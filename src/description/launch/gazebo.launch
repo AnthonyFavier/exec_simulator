@@ -1,8 +1,9 @@
 <launch>
 
   <!-- this opens gazebo -->
-  <include
-    file="$(find gazebo_ros)/launch/empty_world.launch" />
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+      <arg name="world_name" value="$(find simulator)/worlds/world1.world" />
+  </include>
 
   <!-- this put robot in gazebo world -->
   <arg name="robot_model" default="$(find description)/urdf/panda.urdf"/>
@@ -11,11 +12,7 @@
   <param name="robot_description" textfile="$(arg robot_model)"/>
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
-  <node 
-    name="urdf_spawner" 
-    pkg="gazebo_ros" type="spawn_model" 
-    args="-urdf -param robot_description -model panda -x 0 -y 0 -z 0.0" 
-    respawn="false" output="screen" />
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model panda -x 0 -y 0 -z 0.0" respawn="false" output="screen" />
 
 
 </launch>
