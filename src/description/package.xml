@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>description</name>
+  <version>0.0.0</version>
+  <description>The description package</description>
+
+  <maintainer email="afavier@todo.todo">afavier</maintainer>
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roslaunch</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>rviz</depend>
+  <depend>joint_state_publisher_gui</depend>
+  <depend>gazebo</depend>
+
+  <export>
+    <architecture_independent />
+  </export>
+</package>
