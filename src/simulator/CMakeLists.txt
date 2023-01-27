@@ -27,9 +27,10 @@ catkin_package(
 )
 
 add_executable(box_publisher_node src/node.cpp)
-
 target_link_libraries(box_publisher_node ${catkin_LIBRARIES})
 
 
+add_executable(attach_box src/back_node.cpp)
+target_link_libraries(attach_box ${catkin_LIBRARIES})
 
 

@@ -46,7 +46,7 @@ void jointStatesCallback(const sensor_msgs::JointState &joint_states_current)
 
   gazebo_msgs::ModelState model_state;
   // This string results from the spawn_urdf call in the box.launch file argument: -model box
-  model_state.model_name = std::string("box");
+  model_state.model_name = std::string("dyn_obj_1");
   model_state.pose = pose;
   model_state.reference_frame = std::string("world");
 

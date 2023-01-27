@@ -1,5 +1,6 @@
 #include <gazebo_msgs/SetModelState.h>
 #include <gazebo_msgs/ModelStates.h>
+#include <gazebo_msgs/LinkStates.h>
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <ros/ros.h>
@@ -15,9 +16,12 @@ int count = 0;
 bool first=true;
 geometry_msgs::Pose offset;
 
+// moveit::planning_interface::MoveGroupInterface* move_group_interface;
 
-// void jointStatesCallback(const sensor_msgs::JointState &joint_states_current)
-void jointStatesCallback(const gazebo_msgs::ModelStates &model_states_current)
+
+
+
+void jointStatesCallback(const gazebo_msgs::LinkStates &link_states_current)
 {
     //   const robot_state::JointModelGroup *joint_model_group = kinematic_model->getJointModelGroup("panda_arm");
     //   const std::vector<std::string> &joint_names = joint_model_group->getJointModelNames();
@@ -38,51 +42,55 @@ void jointStatesCallback(const gazebo_msgs::ModelStates &model_states_current)
 
     // Get obj_1 state
 
-    if (count < 10)
-        count++;
-    else
-    {
-        count = 0;
+    // if (count < 10)
+    //     count++;
+    // else
+    // {
+    //     count = 0;
 
-        int obj1_id = -1;
-        int obj2_id = -1;
-        for (int i = 0; i < model_states_current.name.size(); i++)
-        {
-            if (model_states_current.name[i] == "dyn_obj_1")
-                obj1_id = i;
-            else if (model_states_current.name[i] == "dyn_obj_2")
-                obj2_id = i;
-            if (obj1_id != -1 && obj2_id != -1)
-                break;
-        }
+        // int obj1_id = -1;
+        // int obj2_id = -1;
+        // int EE_id = -1;
+        // for (int i = 0; i < link_states_current.name.size(); i++)
+        // {
+        //     if (link_states_current.name[i] == "dyn_obj_1::link_0")
+        //         obj1_id = i;
+        //     else if (link_states_current.name[i] == "dyn_obj_2::link_0")
+        //         obj2_id = i;
+        //     else if (link_states_current.name[i] == "panda::panda_link7")
+        //         EE_id = i;
+        //     if (obj1_id != -1 && obj2_id != -1 && EE_id!=-1)
+        //         break;
+        // }
 
-        std::cout << "OBJ1 (" << model_states_current.pose[obj1_id].position.x << ", " << model_states_current.pose[obj1_id].position.x << ")  ";
-        std::cout << "OBJ2 (" << model_states_current.pose[obj2_id].position.x << ", " << model_states_current.pose[obj2_id].position.x << ")" << std::endl;
+        // if(first)
+        // {
+        //     first = false;
 
-        if(first)
-        {
-            first = false;
-            offset.position.x = model_states_current.pose[obj2_id].position.x - model_states_current.pose[obj1_id].position.x;
-            offset.position.y = model_states_current.pose[obj2_id].position.y - model_states_current.pose[obj1_id].position.y;
-            offset.position.z = model_states_current.pose[obj2_id].position.z - model_states_current.pose[obj1_id].position.z;
-        }
+        //     std::cout << "ID=" << EE_id << " (" << link_states_current.pose[EE_id].position.x << "," << link_states_current.pose[EE_id].position.y << "," << link_states_current.pose[EE_id].position.z << std::endl;
+        //     // offset.position.x = link_states_current.pose[obj2_id].position.x - link_states_current.pose[obj1_id].position.x;
+        //     // offset.position.y = link_states_current.pose[obj2_id].position.y - link_states_current.pose[obj1_id].position.y;
+        //     // offset.position.z = link_states_current.pose[obj2_id].position.z - link_states_current.pose[obj1_id].position.z;
+        // }
 
+        // geometry_msgs::PoseStamped pose_EE = move_group_interface->getCurrentPose();
+        geometry_msgs::PoseStamped pose_EE ;
         geometry_msgs::Pose pose;
-        pose.position.x = model_states_current.pose[obj1_id].position.x + offset.position.x;
-        pose.position.y = model_states_current.pose[obj1_id].position.y + offset.position.y;
-        pose.position.z = model_states_current.pose[obj1_id].position.z + offset.position.z;
-        pose.orientation.w = model_states_current.pose[obj1_id].orientation.w;
-        pose.orientation.x = model_states_current.pose[obj1_id].orientation.x;
-        pose.orientation.y = model_states_current.pose[obj1_id].orientation.y;
-        pose.orientation.z = model_states_current.pose[obj1_id].orientation.z;
+        pose.position.x = pose_EE.pose.position.x + offset.position.x;
+        pose.position.y = pose_EE.pose.position.y + offset.position.y;
+        pose.position.z = pose_EE.pose.position.z + offset.position.z;
+        pose.orientation.w = pose_EE.pose.orientation.w;
+        pose.orientation.x = pose_EE.pose.orientation.x;
+        pose.orientation.y = pose_EE.pose.orientation.y;
+        pose.orientation.z = pose_EE.pose.orientation.z;
 
         gazebo_msgs::ModelState model_state;
-        model_state.model_name = std::string("dyn_obj_2");
+        model_state.model_name = std::string("dyn_obj_1");
         model_state.pose = pose;
         model_state.reference_frame = std::string("world");
 
         gazebo_model_state_pub.publish(model_state);
-    }
+    // }
 }
 
 int main(int argc, char **argv)
@@ -90,14 +98,40 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "box_publisher_node");
     ros::NodeHandle node_handle;
 
-    ros::Subscriber joint_states_sub = node_handle.subscribe("/gazebo/model_states", 1, jointStatesCallback);
+    ros::AsyncSpinner spinner(1);
+    spinner.start();
 
-    //   robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
-    //   kinematic_model = robot_model_loader.getModel();
-    //   kinematic_state = robot_state::RobotStatePtr(new robot_state::RobotState(kinematic_model));
+    moveit::planning_interface::MoveGroupInterface move_group_interface("panda_arm");
+
+    // geometry_msgs::PoseStamped pose_EE = move_group_interface.getCurrentPose();
+    // std::cout << "(" << pose_EE.pose.position.x << "," << pose_EE.pose.position.y << "," << pose_EE.pose.position.z << ")" << std::endl;
 
     gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 1);
 
-    ros::spin();
+    ros::Rate loop(100);
+
+    while(ros::ok())
+    {
+        geometry_msgs::PoseStamped pose_EE = move_group_interface.getCurrentPose();
+
+        geometry_msgs::Pose pose;
+        pose.position.x = pose_EE.pose.position.x + offset.position.x;
+        pose.position.y = pose_EE.pose.position.y + offset.position.y;
+        pose.position.z = pose_EE.pose.position.z + offset.position.z;
+        pose.orientation.w = pose_EE.pose.orientation.w;
+        pose.orientation.x = pose_EE.pose.orientation.x;
+        pose.orientation.y = pose_EE.pose.orientation.y;
+        pose.orientation.z = pose_EE.pose.orientation.z;
+
+        gazebo_msgs::ModelState model_state;
+        model_state.model_name = std::string("dyn_obj_1");
+        model_state.pose = pose;
+        model_state.reference_frame = std::string("world");
+
+        gazebo_model_state_pub.publish(model_state);
+
+        loop.sleep();
+    }
+
     return 0;
 }

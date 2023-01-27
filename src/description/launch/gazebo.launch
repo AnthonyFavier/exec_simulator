@@ -6,13 +6,13 @@
   </include>
 
   <!-- this put robot in gazebo world -->
-  <arg name="robot_model" default="$(find description)/urdf/panda.urdf"/>
+  <arg name="robot_model" default="$(find description)/urdf/panda_gaz.urdf"/>
 
   <!-- Load universal robot description format (URDF) -->
-  <param name="robot_description" textfile="$(arg robot_model)"/>
+  <param name="robot_description_gaz" textfile="$(arg robot_model)"/>
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
-  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model panda -x 0 -y 0 -z 0.0" respawn="false" output="screen" />
+  <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description_gaz -model panda -x 0 -y 0 -z 0.0" respawn="false" output="screen" />
 
 
 </launch>
