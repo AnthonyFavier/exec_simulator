@@ -10,6 +10,8 @@ project(simulator)
 find_package(catkin REQUIRED
     gazebo_ros
     moveit_ros_planning_interface
+    rviz_visual_tools
+    moveit_visual_tools
 )
 
 find_package(Eigen3)
@@ -26,11 +28,14 @@ catkin_package(
     LIBRARIES
 )
 
-add_executable(box_publisher_node src/node.cpp)
-target_link_libraries(box_publisher_node ${catkin_LIBRARIES})
-
-
-add_executable(attach_box src/back_node.cpp)
+add_executable(attach_box src/attach_box.cpp)
 target_link_libraries(attach_box ${catkin_LIBRARIES})
+
+
+add_executable(attach_box_eigen src/attach_box_eigen.cpp)
+target_link_libraries(attach_box_eigen ${catkin_LIBRARIES})
+
+add_executable(pick_box src/pick_box.cpp)
+target_link_libraries(pick_box ${catkin_LIBRARIES})
 
 

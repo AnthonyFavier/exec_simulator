@@ -130,7 +130,7 @@ int main(int argc, char** argv)
   // We can plan a motion for this group to a desired pose for the
   // end-effector.
   geometry_msgs::Pose target_pose1;
-  // target_pose1.orientation.x = -1.0;
+  target_pose1.orientation.x = -1.0;
   target_pose1.position.x = 0.622370;
   target_pose1.position.y = 0.304499;
   target_pose1.position.z = 0.409051;
