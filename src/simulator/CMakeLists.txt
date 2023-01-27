@@ -28,14 +28,16 @@ catkin_package(
     LIBRARIES
 )
 
-add_executable(attach_box src/attach_box.cpp)
-target_link_libraries(attach_box ${catkin_LIBRARIES})
+set(EXEC_LIST 
+attach_box
+attach_box_eigen
+pick_box
+init_static_scene
+)
 
-
-add_executable(attach_box_eigen src/attach_box_eigen.cpp)
-target_link_libraries(attach_box_eigen ${catkin_LIBRARIES})
-
-add_executable(pick_box src/pick_box.cpp)
-target_link_libraries(pick_box ${catkin_LIBRARIES})
+foreach(NODE ${EXEC_LIST})
+    add_executable(${NODE} src/${NODE}.cpp)
+    target_link_libraries(${NODE} ${catkin_LIBRARIES})
+endforeach()
 
 
