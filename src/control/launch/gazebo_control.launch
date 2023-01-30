@@ -12,7 +12,7 @@
 
 
     <!-- Load the controller from parameter server to simulation -->
-    <node name="controller_spawner" pkg="controller_manager" type="spawner" args="joint_state_controller arm_controller_bis" respawn="false" output="screen"/>
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" args="joint_state_controller p1_arm_controller_bis p2_arm_controller_bis" respawn="false" output="screen"/>
 
 
     <!-- start trajectory controller UI to control each joint separately -->

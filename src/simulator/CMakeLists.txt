@@ -33,6 +33,7 @@ attach_box
 attach_box_eigen
 pick_box
 init_static_scene
+new_move_multiple
 )
 
 foreach(NODE ${EXEC_LIST})

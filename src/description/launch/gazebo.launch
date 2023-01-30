@@ -6,7 +6,7 @@
   </include>
 
   <!-- this put robot in gazebo world -->
-  <arg name="robot_model" default="$(find description)/urdf/panda_gaz.urdf"/>
+  <arg name="robot_model" default="$(find description)/urdf/TEST.urdf"/>
 
   <!-- Load universal robot description format (URDF) -->
   <param name="robot_description_gaz" textfile="$(arg robot_model)"/>

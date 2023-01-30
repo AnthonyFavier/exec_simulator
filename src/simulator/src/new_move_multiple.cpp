@@ -56,12 +56,18 @@ int main(int argc, char** argv)
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
-  static const std::string PLANNING_GROUP = "panda1_arm";
+  ros::Publisher p1_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/p1_arm_controller_bis/command",1);
+  ros::Publisher p2_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/p2_arm_controller_bis/command",1);
 
-  moveit::planning_interface::MoveGroupInterface move_group_interface(PLANNING_GROUP);
+  moveit::planning_interface::MoveGroupInterface move_group_interface("panda1_arm");
   move_group_interface.setGoalOrientationTolerance(3.14159265);
   move_group_interface.setMaxVelocityScalingFactor(1.0);
   move_group_interface.setMaxAccelerationScalingFactor(0.9);
+
+  moveit::planning_interface::MoveGroupInterface move_group_interface2("panda2_arm");
+  move_group_interface2.setGoalOrientationTolerance(3.14159265);
+  move_group_interface2.setMaxVelocityScalingFactor(1.0);
+  move_group_interface2.setMaxAccelerationScalingFactor(0.9);
 
   geometry_msgs::Pose target_pose1;
   target_pose1.orientation.x = -1.0;
@@ -69,7 +75,36 @@ int main(int argc, char** argv)
   target_pose1.position.y = 0.304499;
   target_pose1.position.z = 0.409051;
   move_group_interface.setPoseTarget(target_pose1);
-  move_group_interface.move();
+
+  geometry_msgs::Pose target_pose2;
+  target_pose2.orientation.x = -1.0;
+  target_pose2.position.x = 1.622370;
+  target_pose2.position.y = 0.304499;
+  target_pose2.position.z = 0.409051;
+  move_group_interface2.setPoseTarget(target_pose2);
+
+
+  // move_group_interface.asyncMove();
+  // move_group_interface2.asyncMove();
+
+
+  moveit::planning_interface::MoveGroupInterface::Plan right_arm_plan;
+  moveit::planning_interface::MoveGroupInterface::Plan left_arm_plan;
+
+  bool rgt_success = (move_group_interface.plan(right_arm_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+  bool lft_success = (move_group_interface2.plan(left_arm_plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+
+  trajectory_msgs::JointTrajectory traj1 = right_arm_plan.trajectory_.joint_trajectory;
+  trajectory_msgs::JointTrajectory traj2 = left_arm_plan.trajectory_.joint_trajectory;
+
+  p1_pub.publish(traj1);
+  p2_pub.publish(traj2);
+
+  // if(rgt_success && lft_success)
+  // {
+  //   move_group_interface.asyncExecute(right_arm_plan);
+  //   move_group_interface2.asyncExecute(left_arm_plan);
+  // }
 
   ros::shutdown();
   return 0;
