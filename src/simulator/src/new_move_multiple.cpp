@@ -56,8 +56,8 @@ int main(int argc, char** argv)
   ros::AsyncSpinner spinner(1);
   spinner.start();
 
-  ros::Publisher p1_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/p1_arm_controller_bis/command",1);
-  ros::Publisher p2_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/p2_arm_controller_bis/command",1);
+  ros::Publisher p1_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/panda1_arm_controller/command",1);
+  ros::Publisher p2_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/panda2_arm_controller/command",1);
 
   moveit::planning_interface::MoveGroupInterface move_group_interface("panda1_arm");
   move_group_interface.setGoalOrientationTolerance(3.14159265);

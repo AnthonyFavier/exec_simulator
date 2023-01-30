@@ -10,7 +10,7 @@ joint_state_controller:
 # this is a position (trajectory) controller controller. 
 # Because all three joints are controlled at the same time 
 # If you want, you can load controller for each joint separately
-p1_arm_controller_bis:
+panda1_arm_controller:
   type: "position_controllers/JointTrajectoryController"
   joints:
     - panda1_joint1
@@ -21,7 +21,7 @@ p1_arm_controller_bis:
     - panda1_joint6
     - panda1_joint7
 
-p2_arm_controller_bis:
+panda2_arm_controller:
   type: "position_controllers/JointTrajectoryController"
   joints:
     - panda2_joint1

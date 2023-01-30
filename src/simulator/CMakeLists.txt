@@ -29,12 +29,12 @@ catkin_package(
 )
 
 set(EXEC_LIST 
-attach_box_p1
-attach_box_p2
-attach_box_eigen
+attach_obj
+attach_obj_tf
 pick_box
 init_static_scene
 new_move_multiple
+move_arm
 )
 
 foreach(NODE ${EXEC_LIST})

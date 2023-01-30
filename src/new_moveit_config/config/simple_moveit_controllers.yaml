@@ -1,5 +1,5 @@
 controller_list:
-  - name: p1_arm_controller_bis
+  - name: panda1_arm_controller
     action_ns: follow_joint_trajectory
     type: FollowJointTrajectory
     default: True
@@ -11,7 +11,7 @@ controller_list:
       - panda1_joint5
       - panda1_joint6
       - panda1_joint7
-  - name: p2_arm_controller_bis
+  - name: panda2_arm_controller
     action_ns: follow_joint_trajectory
     type: FollowJointTrajectory
     default: True
