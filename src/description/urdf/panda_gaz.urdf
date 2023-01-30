@@ -260,6 +260,7 @@
     </collision>
   </link>
 
+  <!-- ############# FINGERS ############# -->
   <link name="panda_leftfinger">
     <contact>
    <friction_anchor/>
@@ -294,7 +295,6 @@
    <spinning_friction value="0.1"/>
    <lateral_friction value="1.0"/>
  </contact>
-
  <inertial>
    <origin rpy="0 0 0" xyz="0 -0.01 0.02"/>
     <mass value="0.1"/>
@@ -319,19 +319,16 @@
  <parent link="panda_hand"/>
  <child link="panda_leftfinger"/>
  <origin rpy="0 0 0" xyz="0 0.04 0.0584"/>
- <!-- <origin rpy="0 0 0" xyz="0 0 0.0584"/> -->
  <axis xyz="0 1 0"/>
- <!-- <limit effort="20" lower="0.0" upper="0.04" velocity="0.2"/> -->
 </joint>
 <joint name="panda_finger_joint2" type="fixed">
  <parent link="panda_hand"/>
  <child link="panda_rightfinger"/>
  <origin rpy="0 0 0" xyz="0 -0.04 0.0584"/>
- <!-- <origin rpy="0 0 0" xyz="0 0 0.0584"/> -->
  <axis xyz="0 -1 0"/>
- <!-- <limit effort="20" lower="0.0" upper="0.04" velocity="0.2"/> -->
- <!-- <mimic joint="panda_finger_joint1"/> -->
 </joint>
+<!-- ################################### -->
+
 
    <link name="panda_grasptarget">
     <inertial>

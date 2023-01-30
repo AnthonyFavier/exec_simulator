@@ -29,7 +29,8 @@ catkin_package(
 )
 
 set(EXEC_LIST 
-attach_box
+attach_box_p1
+attach_box_p2
 attach_box_eigen
 pick_box
 init_static_scene
