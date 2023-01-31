@@ -63,9 +63,9 @@ int main(int argc, char **argv)
 
     moveit::planning_interface::MoveGroupInterface move_group_interface(ROBOT_NAME+"_arm");
 
-    ros::Publisher gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 1);
+    ros::Publisher gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 10);
 
-    ros::Subscriber cmd_sub = node_handle.subscribe("/"+ROBOT_NAME+"_attach_cmd", 1, command_cb);
+    ros::Subscriber cmd_sub = node_handle.subscribe("/"+ROBOT_NAME+"_attach_cmd", 10, command_cb);
 
     ros::Rate loop(200);
 

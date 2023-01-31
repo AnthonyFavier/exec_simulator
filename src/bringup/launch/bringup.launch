@@ -21,6 +21,6 @@
         <arg name="debug" value="false"/>
     </include>
 
-    <!-- <node name="init_planning_scene" pkg="simulator" type="init_static_scene" respawn="false" output="screen" /> -->
+    <node name="init_planning_scene" pkg="simulator" type="init_static_scene" respawn="false" output="screen" />
 
 </launch>

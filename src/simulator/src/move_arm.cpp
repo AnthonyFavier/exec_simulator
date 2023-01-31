@@ -71,14 +71,16 @@ int main(int argc, char **argv)
   spinner.start();
 
   move_group_interface = new moveit::planning_interface::MoveGroupInterface(ROBOT_NAME + "_arm");
+  move_group_interface->setPlannerId("RRTstar");
+  move_group_interface->setPlanningTime(0.3);
   move_group_interface->setGoalOrientationTolerance(3.14159265);
   move_group_interface->setMaxVelocityScalingFactor(1.0);
   move_group_interface->setMaxAccelerationScalingFactor(0.9);
   named_targets = move_group_interface->getNamedTargets();
 
-  traj_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/" + ROBOT_NAME + "_arm_controller/command", 1);
-  ros::Subscriber goal_pose_sub = node_handle.subscribe("/" + ROBOT_NAME + "_move_goal_pose", 1, move_goal_pose_cb);
-  ros::Subscriber named_target_sub = node_handle.subscribe("/" + ROBOT_NAME + "_move_named_target", 1, move_named_target);
+  traj_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/" + ROBOT_NAME + "_arm_controller/command", 10);
+  ros::Subscriber goal_pose_sub = node_handle.subscribe("/" + ROBOT_NAME + "_move_goal_pose", 10, move_goal_pose_cb);
+  ros::Subscriber named_target_sub = node_handle.subscribe("/" + ROBOT_NAME + "_move_named_target", 10, move_named_target);
 
   // ros::spin();
   ros::Rate loop(50);
