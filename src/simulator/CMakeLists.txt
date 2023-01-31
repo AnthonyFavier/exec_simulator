@@ -12,13 +12,14 @@ find_package(catkin REQUIRED
     moveit_ros_planning_interface
     rviz_visual_tools
     moveit_visual_tools
+    sim_msgs
 )
 
 find_package(Eigen3)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${SDFormat_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS} ${SDFormat_INCLUDE_DIRS})
 
 catkin_package(
     DEPENDS
@@ -35,6 +36,7 @@ pick_box
 init_static_scene
 new_move_multiple
 move_arm
+sim_controller
 )
 
 foreach(NODE ${EXEC_LIST})
