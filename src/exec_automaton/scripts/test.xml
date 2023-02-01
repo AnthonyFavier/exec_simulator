@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+
+<!-- LOW LEVEL ACTION -->
+<!-- 
+    move_arm_obj(object_name)
+    move_arm_stance(stance_name)
+    move_arm_location(location_name)
+    move_arm_pose(pose)
+    grab_obj(obj_name)
+    grab_obj_at_loc(location_name)
+    drop()
+    wait(duration) 
+-->
+<high_level_actions>
+
+    <pick_b>
+        <move_arm_obj obj_name="cube_b"/>
+        <grab obj_name="cube_b"/>
+        <move_arm_stance stance_name_="home"/>
+    </pick_b>
+
+    <pick_r>
+        <move_arm_obj obj_name="cube_r"/>
+        <grab obj_name="cube_r"/>
+        <move_arm_stance stance_name_="home"/>
+    </pick_r>
+
+    <pick_g>
+        <move_arm_obj obj_name="cube_g"/>
+        <grab obj_name="cube_g"/>
+        <move_arm_stance stance_name_="home"/>
+    </pick_g>
+
+    <place_1>
+        <move_arm_location location_name="loc_1"/>
+        <drop/>
+        <move_arm_stance stance_name="home"/>
+    </place_1>
+
+    <place_2>
+        <move_arm_location location_name="loc_2"/>
+        <drop/>
+        <move_arm_stance stance_name="home"/>
+    </place_2>
+
+    <place_3>
+        <move_arm_location location_name="loc_3"/>
+        <drop/>
+        <move_arm_stance stance_name="home"/>
+    </place_3>
+
+    <place_4>
+        <move_arm_location location_name="loc_4"/>
+        <drop/>
+        <move_arm_stance stance_name="home"/>
+    </place_4>
+    
+    <drink>
+        <wait duration="4.0"/>
+    </drink>
+
+    <pushing>
+        <move_arm_location location_name="loc_3"/>
+        <grab_obj_at_loc location_name="loc_3"/>
+        <move_arm_location location_name="loc_3bis"/>
+        <drop/>
+    </pushing>
+
+</high_level_actions>

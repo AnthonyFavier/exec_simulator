@@ -10,6 +10,7 @@ find_package(catkin REQUIRED
 add_message_files(
   FILES
   Action.msg
+  VHA.msg
 )
 
 generate_messages(

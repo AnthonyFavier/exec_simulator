@@ -1,6 +1,8 @@
 #include <ros/ros.h>
 #include <termios.h>
 #include <vector>
+#include "sim_msgs/VHA.h"
+#include "std_msgs/Int32.h"
 
 int getch()
 {
@@ -36,38 +38,60 @@ void print_actions()
     std::cout << str;
 }
 
+void print_actions_bis()
+{
+    std::cout << "\nValid human actions:\n";
+
+    std::string str ="";
+    for(int i=0; i<valid_actions.size(); i++)
+    {
+        str += std::to_string(i) + " " + valid_actions[i];
+        if(i<valid_actions.size()-1)
+            str += " - ";
+    }
+    std::cout << str << std::endl;
+}
+
+bool waiting_new_step=false;
+bool first = false;
+void vha_cb(const sim_msgs::VHA msg)
+{
+    first = true;
+    valid_actions.clear();
+    // valid_actions = msg.valid_human_actions;
+    for(int i=0; i<msg.valid_human_actions.size(); i++)
+        valid_actions.push_back(msg.valid_human_actions[i]);
+    waiting_new_step = false;
+    print_actions_bis();
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "hmi");
     ros::NodeHandle node_handle;
 
-    valid_actions.push_back("pick 1");
-    valid_actions.push_back("pick 2");
-    valid_actions.push_back("drink");
+    ros::Subscriber vha_sub = node_handle.subscribe("/hmi_vha", 5, vha_cb);
+    ros::Publisher human_choice_pub = node_handle.advertise<std_msgs::Int32>("/human_choice", 1);
+
+    ros::AsyncSpinner spinner(2);
+    spinner.start();
 
     ros::Rate loop(50);
-    print_actions();
+    std::cout << "waiting first vha..." << std::endl;
+    while (ros::ok() && !first)
+        loop.sleep();
+
     while (ros::ok())
     {
         int c = getch(); // call your non-blocking input function
-        if (c=='0' || c=='1' || c=='2')
+        if(!waiting_new_step && c>=48 && c<=57)
         {
-            std::cout << "\nAction " << char(c) << " selected !" << std::endl;
-            print_actions();
+            std_msgs::Int32 msg;
+            msg.data = c - 48;
+            std::cout << "Action " << char(c) << " selected ! Waiting step over..." << std::endl;
+            waiting_new_step = true;
+            human_choice_pub.publish(msg);
         }
-        else if (c == 'b')
-        {
-            std::cout << "ROH\r";
-
-        }
-        else if (c=='u')
-        {
-            valid_actions.pop_back();
-            valid_actions[1] = "blablater";
-            print_actions();
-        }
-
-        ros::spinOnce();
         loop.sleep();
     }
 

@@ -10,6 +10,8 @@ from enum import Enum
 import logging as lg
 import logging.config
 import rospy
+from sim_msgs.msg import Action, VHA
+from std_msgs.msg import Int32, Empty
 
 class IdResult(Enum):
     NOT_NEEDED=0
@@ -29,6 +31,13 @@ import ConcurrentModule as ConM
 from arrangement import *
 # from conflict_pick import *
 # from simple import *
+
+g_update_VHA_pub = None
+g_robot_action_pub = None
+g_human_action_pub = None
+g_step_over_sub = None
+
+step_over = True
 
 class WrongException(Exception):
     pass
@@ -63,31 +72,38 @@ def execution_simulation(begin_step: ConM.Step):
     Main algorithm 
     """
 
-    rate = rospy.Rate(10) # 10hz
-
     curr_step = get_first_step(begin_step)
     while not rospy.is_shutdown() and not exec_over(curr_step):
-        wait_step_start(curr_step)
-        MOCK_H_action_choice(curr_step)
+        human_acting = wait_step_start(curr_step)
 
-        if is_ID_needed(curr_step):
-            result_id = MOCK_run_id_phase(curr_step)
-            if ID_successful(result_id):
-                RA = pick_any_valid_RA(curr_step, result_id)
-            else:
-                RA = curr_step.SRA
+        if not human_acting:
+            ## 4 & 5 ##
+            RA = pick_any_RA(curr_step)
         else:
-            lg.debug("ID not needed.")
-            result_id = IdResult.NOT_NEEDED
-            RA = curr_step.SRA
+            if is_ID_needed(curr_step):
+                result_id = MOCK_run_id_phase(curr_step)
+                if ID_successful(result_id):
+                    ## 2 ##
+                    RA = pick_any_valid_RA(curr_step, result_id)
+                else:
+                    ## 1 ##
+                    RA = curr_step.SRA
+            else:
+                ## 3 ##
+                rospy.loginfo("ID not needed.")
+                result_id = IdResult.NOT_NEEDED
+                RA = curr_step.SRA
 
-        MOCK_execute_RA(RA)
+        execute_RA(RA)
 
-        MOCK_H_LRDe(curr_step, RA)
-        HA = MOCK_assess_human_action(result_id)
-        curr_step = get_next_step(curr_step, HA, RA)
         wait_step_end()
-    lg.debug(f"END => {curr_step}")
+
+
+        # MOCK_H_LRDe(curr_step, RA)
+        HA = MOCK_assess_human_action(result_id)
+
+        curr_step = get_next_step(curr_step, HA, RA)
+    rospy.loginfo(f"END => {curr_step}")
     return int(curr_step.id)
 
 
@@ -129,7 +145,7 @@ def MOCK_H_LRDe(step: ConM.Step, RA: CM.Action):
     if HC.name=="LRD":
         p_Le_L = g_p_lrde/(g_p_lrde + g_p_lrdo)
         if random.random()<p_Le_L:
-            lg.debug("Human only let robot decide")
+            rospy.loginfo("Human only let robot decide")
             valid_pairs = []
             for p in step.get_pairs():
                 if p.human_action.name!="LRD" and CM.Action.are_similar(p.robot_action, RA):
@@ -141,9 +157,6 @@ def MOCK_H_LRDe(step: ConM.Step, RA: CM.Action):
 ##########################
 ## MOCK Robot execution ##
 ##########################
-def MOCK_execute_RA(RA: CM.Action):
-    lg.debug(f"Execute Robot Action {RA}")
-
 def MOCK_run_id_phase(step: ConM.Step):
     """
     Simulate the identification phase.
@@ -151,7 +164,7 @@ def MOCK_run_id_phase(step: ConM.Step):
     For other human actions, the ID phase has a P_SUCCESS_ID_PHASE chance to succeed.
     If successful, there is a P_WRONG_ID chance that the ID the actually wrong.
     """
-    lg.debug("Start ID phase...")
+    rospy.loginfo("Start ID phase...")
     if HC.name=="LRD":
         id_result = HC
     else:
@@ -162,18 +175,18 @@ def MOCK_run_id_phase(step: ConM.Step):
             else:
                 id_result = HC
         else:
-            lg.debug("ID failed...")
+            rospy.loginfo("ID failed...")
             id_result = IdResult.FAILED
 
     if id_result!=IdResult.FAILED:
-        lg.debug(f"ID successful: {id_result}")
+        rospy.loginfo(f"ID successful: {id_result}")
     
     return id_result
 
 def MOCK_assess_human_action(result_id):
-    lg.debug(f"Assessed Human action: {HC}")
+    rospy.loginfo(f"Assessed Human action: {HC}")
     if result_id!=IdResult.NOT_NEEDED and result_id.name!="LRD" and not CM.Action.are_similar(result_id, HC):
-        lg.debug("Robot was wrong about Human action...")
+        rospy.loginfo("Robot was wrong about Human action...")
     return HC
 
 
@@ -199,14 +212,35 @@ def exec_over(step):
     return False
 
 def wait_step_start(step: ConM.Step):
-    # i.e. wait for human to start acting
-    lg.debug("\nCurrent step:")
-    lg.debug(CM.str_agents(get_agents_before_step(step)))
-    lg.debug(step.str())
-    lg.debug("Waiting for human to act...")
-    if not DEBUG:
-        if INPUT:
-            input()
+    global HC, step_over
+    # i.e. wait for human to start acting or timeout reached
+    rospy.loginfo("Current step:\n"+CM.str_agents(get_agents_before_step(step)))
+    rospy.loginfo(step.str())
+
+    possible_human_actions = [ho.human_action for ho in step.human_options]
+    update_vha(possible_human_actions)
+
+    rospy.loginfo("Waiting for human to act...")
+    try:
+        human_choice = rospy.wait_for_message("/human_choice", Int32, timeout=TIMEOUT_DELAY)
+    except rospy.exceptions.ROSException:
+        rospy.loginfo("Time out reached")
+        human_choice = None
+        
+    rospy.loginfo(human_choice)
+    if human_choice==None or (human_choice!=None and possible_human_actions[human_choice.data].name=="LRD"):
+        rospy.loginfo("human not acting...")
+        human_acting = False
+        pass
+    else:
+        human_acting = True
+        rospy.loginfo(f"human performing: {possible_human_actions[human_choice.data]}")
+        HC = possible_human_actions[human_choice.data]
+        msg = compute_msg_action(HC)
+        g_human_action_pub.publish(msg)
+
+    step_over = False
+    return human_acting
 
 def is_ID_needed(step: ConM.Step):
     # ID needed if SRA is WAIT and R has other options
@@ -227,6 +261,38 @@ def is_ID_needed(step: ConM.Step):
 def ID_successful(result: CM.Action | None):
     return result!=IdResult.FAILED and result!=IdResult.NOT_NEEDED
 
+def pick_any_RA(step: ConM.Step):
+    pairs = step.get_pairs()
+    robot_actions = [p.robot_action for p in pairs]
+
+    i=0
+    while i<len(robot_actions):
+        ra1 = robot_actions[i]
+        j=i+1
+        while j<robot_actions[j]:
+            ra2 = robot_actions[j]
+            if CM.Action.are_similar(ra1,ra2):
+                robot_actions.pop(j)
+            else:
+                j+=1
+        i+=1
+
+    # pick any or SRA?, for now SRA
+    if step.SRA.name=="SKIP":
+        RA = robot_actions[0]
+    else:
+        RA = step.SRA
+
+    # compute VHA
+    valid_human_actions = []
+    for ho in step.human_options:
+        for ho_ra in ho.robot_actions:
+            if CM.Action.are_similar(RA, ho_ra):
+                valid_human_actions.append(ho.human_action)
+    update_vha(valid_human_actions)
+
+    return RA
+
 def pick_any_valid_RA(step: ConM.Step, human_action: CM.Action):
     # Pick robot action according to identified human action
     # And apply this action
@@ -244,11 +310,16 @@ def pick_any_valid_RA(step: ConM.Step, human_action: CM.Action):
 
     return robot_action
 
+def step_over_cb(msg):
+    global step_over
+    step_over = True
+
 def wait_step_end():
-    lg.debug("Waiting step end...")
-    if not DEBUG:
-        if INPUT:
-            input()
+    rospy.loginfo("Waiting step end...")
+    #TODO, should liste to human choice, to publish the human action if needed ...
+    while not step_over and not rospy.is_shutdown():
+        rospy.sleep(0.1)
+    rospy.loginfo("Current step is over.")
 
 def get_executed_pair(step: ConM.Step, HA: CM.Action, RA: CM.Action):
     for ho in step.human_options:
@@ -289,6 +360,54 @@ def get_lrd_probas(nb_human_actions):
     return p_lrde, p_lrdo, p_eq
 
 
+#########
+## ROS ##
+#########
+def update_vha(valid_human_actions: list[CM.Action]):
+    msg = VHA()
+    msg.valid_human_actions = []
+    for ha in valid_human_actions:
+        msg.valid_human_actions.append( ha.name + str(ha.parameters) )
+    rospy.loginfo(msg)
+    g_update_VHA_pub.publish(msg)
+
+def compute_msg_action(a):
+    msg = Action()
+
+    if"pick_b"==a.name:
+        msg.type=Action.PICK_B
+        msg.obj = "cube_b"
+    elif "pick_r"==a.name:
+        msg.type=Action.PICK_R
+        msg.obj = "cube_r"
+    elif "pick_g"==a.name:
+        msg.type=Action.PICK_G
+        msg.obj = "cube_g"
+    elif "place_1"==a.name:
+        msg.type=Action.PLACE_1
+        msg.location = "loc_1"
+    elif "place_2"==a.name:
+        msg.type=Action.PLACE_2
+        msg.location = "loc_2"
+    elif "place_3"==a.name:
+        msg.type=Action.PLACE_3
+        msg.location = "loc_3"
+    elif "place_4"==a.name:
+        msg.type=Action.PLACE_4
+        msg.location = "loc_4"
+    elif "drink"==a.name:
+        msg.type=Action.DRINK
+    elif "pushing"==a.name:
+        msg.type=Action.PUSHING
+        
+    return msg
+
+def execute_RA(RA: CM.Action):
+    rospy.loginfo(f"Execute Robot Action {RA}")
+    msg = compute_msg_action(RA)
+    g_robot_action_pub.publish(msg)
+
+
 ##########
 ## MAIN ##
 ##########
@@ -296,19 +415,21 @@ def show_solution_exec():
     ConM.render_tree(begin_step)
 
 def main_exec(domain_name, solution_tree, begin_step):
-    global P_SUCCESS_ID_PHASE, P_WRONG_ID, P_LET_ROBOT_DECIDE, P_LEAVE_ROBOT_DO
+    global P_SUCCESS_ID_PHASE, P_WRONG_ID, P_LET_ROBOT_DECIDE, P_LEAVE_ROBOT_DO, TIMEOUT_DELAY
 
+    TIMEOUT_DELAY       = 500.0
     # Mock ID phase
     P_SUCCESS_ID_PHASE  = 0.6
     P_WRONG_ID          = 0.2
     # Mock human behavior (set to -1 to make it equiprobable) (must have P_LRDe + P_LRDo <= 1)
     P_LEAVE_ROBOT_DO    = 0.4
     P_LET_ROBOT_DECIDE  = 0.1
+    
 
     # Init Seed
     seed = random.randrange(sys.maxsize)
     random.seed(seed)
-    lg.debug(f"\nSeed was: {seed}")
+    rospy.loginfo(f"Seed was: {seed}")
 
     initDomain()
 
@@ -319,12 +440,20 @@ def main_exec(domain_name, solution_tree, begin_step):
     try:
         result = execution_simulation(begin_step)
     except WrongException as inst:
-        lg.debug(f"Exception catched: {inst.args[0]}")
+        rospy.loginfo(f"Exception catched: {inst.args[0]}")
         result=-1
 
     return (result, seed)
 
 if __name__ == "__main__":
-    rospy.init_node("exec_automaton")
+    rospy.init_node('exec_automaton')
+    g_update_VHA_pub = rospy.Publisher('/hmi_vha', VHA, queue_size=1)
+    g_robot_action_pub = rospy.Publisher('/robot_action', Action, queue_size=1)
+    g_human_action_pub = rospy.Publisher('/human_action', Action, queue_size=1)
+    g_step_over_sub = rospy.Subscriber('/step_over', Empty, step_over_cb)
+
+    rospy.loginfo("Wait pub/sub to be initialized...")
+    rospy.sleep(1)
+
     domain_name, solution_tree, begin_step = load_solution()
     main_exec(domain_name, solution_tree, begin_step)

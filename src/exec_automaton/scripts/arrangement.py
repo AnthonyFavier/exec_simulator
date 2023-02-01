@@ -50,20 +50,6 @@ def o_place_1_effects(state, agent):
         raise Exception("Holding nothing!!!")
 o_place_1 = CM.Operator("place_1", pre_cond=o_place_1_precond, effects=o_place_1_effects)
 
-## place_1 ##
-def o_place_1_precond(state, agent):
-    return nothing_at_place("1", state)
-def o_place_1_effects(state, agent):
-    if state.pos_b.val==agent:
-        state.pos_b.val = "1"
-    elif state.pos_r.val==agent:
-        state.pos_r.val = "1"
-    elif state.pos_g.val==agent:
-        state.pos_g.val = "1"
-    else:
-        raise Exception("Holding nothing!!!")
-o_place_1 = CM.Operator("place_1", pre_cond=o_place_1_precond, effects=o_place_1_effects)
-
 ## place_2 ##
 def o_place_2_precond(state, agent):
     return nothing_at_place("2", state)
@@ -106,7 +92,7 @@ def o_place_4_effects(state, agent):
         raise Exception("Holding nothing!!!")
 o_place_4 = CM.Operator("place_4", pre_cond=o_place_4_precond, effects=o_place_4_effects)
 
-## Drink ##
+## drink ##
 def o_drink_precond(state, agent):
     return state.thirsty.val==True
 def o_drink_effects(state, agent):

@@ -16,8 +16,13 @@ void wait_still_moving(AGENT agent);
 void robot_action_cb(const sim_msgs::Action& msg);
 void human_action_cb(const sim_msgs::Action& msg);
 void manage_action(AGENT agent, const sim_msgs::Action& action);
-void pick_object(AGENT agent, const std::string& obj);
+
+void pick(AGENT agent, const std::string &obj);
+void place_pose(AGENT agent, const geometry_msgs::Pose &pose);
+void place_location(AGENT agent, const std::string &location);
+
 void move_pose_target(AGENT agent, const geometry_msgs::Pose& pose_target);
+void move_obj_target(AGENT agent, const std::string &obj_name);
 void move_named_target(AGENT agent, const std::string& named_target);
 void grab_obj(AGENT agent, const std::string& object);
 void drop(AGENT agent);
