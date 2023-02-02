@@ -1,0 +1,6 @@
+uint8 type
+uint8 GRAB=0
+string obj_name
+uint8 DROP=1
+---
+bool success

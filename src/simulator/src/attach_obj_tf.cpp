@@ -8,33 +8,37 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/String.h>
 #include <tf/transform_listener.h>
+#include "sim_msgs/AttachObj.h"
 
 std::string ROBOT_NAME = "undef";
 
 bool g_attach=false;
 std::string g_obj="";
 
-void command_cb(const std_msgs::String& msg)
+bool cmd_server(sim_msgs::AttachObj::Request &req, sim_msgs::AttachObj::Response &res)
 {
-    size_t sep_pos = msg.data.find_first_of(" ");
-    std::string cmd = msg.data.substr(0, sep_pos);
-    std::string obj = msg.data.substr(sep_pos+1, std::string::npos);
-
-    if(cmd=="grab")
+    res.success = true;
+    if(req.type==req.GRAB)
     {
         if(g_attach)
-            ROS_ERROR("Trying to grap object %s but robot is already holding object %s!", obj.c_str(), g_obj.c_str());
+        {
+            ROS_ERROR("Trying to grap object %s but robot is already holding object %s!", req.obj_name.c_str(), g_obj.c_str());
+            res.success = false;
+        }
         else
         {
-            ROS_INFO("%s has grabbed %s.", ROBOT_NAME.c_str(), obj.c_str());
+            ROS_INFO("%s has grabbed %s.", ROBOT_NAME.c_str(), req.obj_name.c_str());
             g_attach = true;
-            g_obj = obj;
+            g_obj = req.obj_name;
         }
     }
-    else if(cmd=="drop")
+    else if(req.type==req.DROP)
     {
         if(!g_attach)
+        {
             ROS_ERROR("Trying to drop but robot isn't holding any object!");
+            res.success = false;
+        }
         else
         {
             ROS_INFO("%s has dropped %s.", ROBOT_NAME.c_str(), g_obj.c_str());
@@ -42,7 +46,13 @@ void command_cb(const std_msgs::String& msg)
         }
     }
     else
-        ROS_ERROR("Command %s unknown!", cmd.c_str());
+    {
+        ROS_ERROR("Command %d unknown!", req.type);
+        res.success = false;
+    }
+
+    ros::Duration(0.1).sleep();
+    return true;
 }
 
 int main(int argc, char **argv)
@@ -65,7 +75,7 @@ int main(int argc, char **argv)
 
     ros::Publisher gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 10);
 
-    ros::Subscriber cmd_sub = node_handle.subscribe("/"+ROBOT_NAME+"_attach_cmd", 10, command_cb);
+    ros::ServiceServer cmd_service = node_handle.advertiseService("attach_obj", cmd_server);
 
     ros::Rate loop(200);
 
@@ -84,9 +94,6 @@ int main(int argc, char **argv)
             pose.orientation.x = transform.getRotation().x();
             pose.orientation.y = transform.getRotation().y();
             pose.orientation.z = transform.getRotation().z();
-
-            // std::cout << "(" << pose.position.x << "," << pose.position.y << "," << pose.position.z << ") ("
-                // << pose.orientation.w << "," << pose.orientation.x << "," << pose.orientation.y << "," << pose.orientation.z << ")" <<  std::endl;
 
             gazebo_msgs::ModelState model_state;
             model_state.model_name = std::string(g_obj);

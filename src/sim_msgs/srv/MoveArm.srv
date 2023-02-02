@@ -1,0 +1,4 @@
+geometry_msgs/Pose pose_target
+string named_target
+---
+bool success

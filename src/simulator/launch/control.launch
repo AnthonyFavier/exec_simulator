@@ -4,12 +4,14 @@
     <arg name="robot_name1" value="panda1"/>
     <arg name="robot_name2" value="panda2"/>
 
-    <!-- move_arm -->
-    <node name="move_arm_$(arg robot_name1)" type="move_arm" pkg="simulator" args="$(arg robot_name1)" respawn="false" output="screen"/>
-    <node name="move_arm_$(arg robot_name2)" type="move_arm" pkg="simulator" args="$(arg robot_name2)" respawn="false" output="screen"/>
-
-    <!-- attach obj -->
-    <node name="attach_obj_$(arg robot_name1)" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name1)" respawn="false" output="screen"/>
-    <node name="attach_obj_$(arg robot_name2)" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name2)" respawn="false" output="screen"/>
+    <group ns="$(arg robot_name1)">
+        <node name="move_arm" type="move_arm" pkg="simulator" args="$(arg robot_name1)" respawn="false" output="screen"/>
+        <node name="attach_obj" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name1)" respawn="false" output="screen"/>
+    </group>
+    
+    <group ns="$(arg robot_name2)">
+        <node name="move_arm" type="move_arm" pkg="simulator" args="$(arg robot_name2)" respawn="false" output="screen"/>
+        <node name="attach_obj" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name2)" respawn="false" output="screen"/>
+    </group>
 
 </launch>

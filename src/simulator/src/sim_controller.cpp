@@ -4,12 +4,11 @@
 bool waiting_step_start = true;
 bool action_received[2] = {false, false};
 bool action_done[2] = {false, false};
-bool moving[2] = {false, false};
-ros::Publisher move_arm_pose_pub[2];
-ros::Publisher move_arm_named_pub[2];
-ros::Publisher attach_obj_pub[2];
-moveit::planning_interface::MoveGroupInterface *move_group_interface[2];
+ros::ServiceClient move_arm_pose_client[2];
+ros::ServiceClient move_arm_named_client[2];
+ros::ServiceClient attach_obj_client[2];
 ros::ServiceClient get_model_state_client[2];
+// ros::ServiceClient set_model_state_client[2]; ??????
 
 std::map<std::string, geometry_msgs::Pose> locations =
     {
@@ -68,52 +67,6 @@ std::string get_agent_str(AGENT agent)
     else
         throw ros::Exception("Agent unknown...");
 }
-// ************************************************************************ //
-
-void check_moving(AGENT agent, geometry_msgs::Pose &new_pose, geometry_msgs::Pose &previous_pose, int &count)
-{
-    // ROS_INFO("\tcheck pose %d %d %d", agent, moving[agent], count);
-    // show_pose(previous_pose);
-    // show_pose(new_pose);
-
-    if (abs(new_pose.position.x - previous_pose.position.x) < tolerance && abs(new_pose.position.y - previous_pose.position.y) < tolerance && abs(new_pose.position.z - previous_pose.position.z) < tolerance && abs(new_pose.orientation.w - previous_pose.orientation.w) < tolerance && abs(new_pose.orientation.x - previous_pose.orientation.x) < tolerance && abs(new_pose.orientation.y - previous_pose.orientation.y) < tolerance && abs(new_pose.orientation.z - previous_pose.orientation.z) < tolerance)
-    {
-        if (moving[agent])
-        {
-            if (count > 3)
-            {
-                moving[agent] = false;
-                count = 0;
-            }
-            else
-                count++;
-        }
-    }
-    else
-    {
-        moving[agent] = true;
-        count = 0;
-    }
-    previous_pose = new_pose;
-}
-
-void wait_still_moving(AGENT agent)
-{
-    moving[agent] = true;
-    geometry_msgs::Pose previous_pose = move_group_interface[agent]->getCurrentPose().pose;
-    int count = 0;
-    ros::Duration(2).sleep();
-
-    ros::Rate loop(20);
-    ROS_INFO("\t\tWaiting still moving...");
-    while (ros::ok() && moving[agent])
-    {
-        geometry_msgs::Pose pose = move_group_interface[agent]->getCurrentPose().pose;
-        check_moving(agent, pose, previous_pose, count);
-        loop.sleep();
-    }
-    ROS_INFO("\t\tMotion done!");
-}
 
 // ************************* HIGH LEVEL ACTIONS *************************** //
 
@@ -157,8 +110,10 @@ void place_location(AGENT agent, const std::string &location)
 void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target)
 {
     ROS_INFO("\t%s MOVE_POSE_TARGET START", get_agent_str(agent).c_str());
-    move_arm_pose_pub[agent].publish(pose_target);
-    wait_still_moving(agent);
+    sim_msgs::MoveArm srv;
+    srv.request.pose_target = pose_target;
+    if(!move_arm_pose_client[agent].call(srv) || !srv.response.success)
+        throw ros::Exception("Calling service move_arm_pose_target failed...");
     ROS_INFO("\t%s MOVE_POSE_TARGET END", get_agent_str(agent).c_str());
 }
 
@@ -167,7 +122,7 @@ void move_obj_target(AGENT agent, const std::string &obj_name)
     geometry_msgs::Pose obj_pose;
     gazebo_msgs::GetModelState srv;
     srv.request.model_name = obj_name;
-    if (!get_model_state_client[agent].call(srv) && srv.response.success)
+    if (!get_model_state_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service get_model_state failed...");
     else
         obj_pose = srv.response.pose;
@@ -178,30 +133,31 @@ void move_obj_target(AGENT agent, const std::string &obj_name)
 void move_named_target(AGENT agent, const std::string &named_target)
 {
     ROS_INFO("\t%s MOVE_NAMED_TARGET START", get_agent_str(agent).c_str());
-    std_msgs::String str_msg;
-    str_msg.data = named_target;
-    move_arm_named_pub[agent].publish(str_msg);
-    wait_still_moving(agent);
+    sim_msgs::MoveArm srv;
+    srv.request.named_target = named_target;
+    if(!move_arm_named_client[agent].call(srv) || !srv.response.success)
+        throw ros::Exception("Calling service move_arm_named_target failed...");
     ROS_INFO("\t%s MOVE_NAMED_TARGET START", get_agent_str(agent).c_str());
 }
 
 void grab_obj(AGENT agent, const std::string &object)
 {
     ROS_INFO("\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
-    std_msgs::String str_msg;
-    str_msg.data = "grab " + object;
-    attach_obj_pub[agent].publish(str_msg);
-    ros::Duration(0.2).sleep();
+    sim_msgs::AttachObj srv;
+    srv.request.type=sim_msgs::AttachObj::Request::GRAB;
+    srv.request.obj_name = object;
+    if(!attach_obj_client[agent].call(srv) || !srv.response.success)
+        throw ros::Exception("Calling service attach_obj failed...");
     ROS_INFO("\t%s GRAB_OBJ END", get_agent_str(agent).c_str());
 }
 
 void drop(AGENT agent)
 {
     ROS_INFO("\t%s DROP START", get_agent_str(agent).c_str());
-    std_msgs::String str_msg;
-    str_msg.data = "drop";
-    attach_obj_pub[agent].publish(str_msg);
-    ros::Duration(1).sleep();
+    sim_msgs::AttachObj srv;
+    srv.request.type=sim_msgs::AttachObj::Request::DROP;
+    if(!attach_obj_client[agent].call(srv) || !srv.response.success)
+        throw ros::Exception("Calling service attach_obj failed...");
     ROS_INFO("\t%s DROP END", get_agent_str(agent).c_str());
 }
 
@@ -273,20 +229,18 @@ int main(int argc, char **argv)
     ros::Subscriber robot_action = node_handle.subscribe("/robot_action", 1, robot_action_cb);
     ros::Subscriber human_action = node_handle.subscribe("/human_action", 1, human_action_cb);
 
-    move_arm_pose_pub[AGENT::ROBOT] = node_handle.advertise<geometry_msgs::Pose>("/panda1_move_goal_pose", 10);
-    move_arm_pose_pub[AGENT::HUMAN] = node_handle.advertise<geometry_msgs::Pose>("/panda2_move_goal_pose", 10);
+    move_arm_pose_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_pose_target");
+    move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda2/move_pose_target");
 
-    move_arm_named_pub[AGENT::ROBOT] = node_handle.advertise<std_msgs::String>("/panda1_move_named_target", 10);
-    move_arm_named_pub[AGENT::HUMAN] = node_handle.advertise<std_msgs::String>("/panda2_move_named_target", 10);
+    move_arm_named_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_named_target");
+    move_arm_named_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda2/move_named_target");
 
-    attach_obj_pub[AGENT::ROBOT] = node_handle.advertise<std_msgs::String>("/panda1_attach_cmd", 10);
-    attach_obj_pub[AGENT::HUMAN] = node_handle.advertise<std_msgs::String>("/panda2_attach_cmd", 10);
+
+    attach_obj_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::AttachObj>("/panda1/attach_obj");
+    attach_obj_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::AttachObj>("/panda2/attach_obj");
 
     ros::Publisher step_over_pub = node_handle.advertise<std_msgs::Empty>("/step_over", 10);
     std_msgs::Empty empty_msg;
-
-    move_group_interface[AGENT::ROBOT] = new moveit::planning_interface::MoveGroupInterface("panda1_arm");
-    move_group_interface[AGENT::HUMAN] = new moveit::planning_interface::MoveGroupInterface("panda2_arm");
 
     get_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
     get_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
@@ -298,7 +252,9 @@ int main(int argc, char **argv)
     bool transi_step_over = true;
     while (ros::ok())
     {
-        if ((action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]) || (action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && !action_received[AGENT::HUMAN] && !action_done[AGENT::HUMAN]) || (!action_received[AGENT::ROBOT] && !action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]))
+        if ((action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]) 
+        || (action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && !action_received[AGENT::HUMAN] && !action_done[AGENT::HUMAN]) 
+        || (!action_received[AGENT::ROBOT] && !action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]))
         {
             ROS_INFO("=> STEP OVER");
             step_over_pub.publish(empty_msg);
@@ -311,9 +267,6 @@ int main(int argc, char **argv)
 
         loop.sleep();
     }
-
-    delete move_group_interface[AGENT::ROBOT];
-    delete move_group_interface[AGENT::HUMAN];
 
     return 0;
 }

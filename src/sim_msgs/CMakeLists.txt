@@ -12,6 +12,11 @@ add_message_files(
   Action.msg
   VHA.msg
 )
+add_service_files(
+  FILES
+  MoveArm.srv
+  AttachObj.srv
+)
 
 generate_messages(
     DEPENDENCIES

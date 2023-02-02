@@ -417,7 +417,7 @@ def main_exec(domain_name, solution_tree, begin_step):
     TIMEOUT_DELAY       = 500.0
     # Mock ID phase
     P_SUCCESS_ID_PHASE  = 0.6
-    P_WRONG_ID          = 0.2
+    P_WRONG_ID          = 0.0
     # Mock human behavior (set to -1 to make it equiprobable) (must have P_LRDe + P_LRDo <= 1)
     P_LEAVE_ROBOT_DO    = 0.4
     P_LET_ROBOT_DECIDE  = 0.1

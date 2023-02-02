@@ -1,6 +1,7 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <std_msgs/String.h>
 #include <algorithm>
+#include "sim_msgs/MoveArm.h"
 
 std::string ROBOT_NAME = "";
 
@@ -8,53 +9,53 @@ ros::Publisher traj_pub;
 moveit::planning_interface::MoveGroupInterface *move_group_interface;
 std::vector<std::string> named_targets;
 
-void move_goal_pose_cb(const geometry_msgs::Pose &goal_pose)
+bool move_named_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmResponse &res)
 {
-  ROS_INFO("Pose target received.");
-
-  // Set goal pose
-  move_group_interface->setPoseTarget(goal_pose);
-
-  // Plan
-  moveit::planning_interface::MoveGroupInterface::Plan plan;
-  ROS_INFO("before planning");
-  bool success = (move_group_interface->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
-  ROS_INFO("after planning");
-
-  // Execute
-  if(!success)
-    ROS_INFO("Failed to plan...");
-  else
+  if(std::find(named_targets.begin(), named_targets.end(), req.named_target) == named_targets.end())
   {
-    ROS_INFO("Success to plan");
-    traj_pub.publish(plan.trajectory_.joint_trajectory);
-  }
-}
-
-void move_named_target(const std_msgs::String &named_target)
-{
-  ROS_INFO("Named target received.");
-
-  if(std::find(named_targets.begin(), named_targets.end(), named_target.data) == named_targets.end())
     ROS_ERROR("Named target not existing!");
+    res.success = false;
+  }
   else
   {
-    // Set Goal Pose
-    move_group_interface->setNamedTarget(named_target.data);
+    // Set goal pose
+    move_group_interface->setNamedTarget(req.named_target);
 
     // Plan
     moveit::planning_interface::MoveGroupInterface::Plan plan;
     bool success = (move_group_interface->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+    res.success = success;
 
     // Execute
     if(!success)
       ROS_INFO("Failed to plan...");
     else
-    {
-      ROS_INFO("Success to plan");
-      traj_pub.publish(plan.trajectory_.joint_trajectory);
-    }
+      move_group_interface->execute(plan);
   }
+  return true;
+}
+
+bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmResponse &res)
+{
+  ROS_INFO("Pose target received.");
+
+  // Set goal pose
+  move_group_interface->setPoseTarget(req.pose_target);
+
+  // Plan
+  moveit::planning_interface::MoveGroupInterface::Plan plan;
+  // ROS_INFO("before planning");
+  bool success = (move_group_interface->plan(plan) == moveit::planning_interface::MoveItErrorCode::SUCCESS);
+  // ROS_INFO("after planning");
+  res.success = success;
+
+  // Execute
+  if(!success)
+    ROS_INFO("Failed to plan...");
+  else
+    move_group_interface->execute(plan);
+
+  return true;
 }
 
 int main(int argc, char **argv)
@@ -78,11 +79,10 @@ int main(int argc, char **argv)
   move_group_interface->setMaxAccelerationScalingFactor(0.9);
   named_targets = move_group_interface->getNamedTargets();
 
-  traj_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>("/" + ROBOT_NAME + "_arm_controller/command", 10);
-  ros::Subscriber goal_pose_sub = node_handle.subscribe("/" + ROBOT_NAME + "_move_goal_pose", 10, move_goal_pose_cb);
-  ros::Subscriber named_target_sub = node_handle.subscribe("/" + ROBOT_NAME + "_move_named_target", 10, move_named_target);
+  traj_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>(ROBOT_NAME + "_arm_controller/command", 10);
+  ros::ServiceServer move_pose_target_service = node_handle.advertiseService("move_pose_target", move_pose_target_server);
+  ros::ServiceServer move_named_target_service = node_handle.advertiseService("move_named_target", move_named_target_server);
 
-  // ros::spin();
   ros::Rate loop(50);
   while(ros::ok())
     loop.sleep();

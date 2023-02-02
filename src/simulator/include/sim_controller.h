@@ -8,6 +8,9 @@
 #include "sim_msgs/Action.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <gazebo_msgs/GetModelState.h>
+#include "sim_msgs/MoveArm.h"
+#include "sim_msgs/AttachObj.h"
+
 
 enum AGENT{ROBOT, HUMAN};
 
