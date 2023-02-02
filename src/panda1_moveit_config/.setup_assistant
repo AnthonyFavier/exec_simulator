@@ -1,11 +1,11 @@
 moveit_setup_assistant_config:
   URDF:
     package: description
-    relative_path: urdf/panda.urdf
+    relative_path: urdf/panda1.urdf
     xacro_args: ""
   SRDF:
-    relative_path: config/panda.srdf
+    relative_path: config/panda1.srdf
   CONFIG:
     author_name: anthony favier
     author_email: anthony.favier@laas.fr
-    generated_timestamp: 1674830007
+    generated_timestamp: 1675345488

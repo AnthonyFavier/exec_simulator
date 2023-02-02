@@ -1,9 +1,9 @@
 <package>
 
-  <name>moveit_config</name>
+  <name>panda1_moveit_config</name>
   <version>0.3.0</version>
   <description>
-     An automatically generated package with all the configuration and launch files for using the panda with the MoveIt Motion Planning Framework
+     An automatically generated package with all the configuration and launch files for using the panda1 with the MoveIt Motion Planning Framework
   </description>
   <author email="anthony.favier@laas.fr">anthony favier</author>
   <maintainer email="anthony.favier@laas.fr">anthony favier</maintainer>
