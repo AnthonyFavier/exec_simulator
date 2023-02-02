@@ -16,7 +16,4 @@
         <arg name="init_pose_Y" value="3.14159265"/>
     </include>
 
-    <!-- <node name="init_planning_scene" pkg="simulator" type="init_static_scene" respawn="false"
-    output="screen" /> -->
-
 </launch>

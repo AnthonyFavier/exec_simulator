@@ -58,6 +58,8 @@
             <arg name="rviz_config" value="$(arg dollar)$(arg path)/launch/moveit.rviz" />
             <arg name="debug" value="false" />
         </include>
+
+        <node name="init_planning_scene" pkg="simulator" type="init_static_scene" respawn="false" output="screen" />
     </group>
 
 </launch>
