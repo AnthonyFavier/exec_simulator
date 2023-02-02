@@ -1,6 +1,6 @@
 moveit_setup_assistant_config:
   URDF:
-    package: description
+    package: bringup
     relative_path: urdf/panda2.urdf
     xacro_args: ""
   SRDF:
@@ -8,4 +8,4 @@ moveit_setup_assistant_config:
   CONFIG:
     author_name: anthony favier
     author_email: anthony.favier@laas.fr
-    generated_timestamp: 1675352542
+    generated_timestamp: 1675360163

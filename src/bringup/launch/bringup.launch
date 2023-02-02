@@ -1,51 +1,21 @@
 <launch>
-    
-    <!-- this opens gazebo and put the robot in gazebo -->
-    <include file="$(find control)/launch/gazebo_control.launch" />
-    
-    
-    <group ns="panda1">
-        <!-- Given the published joint states, publish tf for the robot links -->
-        <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
-            respawn="true" output="screen">
-        </node>
-    
-        <!-- Run the main MoveIt! executable without trajectory execution (we do not have controllers
-        configured by default) -->
-        <include file="$(find panda1_moveit_config)/launch/move_group.launch">
-            <arg name="allow_trajectory_execution" value="true" />
-            <arg name="info" value="true" />
-            <arg name="debug" value="false" />
-            <arg name="load_robot_description" value="true" />
-        </include>
-    
-        <!-- Run Rviz and load the default config to see the state of the move_group node -->
-        <include file="$(find panda1_moveit_config)/launch/moveit_rviz.launch">
-            <arg name="rviz_config" value="$(find panda1_moveit_config)/launch/moveit.rviz" />
-            <arg name="debug" value="false" />
-        </include>
-    </group>
 
-    <group ns="panda2">
-        <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
-            respawn="true" output="screen">
-        </node>
-    
-        <include file="$(find panda2_moveit_config)/launch/move_group.launch">
-            <arg name="allow_trajectory_execution" value="true" />
-            <arg name="info" value="true" />
-            <arg name="debug" value="false" />
-            <arg name="load_robot_description" value="true" />
-        </include>
-        
-        <include file="$(find panda2_moveit_config)/launch/moveit_rviz.launch">
-            <arg name="rviz_config" value="$(find panda2_moveit_config)/launch/moveit.rviz" />
-            <arg name="debug" value="false" />
-        </include>
-    </group>
-    
+    <!-- this opens gazebo -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find simulator)/worlds/world2.world" />
+        <arg name="gui" value="true" />
+    </include>
 
-    
+    <include file="$(find bringup)/launch/launch_robot.launch">
+        <arg name="robot_name" value="panda1"/>
+    </include>
+
+    <include file="$(find bringup)/launch/launch_robot.launch">
+        <arg name="robot_name" value="panda2"/>
+        <arg name="init_pose_x" value="1.5"/>
+        <arg name="init_pose_Y" value="3.14159265"/>
+    </include>
+
     <!-- <node name="init_planning_scene" pkg="simulator" type="init_static_scene" respawn="false"
     output="screen" /> -->
 

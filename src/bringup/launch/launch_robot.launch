@@ -1,0 +1,63 @@
+<launch>
+
+    <arg name="robot_name" default="panda1"/>
+    <arg name="init_pose_x" default="0"/>
+    <arg name="init_pose_y" default="0"/>
+    <arg name="init_pose_z" default="0"/>
+    <arg name="init_pose_R" default="0"/>
+    <arg name="init_pose_P" default="0"/>
+    <arg name="init_pose_Y" default="0"/>
+    
+    <group ns="$(arg robot_name)">
+        <!-- this put robot in gazebo world -->
+        <arg name="robot_model" default="$(find bringup)/urdf/$(arg robot_name)_gaz.urdf" />
+    
+        <!-- Load universal robot description format (URDF) -->
+        <param name="description_gaz" textfile="$(arg robot_model)" />
+        
+        <!-- push robot_description to factory and spawn robot in gazebo -->
+        <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
+            args="-urdf -param description_gaz -model $(arg robot_name) -x $(arg init_pose_x) -y $(arg init_pose_y) -z $(arg init_pose_z) -R $(arg init_pose_R) -P $(arg init_pose_P) -Y $(arg init_pose_Y)"
+            respawn="false" output="screen" />
+
+
+        <!-- Load joint controller configurations to parameter server -->
+        <!-- think of parameter server as global variables which you can  -->
+        <!-- access using the command 'rosparam list' in the terminal -->
+        <rosparam file="$(find bringup)/config/controller.yaml" command="load" />
+
+        <!-- Load the controller from parameter server to simulation -->
+        <node name="controller_spawner" pkg="controller_manager" type="spawner"
+            args="joint_state_controller $(arg robot_name)_arm_controller" respawn="false" output="screen" />
+
+        <!-- start trajectory controller UI to control each joint separately -->
+        <node name="control_ui" pkg="rqt_joint_trajectory_controller"
+            type="rqt_joint_trajectory_controller" respawn="false" output="screen" />
+
+        <!-- Given the published joint states, publish tf for the robot links -->
+        <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+            respawn="true" output="screen">
+        </node>
+
+        <!-- Run the main MoveIt! executable without trajectory execution (we do not have
+        controllers
+        configured by default) -->
+        <!-- <include file="$(eval find(arg('robot_name')) + '_moveit_config')/launch/move_group.launch"> -->
+        <!-- <include file="$(find $(arg robot_name)_moveit_config)/launch/move_group.launch"> -->
+        <arg name="path" value="(find $(arg robot_name)_moveit_config)"/>
+        <arg name="dollar" value="$"/>
+        <include file="$(arg dollar)$(arg path)/launch/move_group.launch">
+            <arg name="allow_trajectory_execution" value="true" />
+            <arg name="info" value="true" />
+            <arg name="debug" value="false" />
+            <arg name="load_robot_description" value="true" />
+        </include>
+
+        <!-- Run Rviz and load the default config to see the state of the move_group node -->
+        <include file="$(arg dollar)$(arg path)/launch/moveit_rviz.launch">
+            <arg name="rviz_config" value="$(arg dollar)$(arg path)/launch/moveit.rviz" />
+            <arg name="debug" value="false" />
+        </include>
+    </group>
+
+</launch>
