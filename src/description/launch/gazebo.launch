@@ -2,7 +2,7 @@
 
   <!-- this opens gazebo -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-      <arg name="world_name" value="$(find simulator)/worlds/world1.world" />
+      <arg name="world_name" value="$(find simulator)/worlds/world2.world" />
   </include>
 
   <!-- this put robot in gazebo world -->

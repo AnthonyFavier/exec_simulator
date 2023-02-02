@@ -17,12 +17,6 @@ class IdResult(Enum):
     NOT_NEEDED=0
     FAILED=1
 
-DEBUG = False
-INPUT = False
-########
-# DEBUG = True
-# INPUT = True
-
 sys.path.insert(0, "/home/afavier/exec_simulator_ws/src/exec_automaton/scripts")
 # sys.path.insert(0, "/home/afavier/ws/HATPEHDA/hatpehda")
 import ConcurrentModule as ConM
@@ -76,6 +70,7 @@ def execution_simulation(begin_step: ConM.Step):
     while not rospy.is_shutdown() and not exec_over(curr_step):
         human_acting = wait_step_start(curr_step)
 
+        result_id = IdResult.NOT_NEEDED
         if not human_acting:
             ## 4 & 5 ##
             RA = pick_any_RA(curr_step)
@@ -227,11 +222,13 @@ def wait_step_start(step: ConM.Step):
         rospy.loginfo("Time out reached")
         human_choice = None
         
-    rospy.loginfo(human_choice)
-    if human_choice==None or (human_choice!=None and possible_human_actions[human_choice.data].name=="LRD"):
+    if human_choice==None:
         rospy.loginfo("human not acting...")
         human_acting = False
-        pass
+    elif possible_human_actions[human_choice.data].name=="LRD":
+        rospy.loginfo("human not acting...")
+        human_acting = False
+        HC = possible_human_actions[human_choice.data]
     else:
         human_acting = True
         rospy.loginfo(f"human performing: {possible_human_actions[human_choice.data]}")
@@ -265,17 +262,17 @@ def pick_any_RA(step: ConM.Step):
     pairs = step.get_pairs()
     robot_actions = [p.robot_action for p in pairs]
 
-    i=0
-    while i<len(robot_actions):
-        ra1 = robot_actions[i]
-        j=i+1
-        while j<robot_actions[j]:
-            ra2 = robot_actions[j]
-            if CM.Action.are_similar(ra1,ra2):
-                robot_actions.pop(j)
-            else:
-                j+=1
-        i+=1
+    # i=0
+    # while i<len(robot_actions):
+    #     ra1 = robot_actions[i]
+    #     j=i+1
+    #     while j<len(robot_actions):
+    #         ra2 = robot_actions[j]
+    #         if CM.Action.are_similar(ra1,ra2):
+    #             robot_actions.pop(j)
+    #         else:
+    #             j+=1
+    #     i+=1
 
     # pick any or SRA?, for now SRA
     if step.SRA.name=="SKIP":
@@ -432,10 +429,6 @@ def main_exec(domain_name, solution_tree, begin_step):
     rospy.loginfo(f"Seed was: {seed}")
 
     initDomain()
-
-    if INPUT:
-        print("Press Enter to start...")
-        input()
 
     try:
         result = execution_simulation(begin_step)

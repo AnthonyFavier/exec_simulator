@@ -58,7 +58,6 @@ void vha_cb(const sim_msgs::VHA msg)
 {
     first = true;
     valid_actions.clear();
-    // valid_actions = msg.valid_human_actions;
     for(int i=0; i<msg.valid_human_actions.size(); i++)
         valid_actions.push_back(msg.valid_human_actions[i]);
     waiting_new_step = false;

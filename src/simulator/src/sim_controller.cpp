@@ -16,11 +16,10 @@ std::map<std::string, geometry_msgs::Pose> locations =
         {"loc1", make_pose(make_point(0.62, 0.30, 0.41), make_quaternion())},
         {"loc2", make_pose(make_point(0.60, -0.29, 0.42), make_quaternion())},
         {"handover", make_pose(make_point(0.75, 0.0, 0.7), make_quaternion())},
-        {"loc_1", make_pose(make_point(0, 0, 0.41), make_quaternion())},
-        {"loc_2", make_pose(make_point(0, 0, 0.41), make_quaternion())},
-        {"loc_3", make_pose(make_point(0, 0, 0.41), make_quaternion())},
-        {"loc_4", make_pose(make_point(0, 0, 0.41), make_quaternion())},
-        {"loc_3bis", make_pose(make_point(0, 0, 0.41), make_quaternion())},
+        {"loc_1", make_pose(make_point(0.75, -0.08, 0.41), make_quaternion())},
+        {"loc_2", make_pose(make_point(0.75, 0.15, 0.41), make_quaternion())},
+        {"loc_3", make_pose(make_point(0.75, 0.38, 0.41), make_quaternion())},
+        {"loc_3bis", make_pose(make_point(0.57, 0.38, 0.41), make_quaternion())},
 };
 
 const double tolerance = 0.01;
@@ -120,6 +119,8 @@ void wait_still_moving(AGENT agent)
 
 void pick(AGENT agent, const std::string &obj)
 {
+    ROS_INFO("\t%s PICK START", get_agent_str(agent).c_str());
+    
     /* MOVE ARM TO OBJ */
     move_obj_target(agent, obj);
 
@@ -128,15 +129,20 @@ void pick(AGENT agent, const std::string &obj)
 
     /* MOVE ARM BACK*/
     move_named_target(agent, "home");
+    ROS_INFO("\t%s PICK END", get_agent_str(agent).c_str());
 }
 
 void place_pose(AGENT agent, const geometry_msgs::Pose &pose)
 {
+    ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
+    show_pose(pose);
+
     move_pose_target(agent, pose);
 
     drop(agent);
 
     move_named_target(agent, "home");
+    ROS_INFO("\t%s PLACE_POSE END", get_agent_str(agent).c_str());
 }
 
 void place_location(AGENT agent, const std::string &location)
@@ -165,6 +171,7 @@ void move_obj_target(AGENT agent, const std::string &obj_name)
         throw ros::Exception("Calling service get_model_state failed...");
     else
         obj_pose = srv.response.pose;
+    show_pose(obj_pose);
     move_pose_target(agent, obj_pose);
 }
 
