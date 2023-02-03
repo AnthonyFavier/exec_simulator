@@ -29,6 +29,11 @@ catkin_package(
     LIBRARIES
 )
 
+install(PROGRAMS
+  scripts/ompl_constrained_planning_tutorial.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 set(EXEC_LIST 
 attach_obj
 attach_obj_tf

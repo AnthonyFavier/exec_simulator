@@ -2,6 +2,7 @@
 #include <std_msgs/String.h>
 #include <algorithm>
 #include "sim_msgs/MoveArm.h"
+#include "moveit_msgs/Constraints.h"
 
 std::string ROBOT_NAME = "";
 
@@ -58,6 +59,37 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
   return true;
 }
 
+bool move_pose_cart_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmResponse &res)
+{
+  ROS_INFO("Pose cart target received.");
+
+  std::vector<geometry_msgs::Pose> waypoints;
+  waypoints.push_back(req.pose_target);
+
+  moveit_msgs::RobotTrajectory trajectory;
+  const double jump_threshold = 0.0;
+  const double eef_step = 0.01;
+  double fraction = move_group_interface->computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+
+  move_group_interface->execute(trajectory);
+
+  return true;
+}
+
+bool move_pose_cart_target_server_new(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmResponse &res)
+{
+  ROS_INFO("Pose cart target received.");
+
+  // moveit_msgs::Constraints test_constraints;
+  // test_constraints.position_constraints.
+
+  // move_group_interface->setPathConstraints();
+
+  // move_group_interface->execute(trajectory);
+
+  return true;
+}
+
 int main(int argc, char **argv)
 {
   if (argc < 2)
@@ -72,15 +104,15 @@ int main(int argc, char **argv)
   spinner.start();
 
   move_group_interface = new moveit::planning_interface::MoveGroupInterface(ROBOT_NAME + "_arm");
-  move_group_interface->setPlannerId("RRTstar");
-  move_group_interface->setPlanningTime(0.3);
+  move_group_interface->setPlanningTime(1.0);
   move_group_interface->setGoalOrientationTolerance(3.14159265);
   move_group_interface->setMaxVelocityScalingFactor(1.0);
-  move_group_interface->setMaxAccelerationScalingFactor(0.9);
+  move_group_interface->setMaxAccelerationScalingFactor(1.0);
   named_targets = move_group_interface->getNamedTargets();
 
   traj_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>(ROBOT_NAME + "_arm_controller/command", 10);
   ros::ServiceServer move_pose_target_service = node_handle.advertiseService("move_pose_target", move_pose_target_server);
+  // ros::ServiceServer move_pose_cart_target_service = node_handle.advertiseService("move_pose_cart_target", move_pose_cart_target_server);
   ros::ServiceServer move_named_target_service = node_handle.advertiseService("move_named_target", move_named_target_server);
 
   ros::Rate loop(50);
