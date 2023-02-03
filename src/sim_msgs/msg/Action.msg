@@ -13,6 +13,8 @@ uint8 PLACE_3=7
 uint8 PLACE_4=8
 uint8 DRINK=9
 uint8 PUSHING=10
+uint8 WAIT=11
+uint8 IDLE=12
 
 # PARAMS:
 geometry_msgs/Pose pose

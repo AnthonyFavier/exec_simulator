@@ -1,4 +1,3 @@
-
 #include "sim_controller.h"
 
 bool waiting_step_start = true;
@@ -8,6 +7,7 @@ ros::ServiceClient move_arm_pose_client[2];
 ros::ServiceClient move_arm_named_client[2];
 ros::ServiceClient attach_obj_client[2];
 ros::ServiceClient get_model_state_client[2];
+ros::Publisher set_obj_pose_pub;
 // ros::ServiceClient set_model_state_client[2]; ??????
 
 std::map<std::string, geometry_msgs::Pose> locations =
@@ -18,7 +18,8 @@ std::map<std::string, geometry_msgs::Pose> locations =
         {"loc_1", make_pose(make_point(0.75, -0.08, 0.41), make_quaternion())},
         {"loc_2", make_pose(make_point(0.75, 0.15, 0.41), make_quaternion())},
         {"loc_3", make_pose(make_point(0.75, 0.38, 0.41), make_quaternion())},
-        {"loc_3bis", make_pose(make_point(0.57, 0.38, 0.41), make_quaternion())},
+        {"loc_3above", make_pose(make_point(0.65, 0.38, 0.41), make_quaternion())},
+        {"loc_3below", make_pose(make_point(0.85, 0.38, 0.41), make_quaternion())},
 };
 
 const double tolerance = 0.01;
@@ -103,22 +104,54 @@ void place_location(AGENT agent, const std::string &location)
     place_pose(agent, locations[location]);
 }
 
+void wait(AGENT agent)
+{
+    // Be inactive...
+    ros::Duration(2.0).sleep();
+}
+
+void pushing(AGENT agent)
+{
+    // move close
+    move_location_target(agent, "loc_3above");
+
+    // move arm to obj.pose
+    move_obj_target(agent, "cube_b");
+
+    // move obj
+    geometry_msgs::Pose delta;
+    delta.position.x = 0.2;
+    delta_move_obj(agent, "cube_b", delta);
+
+    // drop
+    drop(agent);
+
+    // move home
+    move_named_target(agent, "home");
+}
+
 // ************************************************************************ //
 
 // ************************* LOW LEVEL ACTIONS **************************** //
 
 void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target)
 {
-    ROS_INFO("\t%s MOVE_POSE_TARGET START", get_agent_str(agent).c_str());
+    ROS_INFO("\t\t%s MOVE_POSE_TARGET START", get_agent_str(agent).c_str());
     sim_msgs::MoveArm srv;
     srv.request.pose_target = pose_target;
     if(!move_arm_pose_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service move_arm_pose_target failed...");
-    ROS_INFO("\t%s MOVE_POSE_TARGET END", get_agent_str(agent).c_str());
+    ROS_INFO("\t\t%s MOVE_POSE_TARGET END", get_agent_str(agent).c_str());
+}
+
+void move_location_target(AGENT agent, const std::string &loc_name)
+{
+    move_pose_target(agent, locations[loc_name]);
 }
 
 void move_obj_target(AGENT agent, const std::string &obj_name)
 {
+    ROS_INFO("\t\t%s MOVE_OBJ START", get_agent_str(agent).c_str());
     geometry_msgs::Pose obj_pose;
     gazebo_msgs::GetModelState srv;
     srv.request.model_name = obj_name;
@@ -128,37 +161,58 @@ void move_obj_target(AGENT agent, const std::string &obj_name)
         obj_pose = srv.response.pose;
     show_pose(obj_pose);
     move_pose_target(agent, obj_pose);
+    ROS_INFO("\t\t%s MOVE_OBJ END", get_agent_str(agent).c_str());
 }
 
 void move_named_target(AGENT agent, const std::string &named_target)
 {
-    ROS_INFO("\t%s MOVE_NAMED_TARGET START", get_agent_str(agent).c_str());
+    ROS_INFO("\t\t%s MOVE_NAMED_TARGET START", get_agent_str(agent).c_str());
     sim_msgs::MoveArm srv;
     srv.request.named_target = named_target;
     if(!move_arm_named_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service move_arm_named_target failed...");
-    ROS_INFO("\t%s MOVE_NAMED_TARGET START", get_agent_str(agent).c_str());
+    ROS_INFO("\t\t%s MOVE_NAMED_TARGET END", get_agent_str(agent).c_str());
 }
 
 void grab_obj(AGENT agent, const std::string &object)
 {
-    ROS_INFO("\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
+    ROS_INFO("\t\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
     sim_msgs::AttachObj srv;
     srv.request.type=sim_msgs::AttachObj::Request::GRAB;
     srv.request.obj_name = object;
     if(!attach_obj_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service attach_obj failed...");
-    ROS_INFO("\t%s GRAB_OBJ END", get_agent_str(agent).c_str());
+    ROS_INFO("\t\t%s GRAB_OBJ END", get_agent_str(agent).c_str());
 }
 
 void drop(AGENT agent)
 {
-    ROS_INFO("\t%s DROP START", get_agent_str(agent).c_str());
+    ROS_INFO("\t\t%s DROP START", get_agent_str(agent).c_str());
     sim_msgs::AttachObj srv;
     srv.request.type=sim_msgs::AttachObj::Request::DROP;
     if(!attach_obj_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service attach_obj failed...");
-    ROS_INFO("\t%s DROP END", get_agent_str(agent).c_str());
+    ROS_INFO("\t\t%s DROP END", get_agent_str(agent).c_str());
+}
+
+void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose)
+{
+    gazebo_msgs::ModelState msg;
+    msg.model_name = obj_name;
+    msg.pose = pose;
+    set_obj_pose_pub.publish(msg);
+}
+
+void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta_move)
+{
+    gazebo_msgs::GetModelState srv;
+    srv.request.model_name = obj_name;
+    get_model_state_client[agent].call(srv);
+    geometry_msgs::Pose new_obj_pose;
+    new_obj_pose.position.x = srv.response.pose.position.x + delta_move.position.x;
+    new_obj_pose.position.y = srv.response.pose.position.y + delta_move.position.y;
+    new_obj_pose.position.z = srv.response.pose.position.z + delta_move.position.z;
+    set_obj_pose(agent, obj_name, new_obj_pose);
 }
 
 // ****************************** CALLBACKS ******************************* //
@@ -189,6 +243,8 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         }
 
         std_msgs::String str_msg;
+        ROS_INFO("%d type=%d", agent, action.type);
+        ROS_INFO("sim_msgs::Action::WAIT=%d", sim_msgs::Action::WAIT);
         switch (action.type)
         {
         case sim_msgs::Action::PICK_OBJ:
@@ -196,7 +252,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         case sim_msgs::Action::PICK_R:
         case sim_msgs::Action::PICK_G:
             if (action.obj == "")
-                ROS_ERROR("Missing object in action msg!");
+                ROS_ERROR("%d Missing object in action msg!", agent);
             else
                 pick(agent, action.obj);
             break;
@@ -206,9 +262,16 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         case sim_msgs::Action::PLACE_3:
         case sim_msgs::Action::PLACE_4:
             if (action.location == "")
-                ROS_ERROR("Missing location in action msg!");
+                ROS_ERROR("%d Missing location in action msg!", agent);
             else
                 place_location(agent, action.location);
+            break;
+        case sim_msgs::Action::PUSHING:
+            pushing(agent);
+            break;
+        case sim_msgs::Action::WAIT:
+        case sim_msgs::Action::IDLE:
+            wait(agent);
             break;
         default:
             throw ros::Exception("Action type unknown...");
@@ -244,6 +307,8 @@ int main(int argc, char **argv)
 
     get_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
     get_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
+
+    set_obj_pose_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 1);
 
     ros::AsyncSpinner spinner(4);
     spinner.start();

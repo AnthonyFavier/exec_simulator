@@ -301,9 +301,8 @@ def pick_any_valid_RA(step: ConM.Step, human_action: CM.Action):
     
     robot_actions = human_option.robot_actions
     robot_action = robot_actions[0]
-    if len(robot_actions)!=1 or robot_action.name!="WAIT":
-        if robot_action.name=="WAIT" and len(robot_actions)>1:
-            robot_action = robot_actions[1]
+    if robot_action.name=="WAIT" and len(robot_actions)>1:
+        robot_action = robot_actions[1]
 
     return robot_action
 
@@ -396,6 +395,12 @@ def compute_msg_action(a):
         msg.type=Action.DRINK
     elif "pushing"==a.name:
         msg.type=Action.PUSHING
+    elif "WAIT"==a.name:
+        msg.type=Action.WAIT
+    elif "IDLE"==a.name:
+        msg.type=Action.IDLE
+    else:
+        raise Exception("Unknown action")
         
     return msg
 

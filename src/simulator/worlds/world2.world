@@ -88,7 +88,7 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <light name='user_spot_light_0' type='spot'>
-      <pose>0.750169 -0.012612 4.0 0 -0 0</pose>
+      <pose>0.750169 -0.012612 4 0 -0 0</pose>
       <diffuse>0.5 0.5 0.5 1</diffuse>
       <specular>0.1 0.1 0.1 1</specular>
       <direction>0 0 -1</direction>
@@ -107,7 +107,7 @@
     </light>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>0.564119 0.254649 3.14608 -0 1.5258 -1.63851</pose>
+        <pose>1.62455 1.99984 2.33534 0 0.7138 -1.99852</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>

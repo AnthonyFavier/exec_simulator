@@ -10,6 +10,7 @@
 #include <gazebo_msgs/GetModelState.h>
 #include "sim_msgs/MoveArm.h"
 #include "sim_msgs/AttachObj.h"
+#include <gazebo_msgs/ModelState.h>
 
 
 enum AGENT{ROBOT, HUMAN};
@@ -25,10 +26,14 @@ void place_pose(AGENT agent, const geometry_msgs::Pose &pose);
 void place_location(AGENT agent, const std::string &location);
 
 void move_pose_target(AGENT agent, const geometry_msgs::Pose& pose_target);
+void move_location_target(AGENT agent, const std::string &loc_name);
 void move_obj_target(AGENT agent, const std::string &obj_name);
 void move_named_target(AGENT agent, const std::string& named_target);
 void grab_obj(AGENT agent, const std::string& object);
 void drop(AGENT agent);
+void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta_move);
+void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose);
+
 
 geometry_msgs::Point make_point(double x, double y, double z);
 geometry_msgs::Quaternion make_quaternion(double x = 0.0, double y = 0.0, double z = 0.0, double w = 1.0);
