@@ -42,10 +42,6 @@
         <joint name="panda2_joint7" value="0"/>
     </group_state>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
-    <disable_collisions link1="panda2_hand" link2="panda2_link3" reason="Never"/>
-    <disable_collisions link1="panda2_hand" link2="panda2_link4" reason="Never"/>
-    <disable_collisions link1="panda2_hand" link2="panda2_link6" reason="Never"/>
-    <disable_collisions link1="panda2_hand" link2="panda2_link7" reason="Adjacent"/>
     <disable_collisions link1="panda2_link0" link2="panda2_link1" reason="Adjacent"/>
     <disable_collisions link1="panda2_link0" link2="panda2_link2" reason="Never"/>
     <disable_collisions link1="panda2_link0" link2="panda2_link3" reason="Never"/>
