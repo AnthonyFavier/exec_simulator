@@ -259,12 +259,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/hand.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <link name="panda2_grasptarget">
     <inertial>

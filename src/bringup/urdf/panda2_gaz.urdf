@@ -20,12 +20,6 @@
         <color rgba="1. 1. 1. 1." />
       </material>
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/link0.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <joint name="panda2_joint_world" type="fixed">
     <origin xyz="0 0 0" rpy="0 0 0" />
@@ -44,12 +38,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/link1.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <joint name="panda2_joint1" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973"
@@ -72,12 +60,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/link2.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <joint name="panda2_joint2" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-1.7628"
@@ -102,11 +84,6 @@
         <color rgba="1. 1. 1. 1." />
       </material>
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/link3.obj" />
-      </geometry>
-    </collision>
   </link>
   <joint name="panda2_joint3" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973"
@@ -129,12 +106,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/link4.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <joint name="panda2_joint4" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-3.0718"
@@ -157,12 +128,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/link5.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <joint name="panda2_joint5" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973"
@@ -185,12 +150,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/link6.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <joint name="panda2_joint6" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-0.0175"
@@ -213,12 +172,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/link7.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <joint name="panda2_joint7" type="revolute">
     <safety_controller k_position="100.0" k_velocity="40.0" soft_lower_limit="-2.8973"
@@ -259,12 +212,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/hand.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <link name="panda2_grasptarget">
     <inertial>
@@ -298,12 +245,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/finger.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <link name="panda2_rightfinger">
     <contact>
@@ -325,13 +266,6 @@
       </geometry>
       <material name="panda_white" />
     </visual>
-    <collision>
-      <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
-      <geometry>
-        <mesh filename="package://bringup/meshes/collision/finger.obj" />
-      </geometry>
-      <material name="panda_white" />
-    </collision>
   </link>
   <joint name="panda2_finger_joint1" type="fixed">
     <parent link="panda2_hand" />
