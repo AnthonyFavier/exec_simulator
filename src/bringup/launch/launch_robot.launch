@@ -29,12 +29,8 @@
         <!-- Load the controller from parameter server to simulation -->
         <node name="controller_spawner" pkg="controller_manager" type="spawner"
             args="joint_state_controller $(arg robot_name)_arm_controller" respawn="false" output="screen" />
-
-        <!-- start trajectory controller UI to control each joint separately -->
-        <node name="control_ui" pkg="rqt_joint_trajectory_controller"
-            type="rqt_joint_trajectory_controller" respawn="false" output="screen" />
-
-        <!-- Given the published joint states, publish tf for the robot links -->
+            
+            <!-- Given the published joint states, publish tf for the robot links -->
         <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
             respawn="true" output="screen">
         </node>
@@ -58,6 +54,9 @@
             <arg name="rviz_config" value="$(arg dollar)$(arg path)/launch/moveit.rviz" />
             <arg name="debug" value="false" />
         </include>
+        
+        <!-- start trajectory controller UI to control each joint separately -->
+        <node name="control_ui" pkg="rqt_joint_trajectory_controller" type="rqt_joint_trajectory_controller" respawn="false" output="screen" />
 
         <node name="init_planning_scene" pkg="simulator" type="init_static_scene" respawn="false" output="screen" />
     </group>

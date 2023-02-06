@@ -15,11 +15,11 @@ std::map<std::string, geometry_msgs::Pose> locations =
         {"loc1", make_pose(make_point(0.62, 0.30, 0.41), make_quaternion())},
         {"loc2", make_pose(make_point(0.60, -0.29, 0.42), make_quaternion())},
         {"handover", make_pose(make_point(0.75, 0.0, 0.7), make_quaternion())},
-        {"loc_1", make_pose(make_point(0.75, -0.08, 0.41), make_quaternion())},
-        {"loc_2", make_pose(make_point(0.75, 0.15, 0.41), make_quaternion())},
-        {"loc_3", make_pose(make_point(0.75, 0.38, 0.41), make_quaternion())},
-        {"loc_3above", make_pose(make_point(0.65, 0.38, 0.41), make_quaternion())},
-        {"loc_3below", make_pose(make_point(0.85, 0.38, 0.41), make_quaternion())},
+        {"loc_1", make_pose(make_point(0.75, -0.08, 0.38), make_quaternion())},
+        {"loc_2", make_pose(make_point(0.75, 0.15, 0.38), make_quaternion())},
+        {"loc_3", make_pose(make_point(0.75, 0.38, 0.38), make_quaternion())},
+        {"loc_3above", make_pose(make_point(0.65, 0.38, 0.38), make_quaternion())},
+        {"loc_3below", make_pose(make_point(0.85, 0.38, 0.38), make_quaternion())},
 };
 
 const double tolerance = 0.01;
@@ -192,7 +192,26 @@ void drop(AGENT agent)
     srv.request.type=sim_msgs::AttachObj::Request::DROP;
     if(!attach_obj_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service attach_obj failed...");
+    set_obj_rpy(agent, srv.response.obj_dropped_name, 0,0,0);
     ROS_INFO("\t\t%s DROP END", get_agent_str(agent).c_str());
+}
+
+void set_obj_rpy(AGENT agent, std::string obj_name, float r, float p, float y)
+{
+    gazebo_msgs::ModelState msg;
+    msg.model_name = obj_name;
+    
+    tf2::Quaternion myQuaternion;
+    myQuaternion.setRPY( r, p, y );
+    
+    gazebo_msgs::GetModelState srv;
+    srv.request.model_name = obj_name;
+    get_model_state_client[agent].call(srv);
+
+    msg.pose.position = srv.response.pose.position;
+    msg.pose.orientation = tf2::toMsg(myQuaternion);
+
+    set_obj_pose_pub.publish(msg);
 }
 
 void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose)

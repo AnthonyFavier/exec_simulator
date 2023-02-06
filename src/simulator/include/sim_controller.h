@@ -11,6 +11,8 @@
 #include "sim_msgs/MoveArm.h"
 #include "sim_msgs/AttachObj.h"
 #include <gazebo_msgs/ModelState.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 
 enum AGENT{ROBOT, HUMAN};
@@ -33,6 +35,7 @@ void grab_obj(AGENT agent, const std::string& object);
 void drop(AGENT agent);
 void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta_move);
 void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose);
+void set_obj_rpy(AGENT agent, std::string obj_name, float r, float p, float y);
 
 
 geometry_msgs::Point make_point(double x, double y, double z);

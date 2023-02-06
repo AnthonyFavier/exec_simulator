@@ -4,3 +4,4 @@ string obj_name
 uint8 DROP=1
 ---
 bool success
+string obj_dropped_name

@@ -43,6 +43,7 @@ bool cmd_server(sim_msgs::AttachObj::Request &req, sim_msgs::AttachObj::Response
         {
             ROS_INFO("%s has dropped %s.", ROBOT_NAME.c_str(), g_obj.c_str());
             g_attach = false;
+            res.obj_dropped_name = g_obj;
         }
     }
     else
