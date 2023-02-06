@@ -221,7 +221,8 @@ m_Place_g4 = CM.Method("Place_g", pre_cond=m_Place_g4_precond, decomp=m_Place_g4
 def m_Place_g_block_precond(state, agent):
     return state.pos_g.val==agent and not nothing_at_place("3", state)
 def m_Place_g_block_decomp(state, agent):
-    return [("pushing",), ("Place_g",)]
+    # return [("pushing",), ("Place_g",)]
+    return [("pushing",)]
 m_Place_g_block = CM.Method("Place_g", pre_cond=m_Place_g_block_precond, decomp=m_Place_g_block_decomp)
 
 common_methods = [("Place",m_Place), ("Place_r",m_Place_r2)]
