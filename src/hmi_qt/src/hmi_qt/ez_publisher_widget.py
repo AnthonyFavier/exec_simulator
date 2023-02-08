@@ -9,6 +9,7 @@ from hmi_qt import publisher
 from std_msgs.msg import Int32, String
 from sim_msgs.msg import VHA
 from copy import deepcopy
+from std_srvs.srv import Empty,EmptyResponse
 
 
 class EzPublisherWidget(QWidget):
@@ -23,7 +24,9 @@ class EzPublisherWidget(QWidget):
         self._publishers["human_choice"] = rospy.Publisher("human_choice", Int32, queue_size=1)
         self._subscribers = []
         self._subscribers.append( rospy.Subscriber("hmi_vha", VHA, self.incoming_vha_cb, queue_size=1) )
+        self._started_service = rospy.Service("hmi_started", Empty, self.started)
         self.nb_human_action = 0
+        self.first = True
         self.setup_ui()
 
     def set_configurable(self, value):
@@ -31,37 +34,33 @@ class EzPublisherWidget(QWidget):
         for slider in self._sliders:
             slider.set_configurable(value)
 
+    def started(self, req):
+        return EmptyResponse()
+
     def incoming_vha_cb(self, msg):
-        for ha in msg.valid_human_actions:
-            print(ha)
+        if msg.type == msg.START:
+            self.clear_human_actions()
+            for ha in msg.valid_human_actions:
+                QtCore.QMetaObject.invokeMethod(self, 'add_human_action_button', QtCore.Qt.QueuedConnection)
 
-    def publish_with_button(self):
-        msg = Int32()
-        msg.data = 3
-        self._publishers["testing_publish"].publish(msg)
+        rospy.sleep(0.1)
+        for i, ha in enumerate(msg.valid_human_actions):
+            button = self._buttons_human_actions[i]
+            button.setText(ha)
 
-        self._human_actions.append( QtWidgets.QPushButton('HA') )
-        self._sub_horizontal_layout.addWidget(self._human_actions[-1])
-
-        if self.alternating:
-            self._pub_button.setStyleSheet("background-color : yellow")
-        else:
-            self._pub_button.setStyleSheet("")
-        self.alternating = not self.alternating
-    
     def clear_human_actions(self):
         self._buttons_human_actions.clear()
         for i in reversed(range(self._h_layout_HA.count())): 
             self._h_layout_HA.itemAt(i).widget().setParent(None)
         self.nb_human_action=0
 
+    @QtCore.pyqtSlot()
     def add_human_action_button(self):
         text = "HA"+str(self.nb_human_action+1)
         button = QtWidgets.QPushButton(text)
         button.setFixedSize(100, 70)
         msg = String()
         msg.data = text
-        # f = lambda : self._publishers["human_choice"].publish(msg)
         id_action = deepcopy(self.nb_human_action)+1
         f = lambda : self.pressed_publish_human_choice(id_action)
         button.clicked.connect(f)
@@ -101,8 +100,6 @@ class EzPublisherWidget(QWidget):
         self._button_skip_ha.setFixedSize(100, 70)
         msg = Int32()
         msg.data = -1
-        f = lambda : self._publishers["human_choice"].publish(msg)
-        # self._button_skip_ha.clicked.connect(f)
         self._button_skip_ha.clicked.connect(lambda : self.pressed_publish_human_choice(-1))
         self._v_layout_main.addWidget(self._button_skip_ha)
 
@@ -131,5 +128,5 @@ def main():
     app.exec_()
 
 if __name__ == '__main__':
-    rospy.init_node('ez_publisher')
+    rospy.init_node('hmi_qt')
     main()
