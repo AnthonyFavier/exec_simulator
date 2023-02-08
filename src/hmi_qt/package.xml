@@ -1,14 +1,13 @@
 <?xml version="1.0"?>
 <package>
-  <name>rqt_ez_publisher</name>
+  <name>hmi_qt</name>
   <version>0.6.1</version>
-  <description>The rqt_ez_publisher package</description>
+  <description>The hmi_qt package</description>
 
   <maintainer email="t.ogura@gmail.com">Takashi Ogura</maintainer>
 
   <license>BSD</license>
 
-  <url type="website">http://wiki.ros.org/rqt_ez_publisher</url>
   <author email="t.ogura@gmail.com">Takashi Ogura</author>
 
 

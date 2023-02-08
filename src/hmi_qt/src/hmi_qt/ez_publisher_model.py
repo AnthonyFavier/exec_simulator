@@ -191,7 +191,7 @@ def make_text(topic_name, attributes, array_index):
 
 class EzPublisherModel(object):
 
-    '''Model for rqt_ez_publisher'''
+    '''Model for hmi_qt'''
 
     def __init__(self, publisher_class, modules=[]):
         self._publishers = {}

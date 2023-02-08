@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(rqt_ez_publisher)
+project(hmi_qt)
 
 find_package(catkin REQUIRED COMPONENTS)
 
@@ -12,6 +12,6 @@ install(FILES
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-catkin_install_python(PROGRAMS scripts/rqt_ez_publisher
+catkin_install_python(PROGRAMS scripts/hmi_qt
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

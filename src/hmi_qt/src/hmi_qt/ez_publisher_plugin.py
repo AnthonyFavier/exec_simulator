@@ -4,19 +4,19 @@ import yaml
 from . import ez_publisher_widget
 from . import publisher
 from . import config_dialog
-from . import quaternion_module
+# from . import quaternion_module
 from rqt_py_common.plugin_container_widget import PluginContainerWidget
 from qt_gui.plugin import Plugin
 
 
 class EzPublisherPlugin(Plugin):
 
-    '''Plugin top class for rqt_ez_publisher'''
 
     def __init__(self, context):
         super(EzPublisherPlugin, self).__init__(context)
         self.setObjectName('EzPublisher')
-        modules = [quaternion_module.QuaternionModule()]
+        # modules = [quaternion_module.QuaternionModule()]
+        modules = []
         self._widget = ez_publisher_widget.EzPublisherWidget(modules=modules)
         self._widget.setObjectName('EzPublisherPluginUi')
         self.mainwidget = PluginContainerWidget(self._widget, True, False)
@@ -25,7 +25,7 @@ class EzPublisherPlugin(Plugin):
                                         (' (%d)' % context.serial_number()))
         context.add_widget(self._widget)
         from argparse import ArgumentParser
-        parser = ArgumentParser(prog='rqt_ez_publisher')
+        parser = ArgumentParser(prog='hmi_qt')
         EzPublisherPlugin.add_arguments(parser)
         args, unknowns = parser.parse_known_args(context.argv())
         self._loaded_settings = None
@@ -64,7 +64,7 @@ class EzPublisherPlugin(Plugin):
     @staticmethod
     def add_arguments(parser):
         group = parser.add_argument_group(
-            'Options for rqt_ez_publisher plugin')
+            'Options for hmi_qt plugin')
         group.add_argument('--slider-file',
                            type=lambda x: EzPublisherPlugin._isfile(parser, x),
                            help="YAML setting file")

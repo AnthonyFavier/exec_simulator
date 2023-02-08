@@ -3,9 +3,9 @@ from python_qt_binding import QtCore
 from python_qt_binding import QtGui
 from python_qt_binding import QtWidgets
 from python_qt_binding.QtWidgets import QWidget
-from rqt_ez_publisher import ez_publisher_model as ez_model
-from rqt_ez_publisher import widget as ez_widget
-from rqt_ez_publisher import publisher
+from hmi_qt import ez_publisher_model as ez_model
+from hmi_qt import widget as ez_widget
+from hmi_qt import publisher
 from std_msgs.msg import Int32, String
 from sim_msgs.msg import VHA
 from copy import deepcopy
