@@ -35,7 +35,6 @@ install(PROGRAMS
 )
 
 set(EXEC_LIST 
-attach_obj
 attach_obj_tf
 pick_box
 init_static_scene

@@ -207,12 +207,6 @@
       <mass value=".81" />
       <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1" />
     </inertial>
-    <visual>
-      <geometry>
-        <mesh filename="package://bringup/meshes/human/hand.stl" />
-      </geometry>
-      <material name="panda_white" />
-    </visual>
   </link>
   <link name="panda2_grasptarget">
     <inertial>
@@ -220,6 +214,12 @@
       <mass value="0.0" />
       <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1" />
     </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="package://bringup/meshes/human/hand.stl" />
+      </geometry>
+      <material name="panda_white" />
+    </visual>
   </link>
   <joint name="panda2_grasptarget_hand" type="fixed">
     <parent link="panda2_hand" />

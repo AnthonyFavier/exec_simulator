@@ -11,8 +11,10 @@
 #include "sim_msgs/MoveArm.h"
 #include "sim_msgs/AttachObj.h"
 #include <gazebo_msgs/ModelState.h>
+#include <gazebo_msgs/SetModelState.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <std_srvs/Empty.h>
 
 
 enum AGENT{ROBOT, HUMAN};

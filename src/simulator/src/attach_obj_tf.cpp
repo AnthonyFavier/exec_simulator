@@ -9,6 +9,7 @@
 #include <std_msgs/String.h>
 #include <tf/transform_listener.h>
 #include "sim_msgs/AttachObj.h"
+#include <std_srvs/Empty.h>
 
 std::string ROBOT_NAME = "undef";
 
@@ -56,6 +57,12 @@ bool cmd_server(sim_msgs::AttachObj::Request &req, sim_msgs::AttachObj::Response
     return true;
 }
 
+bool reset_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+    g_attach = false;
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     if(argc<2)
@@ -77,6 +84,7 @@ int main(int argc, char **argv)
     ros::Publisher gazebo_model_state_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 10);
 
     ros::ServiceServer cmd_service = node_handle.advertiseService("attach_obj", cmd_server);
+    ros::ServiceServer reset_service = node_handle.advertiseService("attach_reset", reset_server);
 
     ros::Rate loop(200);
 

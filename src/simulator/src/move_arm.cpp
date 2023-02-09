@@ -105,10 +105,13 @@ int main(int argc, char **argv)
 
   move_group_interface = new moveit::planning_interface::MoveGroupInterface(ROBOT_NAME + "_arm");
   move_group_interface->setPlanningTime(1.0);
-  move_group_interface->setGoalOrientationTolerance(3.14159265);
+  // move_group_interface->setGoalOrientationTolerance(0.1);
   move_group_interface->setMaxVelocityScalingFactor(1.0);
   move_group_interface->setMaxAccelerationScalingFactor(1.0);
   named_targets = move_group_interface->getNamedTargets();
+
+  move_group_interface->clearPathConstraints();
+  move_group_interface->clearTrajectoryConstraints();
 
   traj_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>(ROBOT_NAME + "_arm_controller/command", 10);
   ros::ServiceServer move_pose_target_service = node_handle.advertiseService("move_pose_target", move_pose_target_server);

@@ -14,4 +14,6 @@
         <node name="attach_obj" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name2)" respawn="false" output="screen"/>
     </group>
 
+    <node name="sim_controller" pkg="simulator" type="sim_controller" respawn="false" output="screen"/>
+
 </launch>

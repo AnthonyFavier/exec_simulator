@@ -7,8 +7,8 @@ ros::ServiceClient move_arm_pose_client[2];
 ros::ServiceClient move_arm_named_client[2];
 ros::ServiceClient attach_obj_client[2];
 ros::ServiceClient get_model_state_client[2];
-ros::Publisher set_obj_pose_pub;
-// ros::ServiceClient set_model_state_client[2]; ??????
+ros::ServiceClient set_model_state_client[2];
+ros::ServiceClient attach_reset_client[2];
 
 std::map<std::string, geometry_msgs::Pose> locations =
     {
@@ -20,6 +20,13 @@ std::map<std::string, geometry_msgs::Pose> locations =
         {"loc_3", make_pose(make_point(0.75, 0.38, 0.38), make_quaternion())},
         {"loc_3above", make_pose(make_point(0.65, 0.38, 0.38), make_quaternion())},
         {"loc_3below", make_pose(make_point(0.85, 0.38, 0.38), make_quaternion())},
+};
+
+std::map<std::string, geometry_msgs::Pose> init_poses =
+    {
+        {"cube_r", make_pose(make_point(0.75, -0.42, 0.40), make_quaternion())},
+        {"cube_g", make_pose(make_point(0.62, -0.33, 0.40), make_quaternion())},
+        {"cube_b", make_pose(make_point(0.88, -0.33, 0.40), make_quaternion())},
 };
 
 const double tolerance = 0.01;
@@ -160,6 +167,13 @@ void move_obj_target(AGENT agent, const std::string &obj_name)
     else
         obj_pose = srv.response.pose;
     show_pose(obj_pose);
+    if(agent==AGENT::HUMAN)
+    {
+        obj_pose.orientation.x = 0.725;
+        obj_pose.orientation.y = 0.019;
+        obj_pose.orientation.z = -0.688;
+        obj_pose.orientation.w = 0.019;
+    }
     move_pose_target(agent, obj_pose);
     ROS_INFO("\t\t%s MOVE_OBJ END", get_agent_str(agent).c_str());
 }
@@ -198,29 +212,29 @@ void drop(AGENT agent)
 
 void set_obj_rpy(AGENT agent, std::string obj_name, float r, float p, float y)
 {
-    gazebo_msgs::ModelState msg;
-    msg.model_name = obj_name;
+    gazebo_msgs::SetModelState srv_set;
+    srv_set.request.model_state.model_name = obj_name;
     
     tf2::Quaternion myQuaternion;
     myQuaternion.setRPY( r, p, y );
     
-    gazebo_msgs::GetModelState srv;
-    srv.request.model_name = obj_name;
-    get_model_state_client[agent].call(srv);
+    gazebo_msgs::GetModelState srv_get;
+    srv_get.request.model_name = obj_name;
+    get_model_state_client[agent].call(srv_get);
 
-    msg.pose.position = srv.response.pose.position;
-    msg.pose.orientation = tf2::toMsg(myQuaternion);
+    srv_set.request.model_state.pose.position = srv_get.response.pose.position;
+    srv_set.request.model_state.pose.orientation = tf2::toMsg(myQuaternion);
 
-    set_obj_pose_pub.publish(msg);
+    set_model_state_client[agent].call(srv_set);
 }
 
 void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose)
 {
-    gazebo_msgs::ModelState msg;
-    msg.model_name = obj_name;
-    msg.pose = pose;
-    set_obj_pose_pub.publish(msg);
-}
+    gazebo_msgs::SetModelState srv;
+    srv.request.model_state.model_name = obj_name;
+    srv.request.model_state.pose = pose;
+    set_model_state_client[agent].call(srv);
+ }
 
 void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta_move)
 {
@@ -303,6 +317,25 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 
 // ************************************************************************ //
 
+bool reset_obj_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+    // reset attach
+    std_srvs::Empty srv_e;
+    attach_reset_client[AGENT::ROBOT].call(srv_e);
+    attach_reset_client[AGENT::HUMAN].call(srv_e);
+
+    // set obj to init pose
+    gazebo_msgs::SetModelState srv;
+    std::vector<std::string> list_obj = {"cube_r", "cube_g", "cube_b"};
+    for(std::vector<std::string>::iterator it=list_obj.begin(); it!=list_obj.end(); ++it)
+    {
+        srv.request.model_state.model_name = *it;
+        srv.request.model_state.pose = init_poses[*it];
+        set_model_state_client[AGENT::ROBOT].call(srv);
+    }
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "sim_controller");
@@ -327,7 +360,12 @@ int main(int argc, char **argv)
     get_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
     get_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
 
-    set_obj_pose_pub = node_handle.advertise<gazebo_msgs::ModelState>("/gazebo/set_model_state", 1);
+    set_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
+    set_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
+
+    ros::ServiceServer reset_service = node_handle.advertiseService("reset_obj", reset_obj_server);
+    attach_reset_client[AGENT::ROBOT] = node_handle.serviceClient<std_srvs::Empty>("/panda1/attach_reset");
+    attach_reset_client[AGENT::HUMAN] = node_handle.serviceClient<std_srvs::Empty>("/panda2/attach_reset");
 
     ros::AsyncSpinner spinner(4);
     spinner.start();
