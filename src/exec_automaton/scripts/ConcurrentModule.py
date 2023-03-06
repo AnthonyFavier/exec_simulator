@@ -227,7 +227,7 @@ def explore():
         lg.debug(RenderTree(init_step))
 
     #TEST GRAPHVIZ
-    # render_dot(init_step)
+    render_dot(init_step)
 
     return init_step
 
@@ -239,7 +239,8 @@ def exploration_step(pairs_to_explore):
     new_step.SRA = find_safe_robot_action(new_step, selected_pair)
     lg.debug(f"{new_step.str()}")
 
-    return get_pairs_to_explore(new_step, pairs_to_explore)
+    new_pairs_to_explore =  get_pairs_to_explore(new_step, pairs_to_explore)
+    return new_pairs_to_explore
 
 ### 1 ###
 def select_pair_to_explore(pairs_to_explore):
@@ -271,8 +272,8 @@ def compute_parallel_pairs(selected_pair: ActionPair) -> List[ActionPair]:
             RS_pairs.append(pair)
     
     # Check if both agents are active
-    h_active = check_list(HS_pairs, lambda x: not x.human_action.name in ["WAIT","IDLE"])!=None
-    r_active = check_list(RS_pairs, lambda x: not x.robot_action.name in ["WAIT","IDLE"])!=None
+    h_active = check_list(HS_pairs, lambda x: not x.human_action.is_inactive())!=None
+    r_active = check_list(RS_pairs, lambda x: not x.robot_action.is_inactive())!=None
     agents_active = h_active and r_active
 
     # Create LRD pairs
@@ -352,6 +353,7 @@ def find_safe_robot_action(new_step: Step, selected_pair: ActionPair) -> CM.Acti
     # Select WAIT as SRA
     elif len(CRA)==0:
         wait_action = CM.Action.create_wait(CM.g_robot_name, None)
+        skip_action = CM.Action.create_skip(CM.g_robot_name, None)
         for ho in new_step.human_options:
             if ho.human_action.name=="LRD":
                 continue
@@ -360,13 +362,13 @@ def find_safe_robot_action(new_step: Step, selected_pair: ActionPair) -> CM.Acti
                 continue
 
             new_agents = get_agents_after_action(selected_pair.end_agents, ho.human_action)
-            new_agents[CM.g_robot_name].planned_actions.append( wait_action )
-            wait_pair = ActionPair(ho.human_action, wait_action, new_agents)
+            new_agents[CM.g_robot_name].planned_actions.append( skip_action )
+            wait_pair = ActionPair(ho.human_action, skip_action, new_agents)
             wait_pair.in_human_option = ho
             
-            ho.robot_actions.append(wait_action)
+            ho.robot_actions.append(skip_action)
             ho.action_pairs.append(wait_pair)
-        SRA = wait_action
+        SRA = skip_action
 
     return SRA
 
@@ -376,22 +378,30 @@ def get_pairs_to_explore(new_step: Step, previous_pairs_to_explore: List[ActionP
     # Criteria: If SRA=WAIT, all pairs from the step must be explored (secondly, since we try to avoid plans with WAITs)
     prio_pairs = []
     no_prio_pairs = []
-    if new_step.SRA.name=="WAIT":
-        # All pairs must be explored
-        for ho in new_step.human_options:
-            no_prio_pairs += ho.action_pairs
-    elif len(new_step.get_pairs())==1\
+    # if new_step.SRA.name=="WAIT":
+    #     # All pairs must be explored
+    #     for ho in new_step.human_options:
+    #         no_prio_pairs += ho.action_pairs
+    # elif len(new_step.get_pairs())==1\
+    #     and new_step.get_pairs()[0].human_action.name=="IDLE"\
+    #     and new_step.get_pairs()[0].robot_action.name=="IDLE":
+    #     pass
+    # else:
+    #     # SRA pairs must be explored
+    #     for ho in new_step.human_options:
+    #         for p in ho.action_pairs:
+    #             if CM.Action.are_similar(p.robot_action, new_step.SRA):
+    #                 prio_pairs.append(p)
+    
+    if len(new_step.get_pairs())==1\
         and new_step.get_pairs()[0].human_action.name=="IDLE"\
         and new_step.get_pairs()[0].robot_action.name=="IDLE":
         pass
     else:
-        # SRA pairs must be explored
         for ho in new_step.human_options:
-            for p in ho.action_pairs:
-                if CM.Action.are_similar(p.robot_action, new_step.SRA):
-                    prio_pairs.append(p)
-    pairs_to_explore = prio_pairs + previous_pairs_to_explore + no_prio_pairs
+            prio_pairs += ho.action_pairs
 
+    pairs_to_explore = prio_pairs + previous_pairs_to_explore + no_prio_pairs 
     return pairs_to_explore
 
 
@@ -587,6 +597,10 @@ def get_agents_after_action(in_agents, action):
 ## HELPER ##
 ############
 def check_list(list, cond):
+    """
+    Returns None if the given condition (cond) is False for every element of the list
+    Otherwise, return the first element for which the condition is True
+    """
     for x in list:
         if cond(x):
             return x
@@ -626,16 +640,16 @@ def render_dot(init_step: Step):
                     with cs.subgraph(name=f"cluster_{i_cluster}") as c:
                         i_cluster+=1
                         if s.is_final:
-                            c.attr(label=str(ho.human_action), style='rounded', color="#4f984b", bgcolor="#aaeaa7")
+                            c.attr(label=ho.human_action.gui_str(), style='rounded', color="#4f984b", bgcolor="#aaeaa7")
                         else:
-                            c.attr(label=str(ho.human_action), style='rounded', color="#D6B656", bgcolor="#FFE6CC")
+                            c.attr(label=ho.human_action.gui_str(), style='rounded', color="#D6B656", bgcolor="#FFE6CC")
                         
                         for p in ho.action_pairs:
                             node_name = p.get_short_str()
                             style="filled,solid"
-                            if CM.Action.are_similar(p.robot_action,s.SRA):
+                            if check_list(s.CRA, lambda x: CM.Action.are_similar(x, p.robot_action)):
                                 style="filled,bold"
-                            c.node(node_name, label=str(p.robot_action), style=style, color="#6C8EBF", fillcolor="#DAE8FC")
+                            c.node(node_name, label=p.robot_action.gui_str(), style=style, color="#6C8EBF", fillcolor="#DAE8FC")
                             if one_node=="":
                                 one_node=node_name
 

@@ -154,11 +154,17 @@ class Action: #AppliedPrimitiveTask
         PT.__init__(cost)
         return PT
 
+    def is_inactive(self):
+        return self.name in ["WAIT", "IDLE", "SKIP", "LRD"]
+
     def create_wait(agent: str, why):
         return Action.cast_PT2A(PrimitiveTask("WAIT", (), why, 0, agent), g_wait_cost[agent])
 
     def create_idle(agent: str, why):
         return Action.cast_PT2A(PrimitiveTask("IDLE", (), why, 0, agent), g_idle_cost[agent])
+
+    def create_skip(agent: str, why):
+        return Action.cast_PT2A(PrimitiveTask("SKIP", (), why, 0, agent), g_wait_cost[agent])
 
     def create_LRD():
         return Action.cast_PT2A(PrimitiveTask("LRD", (), None, 0, g_human_name), LRD_ACTION_COST) 
@@ -176,6 +182,9 @@ class Action: #AppliedPrimitiveTask
            raise Exception("Unknown Agent")
         ag_str = "H" if self.agent==g_human_name else "R" 
         return f"{ag_str}{self.id}"
+
+    def gui_str(self):
+        return f"{self.id}-{self.name}{self.parameters}"
 
     def __repr__(self):
         if not self.agent in [g_human_name, g_robot_name]:
