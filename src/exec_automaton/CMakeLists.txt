@@ -31,12 +31,12 @@ include_directories(
 )
 
 
-set(SCRIPT_LIST 
-arrangement
-)
+# set(SCRIPT_LIST 
+# arrangement
+# )
 
-foreach(NODE ${SCRIPT_LIST})
-    catkin_install_python(PROGRAMS scripts/${NODE}.py
-      DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-endforeach()
+# foreach(NODE ${SCRIPT_LIST})
+#     catkin_install_python(PROGRAMS scripts/${NODE}.py
+#       DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
+# endforeach()
