@@ -105,6 +105,7 @@ int main(int argc, char **argv)
 
   move_group_interface = new moveit::planning_interface::MoveGroupInterface(ROBOT_NAME + "_arm");
   move_group_interface->setPlanningTime(1.0);
+  move_group_interface->setGoalOrientationTolerance(10.0);
   // move_group_interface->setGoalOrientationTolerance(0.1);
   move_group_interface->setMaxVelocityScalingFactor(1.0);
   move_group_interface->setMaxAccelerationScalingFactor(1.0);
