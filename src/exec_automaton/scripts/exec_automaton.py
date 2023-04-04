@@ -30,7 +30,8 @@ sys.path.insert(0, path)
 
 import ConcurrentModule as ConM
 import CommonModule as CM
-from stack_equi import *
+from stack_simple_simu import *
+# from stack_equi import *
 # from arrangement import *
 # from conflict_pick import *
 # from simple import *
@@ -88,7 +89,10 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
     while not exec_over(curr_step):
         wait_step_start(curr_step)
         MOCK_save_best_reachable_solution_for_human(curr_step)
-        MOCK_H_action_choice(curr_step)
+        # MOCK_H_action_choice(curr_step)
+
+        result_id = IdResult.NOT_NEEDED
+
 
         ## 1 & 2 & 3 ##
         if is_human_acting(): 
@@ -104,18 +108,20 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             ## 3 ##
             else: 
                 lg.debug("ID not needed.")
-                result_id = IdResult.NOT_NEEDED
                 RA = pick_best_RA(curr_step)
         ## 4 & 5 ##
         else: 
             RA = pick_best_RA(curr_step)
 
 
-        MOCK_execute_RA(RA)
+        execute_RA(RA)
                   
 
         # MOCK_H_LRDe(curr_step, RA)
-        HA = MOCK_assess_human_action(result_id)
+
+        wait_step_end()
+        
+        HA = MOCK_assess_human_action(result_id, RA)
         curr_step = get_next_step(curr_step, HA, RA)
         MOCK_save_best_reachable_solution_for_human_after_robot_choice(curr_step)
         if MOCK_robot_has_degraded_human_best_solution():
@@ -123,7 +129,9 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             if nb_of_degradation >= 1:
                 r_ranked_leaves, h_ranked_leaves = adjust_robot_preferences(begin_step,h_pref,h_pref)
 
-        wait_step_end()
+        reset_human()
+        rospy.sleep(0.1)
+
     lg.debug(f"END => {curr_step}")
     # return int(curr_step.id)
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
@@ -316,13 +324,11 @@ def wait_step_start(step: ConM.Step):
     bar = IncrementalBar('Waiting', max=TIMEOUT_DELAY)
 
     start_waiting_time = rospy.get_rostime()
-    keep_waiting = True
-    while not rospy.is_shutdown() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY and keep_waiting:
+    while not rospy.is_shutdown() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY:
         bar.goto((rospy.get_rostime()-start_waiting_time).to_sec())
         if HC!=None:
-            keep_waiting=False
-        else:
-            rospy.sleep(0.1)
+            break
+        rospy.sleep(0.1)
     bar.finish()
 
     if HC==None:
@@ -332,11 +338,11 @@ def wait_step_start(step: ConM.Step):
         rospy.sleep(WAIT_START_DELAY)
         rospy.loginfo("Step start detected!")
 
-        if HC.name=="LRD":
-            rospy.loginfo("LRD human not acting...")
+        if HC.is_passive():
+            rospy.loginfo("Human not acting...")
             human_acting = False
         else:
-            rospy.loginfo(f"human performing acting")
+            rospy.loginfo(f"Human is active")
             human_acting = True
 
     step_over = False
@@ -346,15 +352,12 @@ def wait_step_start(step: ConM.Step):
 ##################
 ## SubFonctions ##
 ##################
-
-
-
-
 def is_human_acting():
     return HC.is_passive()
     return True
 
 def is_ID_needed(step: ConM.Step):
+    #TODO
     # Only with best robot choice not a CRA
     return True
 
@@ -451,35 +454,37 @@ def update_vha(valid_human_actions: list[CM.Action], start):
 def compute_msg_action(a):
     msg = Action()
 
-    if"pick_b"==a.name:
-        msg.type=Action.PICK_B
-        msg.obj = "cube_b"
-    elif "pick_r"==a.name:
-        msg.type=Action.PICK_R
-        msg.obj = "cube_r"
-    elif "pick_g"==a.name:
-        msg.type=Action.PICK_G
-        msg.obj = "cube_g"
-    elif "place_1"==a.name:
-        msg.type=Action.PLACE_1
-        msg.location = "loc_1"
-    elif "place_2"==a.name:
-        msg.type=Action.PLACE_2
-        msg.location = "loc_2"
-    elif "place_3"==a.name:
-        msg.type=Action.PLACE_3
-        msg.location = "loc_3"
-    elif "place_4"==a.name:
-        msg.type=Action.PLACE_4
-        msg.location = "loc_4"
-    elif "drink"==a.name:
-        msg.type=Action.DRINK
+    if "pick"==a.name:
+        if "r"==a.parameters[0]:
+            msg.type=Action.PICK_R
+            msg.obj = "cube_r"
+        elif "g"==a.parameters[0]:
+            msg.type=Action.PICK_G
+            msg.obj = "cube_g"
+        elif "b"==a.parameters[0]:
+            msg.type=Action.PICK_B
+            msg.obj = "cube_b"
+    elif "place"==a.name:
+        if "b1"==a.parameters[0]:
+            msg.type=Action.PLACE_1
+            msg.location = "loc_1"
+        elif "b2"==a.parameters[0]:
+            msg.type=Action.PLACE_2
+            msg.location = "loc_2"
+        elif "b3"==a.parameters[0]:
+            msg.type=Action.PLACE_3
+            msg.location = "loc_3"
+        elif "b4"==a.parameters[0]:
+            msg.type=Action.PLACE_4
+            msg.location = "loc_4"
     elif "pushing"==a.name:
         msg.type=Action.PUSHING
-    elif "WAIT"==a.name:
-        msg.type=Action.WAIT
-    elif "IDLE"==a.name:
-        msg.type=Action.IDLE
+    # elif "WAIT"==a.name:
+    #     msg.type=Action.WAIT
+    # elif "IDLE"==a.name:
+    #     msg.type=Action.IDLE
+    elif a.is_passive():
+        msg.type=Action.PASSIVE
     else:
         raise Exception("Unknown action")
         
@@ -498,8 +503,8 @@ def human_choice_cb(msg):
     rospy.loginfo(possible_human_actions)
     HC = possible_human_actions[msg.data-1]
     rospy.loginfo(HC)
-    if HC.name!="LRD":
-        msg = compute_msg_action(possible_human_actions[msg.data])
+    if not HC.is_passive():
+        msg = compute_msg_action(HC)
         g_human_action_pub.publish(msg)
 
 def step_over_cb(msg):

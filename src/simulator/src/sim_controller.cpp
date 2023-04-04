@@ -277,7 +277,6 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 
         std_msgs::String str_msg;
         ROS_INFO("%d type=%d", agent, action.type);
-        ROS_INFO("sim_msgs::Action::WAIT=%d", sim_msgs::Action::WAIT);
         switch (action.type)
         {
         case sim_msgs::Action::PICK_OBJ:
@@ -302,8 +301,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         case sim_msgs::Action::PUSHING:
             pushing(agent);
             break;
-        case sim_msgs::Action::WAIT:
-        case sim_msgs::Action::IDLE:
+        case sim_msgs::Action::PASSIVE:
             wait(agent);
             break;
         default:
