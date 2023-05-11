@@ -454,38 +454,32 @@ def update_vha(valid_human_actions: list[CM.Action], start):
 def compute_msg_action(a):
     msg = Action()
 
+    msg.type = -1
+
     if "pick"==a.name:
         if "r"==a.parameters[0]:
             msg.type=Action.PICK_R
-            msg.obj = "cube_r"
         elif "g"==a.parameters[0]:
             msg.type=Action.PICK_G
-            msg.obj = "cube_g"
         elif "b"==a.parameters[0]:
             msg.type=Action.PICK_B
-            msg.obj = "cube_b"
     elif "place"==a.name:
-        if "b1"==a.parameters[0]:
+        if "l1"==a.parameters[1]:
             msg.type=Action.PLACE_1
-            msg.location = "loc_1"
-        elif "b2"==a.parameters[0]:
+        elif "l2"==a.parameters[1]:
             msg.type=Action.PLACE_2
-            msg.location = "loc_2"
-        elif "b3"==a.parameters[0]:
+        elif "l3"==a.parameters[1]:
             msg.type=Action.PLACE_3
-            msg.location = "loc_3"
-        elif "b4"==a.parameters[0]:
-            msg.type=Action.PLACE_4
-            msg.location = "loc_4"
-    elif "pushing"==a.name:
-        msg.type=Action.PUSHING
+    # elif "pushing"==a.name:
+    #     msg.type=Action.PUSHING
     # elif "WAIT"==a.name:
     #     msg.type=Action.WAIT
     # elif "IDLE"==a.name:
     #     msg.type=Action.IDLE
     elif a.is_passive():
         msg.type=Action.PASSIVE
-    else:
+
+    if msg.type==-1:
         raise Exception("Unknown action")
         
     return msg
