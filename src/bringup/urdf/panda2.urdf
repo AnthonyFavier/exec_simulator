@@ -29,7 +29,7 @@
   </link>
   <!-- TO MATCH WITH INIT POSE IN bringup.launch -->
   <joint name="panda2_joint_world" type="fixed">
-    <origin xyz="1.3 0 0.22" rpy="0 0 3.14159265" />
+    <origin xyz="1.3 0 0.3" rpy="0 0 3.14159265" />
     <parent link="world" />
     <child link="panda2_link0" />
   </joint>

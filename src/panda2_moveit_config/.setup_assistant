@@ -8,4 +8,4 @@ moveit_setup_assistant_config:
   CONFIG:
     author_name: anthony favier
     author_email: anthony.favier@laas.fr
-    generated_timestamp: 1675763834
+    generated_timestamp: 1680609642
