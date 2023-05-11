@@ -111,7 +111,7 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
                 RA = pick_best_RA(curr_step)
         ## 4 & 5 ##
         else: 
-            RA = pick_best_RA(curr_step)
+            RA = pick_best_RA_H_passive(curr_step)
 
 
         execute_RA(RA)
@@ -353,8 +353,7 @@ def wait_step_start(step: ConM.Step):
 ## SubFonctions ##
 ##################
 def is_human_acting():
-    return HC.is_passive()
-    return True
+    return not HC.is_passive()
 
 def is_ID_needed(step: ConM.Step):
     #TODO
@@ -367,6 +366,13 @@ def ID_successful(result: CM.Action | None):
 def pick_best_RA(curr_step: ConM.Step):
     return curr_step.best_robot_pair.robot_action
 
+def pick_best_RA_H_passive(curr_step: ConM.Step):
+    for ho in curr_step.human_options:
+        if not ho.human_action.is_passive():
+            continue
+        else:
+            return ho.best_robot_pair.robot_action
+
 def pick_best_valid_RA(step: ConM.Step, human_action: CM.Action):
     for ho in step.human_options:
         if ho.human_action==human_action:
@@ -374,6 +380,7 @@ def pick_best_valid_RA(step: ConM.Step, human_action: CM.Action):
     raise Exception("No best robot action defined...")
 
 def pick_valid_passive(step: ConM.Step):
+    # Find the first passive robot action
     for ho in step.human_options:
         for p in ho.action_pairs:
             if p.robot_action.is_passive():
