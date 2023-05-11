@@ -123,12 +123,12 @@ void pushing(AGENT agent)
     move_location_target(agent, "loc_3above");
 
     // move arm to obj.pose
-    move_obj_target(agent, "cube_b");
+    move_obj_target(agent, "cube_r");
 
     // move obj
     geometry_msgs::Pose delta;
     delta.position.x = 0.2;
-    delta_move_obj(agent, "cube_b", delta);
+    delta_move_obj(agent, "cube_r", delta);
 
     // drop
     drop(agent);
@@ -167,13 +167,6 @@ void move_obj_target(AGENT agent, const std::string &obj_name)
     else
         obj_pose = srv.response.pose;
     show_pose(obj_pose);
-    if(agent==AGENT::HUMAN)
-    {
-        obj_pose.orientation.x = 0.725;
-        obj_pose.orientation.y = 0.019;
-        obj_pose.orientation.z = -0.688;
-        obj_pose.orientation.w = 0.019;
-    }
     move_pose_target(agent, obj_pose);
     ROS_INFO("\t\t%s MOVE_OBJ END", get_agent_str(agent).c_str());
 }
@@ -280,24 +273,35 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         switch (action.type)
         {
         case sim_msgs::Action::PICK_OBJ:
-        case sim_msgs::Action::PICK_B:
-        case sim_msgs::Action::PICK_R:
-        case sim_msgs::Action::PICK_G:
             if (action.obj == "")
                 ROS_ERROR("%d Missing object in action msg!", agent);
             else
                 pick(agent, action.obj);
             break;
+        case sim_msgs::Action::PICK_R:
+            pick(agent, "cube_r");
+            break;
+        case sim_msgs::Action::PICK_G:
+            pick(agent, "cube_g");
+            break;
+        case sim_msgs::Action::PICK_B:
+            pick(agent, "cube_b");
+            break;
         case sim_msgs::Action::PLACE_OBJ:
-        case sim_msgs::Action::PLACE_1:
-        case sim_msgs::Action::PLACE_2:
-        case sim_msgs::Action::PLACE_3:
-        case sim_msgs::Action::PLACE_4:
             if (action.location == "")
                 ROS_ERROR("%d Missing location in action msg!", agent);
             else
                 place_location(agent, action.location);
             break;
+        case sim_msgs::Action::PLACE_1:
+            place_location(agent, "loc_1");
+            break;        
+        case sim_msgs::Action::PLACE_2:
+            place_location(agent, "loc_2");
+            break;        
+        case sim_msgs::Action::PLACE_3:
+            place_location(agent, "loc_3");
+            break;        
         case sim_msgs::Action::PUSHING:
             pushing(agent);
             break;
