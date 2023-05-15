@@ -349,7 +349,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.75 -0.08 0.34 0 -0 0</pose>
+      <pose>0.75 0.38 0.34 0 -0 0</pose>
     </model>
     <model name='loc_2'>
       <link name='link'>
@@ -397,7 +397,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.75 0.15 0.34 0 -0 0</pose>
+      <pose>0.75 -0.08 0.34 0 -0 0</pose>
     </model>
     <model name='loc_3'>
       <link name='link'>
@@ -445,7 +445,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.75 0.38 0.34 0 -0 0</pose>
+      <pose>0.75 0.15 0.34 0 -0 0</pose>
     </model>
   </world>
 </sdf>
