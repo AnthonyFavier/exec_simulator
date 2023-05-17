@@ -10,23 +10,44 @@ ros::ServiceClient get_model_state_client[2];
 ros::ServiceClient set_model_state_client[2];
 ros::ServiceClient attach_reset_client[2];
 
+// world2
+// std::map<std::string, geometry_msgs::Pose> locations =
+//     {
+//         {"loc1", make_pose(make_point(0.62, 0.30, 0.41), make_quaternion())},
+//         {"loc2", make_pose(make_point(0.60, -0.29, 0.42), make_quaternion())},
+//         {"handover", make_pose(make_point(0.75, 0.0, 0.7), make_quaternion())},
+//         {"loc_1", make_pose(make_point(0.75, -0.08, 0.38), make_quaternion())},
+//         {"loc_2", make_pose(make_point(0.75, 0.15, 0.38), make_quaternion())},
+//         {"loc_3", make_pose(make_point(0.75, 0.38, 0.38), make_quaternion())},
+//         {"loc_3above", make_pose(make_point(0.65, 0.38, 0.38), make_quaternion())},
+//         {"loc_3below", make_pose(make_point(0.85, 0.38, 0.38), make_quaternion())},
+// };
+
+// std::map<std::string, geometry_msgs::Pose> init_poses =
+//     {
+//         {"cube_r", make_pose(make_point(0.75, -0.42, 0.40), make_quaternion())},
+//         {"cube_g", make_pose(make_point(0.62, -0.33, 0.40), make_quaternion())},
+//         {"cube_b", make_pose(make_point(0.88, -0.33, 0.40), make_quaternion())},
+// };
+
+// Stack_new
 std::map<std::string, geometry_msgs::Pose> locations =
     {
-        {"loc1", make_pose(make_point(0.62, 0.30, 0.41), make_quaternion())},
-        {"loc2", make_pose(make_point(0.60, -0.29, 0.42), make_quaternion())},
-        {"handover", make_pose(make_point(0.75, 0.0, 0.7), make_quaternion())},
-        {"loc_1", make_pose(make_point(0.75, -0.08, 0.38), make_quaternion())},
-        {"loc_2", make_pose(make_point(0.75, 0.15, 0.38), make_quaternion())},
-        {"loc_3", make_pose(make_point(0.75, 0.38, 0.38), make_quaternion())},
-        {"loc_3above", make_pose(make_point(0.65, 0.38, 0.38), make_quaternion())},
-        {"loc_3below", make_pose(make_point(0.85, 0.38, 0.38), make_quaternion())},
+        {"l1", make_pose(make_point(0.75, 0.24, 0.37), make_quaternion())},
+        {"l2", make_pose(make_point(0.75, 0.38, 0.37), make_quaternion())},
+        {"l3", make_pose(make_point(0.75, 0.31, 0.44), make_quaternion())},
+        {"l4", make_pose(make_point(0.75, 0.24, 0.51), make_quaternion())},
+        {"l5", make_pose(make_point(0.75, 0.38, 0.51), make_quaternion())},
+        {"box", make_pose(make_point(0.56, -0.4, 0.45), make_quaternion())},
 };
 
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
-        {"cube_r", make_pose(make_point(0.75, -0.42, 0.40), make_quaternion())},
-        {"cube_g", make_pose(make_point(0.62, -0.33, 0.40), make_quaternion())},
-        {"cube_b", make_pose(make_point(0.88, -0.33, 0.40), make_quaternion())},
+        {"cube_r", make_pose(make_point(0.75, -0.22, 0.37), make_quaternion())},
+        {"cube_y", make_pose(make_point(0.86, -0.18, 0.37), make_quaternion())},
+        {"cube_b", make_pose(make_point(0.88, -0.33, 0.37), make_quaternion())},
+        {"cube_p", make_pose(make_point(0.58, -0.32, 0.37), make_quaternion())},
+        {"cube_w", make_pose(make_point(0.75, -0.44, 0.37), make_quaternion())},
 };
 
 const double tolerance = 0.01;
@@ -134,6 +155,22 @@ void pushing(AGENT agent)
     drop(agent);
 
     // move home
+    move_named_target(agent, "home");
+}
+
+void open_box(AGENT agent)
+{
+    move_pose_target(agent, locations["box"]);
+
+    gazebo_msgs::SetModelState srv_set;
+    tf2::Quaternion myQuaternion;
+    geometry_msgs::Point point;
+    srv_set.request.model_state.model_name = "box";
+    point.z = -1.0;
+    srv_set.request.model_state.pose.position = point;
+    srv_set.request.model_state.pose.orientation = tf2::toMsg(myQuaternion);
+    set_model_state_client[agent].call(srv_set);
+
     move_named_target(agent, "home");
 }
 
@@ -285,7 +322,19 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             pick(agent, "cube_g");
             break;
         case sim_msgs::Action::PICK_B:
-            pick(agent, "cube_b");
+            if(agent==AGENT::ROBOT)
+                pick(agent, "cube_b_R");
+            else if(agent==AGENT::HUMAN)
+                pick(agent, "cube_b");
+            break;
+        case sim_msgs::Action::PICK_Y:
+            pick(agent, "cube_y");
+            break;
+        case sim_msgs::Action::PICK_P:
+            pick(agent, "cube_p");
+            break;
+        case sim_msgs::Action::PICK_W:
+            pick(agent, "cube_w");
             break;
         case sim_msgs::Action::PLACE_OBJ:
             if (action.location == "")
@@ -294,16 +343,25 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
                 place_location(agent, action.location);
             break;
         case sim_msgs::Action::PLACE_1:
-            place_location(agent, "loc_1");
+            place_location(agent, "l1");
             break;        
         case sim_msgs::Action::PLACE_2:
-            place_location(agent, "loc_2");
+            place_location(agent, "l2");
             break;        
         case sim_msgs::Action::PLACE_3:
-            place_location(agent, "loc_3");
+            place_location(agent, "l3");
             break;        
+        case sim_msgs::Action::PLACE_4:
+            place_location(agent, "l4");
+            break;        
+        case sim_msgs::Action::PLACE_5:
+            place_location(agent, "l5");
+            break;
         case sim_msgs::Action::PUSH:
             pushing(agent);
+            break;
+        case sim_msgs::Action::OPEN_BOX:
+            open_box(agent);
             break;
         case sim_msgs::Action::PASSIVE:
             wait(agent);
@@ -369,8 +427,24 @@ int main(int argc, char **argv)
     attach_reset_client[AGENT::ROBOT] = node_handle.serviceClient<std_srvs::Empty>("/panda1/attach_reset");
     attach_reset_client[AGENT::HUMAN] = node_handle.serviceClient<std_srvs::Empty>("/panda2/attach_reset");
 
+    ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
+
     ros::AsyncSpinner spinner(4);
     spinner.start();
+
+    std_srvs::Empty empty_srv;
+    ros::service::waitForService("/gazebo/unpause_physics");
+    gazebo_start_client.call(empty_srv);
+    
+    ros::service::waitForService("/panda1/move_pose_target");
+    ros::service::waitForService("/panda2/move_pose_target");
+    ros::service::waitForService("/panda1/move_named_target");
+    ros::service::waitForService("/panda2/move_named_target");
+    move_named_target(AGENT::ROBOT, "home");
+    move_named_target(AGENT::HUMAN, "home");
+    // Publish message to parallelize
+
+    ROS_INFO("Controllers Ready!");
 
     ros::Rate loop(50);
     bool transi_step_over = true;

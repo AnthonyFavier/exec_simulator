@@ -2,9 +2,9 @@
 
     <!-- this opens gazebo -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="$(find simulator)/worlds/world2.world" />
+        <arg name="world_name" value="$(find simulator)/worlds/stack.world" />
         <arg name="gui" value="true" />
-        <!-- <arg name="paused" value="true"/> -->
+        <arg name="paused" value="true"/>
     </include>
 
     <!-- BE CAREFUL -->
