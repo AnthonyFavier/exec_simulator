@@ -302,7 +302,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         case sim_msgs::Action::PLACE_3:
             place_location(agent, "loc_3");
             break;        
-        case sim_msgs::Action::PUSHING:
+        case sim_msgs::Action::PUSH:
             pushing(agent);
             break;
         case sim_msgs::Action::PASSIVE:

@@ -10,7 +10,7 @@ uint8 PLACE_1=6
 uint8 PLACE_2=7
 uint8 PLACE_3=8
 uint8 DRINK=9
-uint8 PUSHING=10
+uint8 PUSH=10
 
 
 # PARAMS:

@@ -1,12 +1,8 @@
 <launch>
 
     <arg name="robot_name" default="panda1"/>
-    <arg name="init_pose_x" default="0"/>
-    <arg name="init_pose_y" default="0"/>
-    <arg name="init_pose_z" default="0"/>
-    <arg name="init_pose_R" default="0"/>
-    <arg name="init_pose_P" default="0"/>
-    <arg name="init_pose_Y" default="0"/>
+    <arg name="init_world_pose" default="-x 0 -y 0 -z 0 -R 0 -P 0 -Y 0"/>
+    <arg name="init_joint_positions" default=""/>
     
     <group ns="$(arg robot_name)">
         <!-- this put robot in gazebo world -->
@@ -17,7 +13,7 @@
         
         <!-- push robot_description to factory and spawn robot in gazebo -->
         <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"
-            args="-urdf -param description_gaz -model $(arg robot_name) -x $(arg init_pose_x) -y $(arg init_pose_y) -z $(arg init_pose_z) -R $(arg init_pose_R) -P $(arg init_pose_P) -Y $(arg init_pose_Y)"
+            args="-urdf -param description_gaz -model $(arg robot_name) $(arg init_world_pose) $(arg init_joint_positions)"
             respawn="false" output="screen" />
 
 

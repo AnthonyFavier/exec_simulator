@@ -16,6 +16,7 @@ add_service_files(
   FILES
   MoveArm.srv
   AttachObj.srv
+  Int.srv
 )
 
 generate_messages(
