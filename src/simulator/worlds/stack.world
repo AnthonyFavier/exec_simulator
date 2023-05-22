@@ -164,14 +164,14 @@
     <model name='cube_r'>
       <link name='link'>
         <inertial>
-          <mass>1</mass>
+          <mass>0.00001</mass>
           <inertia>
-            <ixx>0.166667</ixx>
+            <ixx>0.00001</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>0.166667</iyy>
+            <iyy>0.00001</iyy>
             <iyz>0</iyz>
-            <izz>0.166667</izz>
+            <izz>0.00001</izz>
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
@@ -750,14 +750,14 @@
         <inertial>
           <pose>0 0 0 0 -0 0</pose>
           <inertia>
-            <ixx>1</ixx>
+            <ixx>0</ixx>
             <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>1</iyy>
+            <ixz>0.0001</ixz>
+            <iyy>0</iyy>
             <iyz>0</iyz>
-            <izz>1</izz>
+            <izz>0</izz>
           </inertia>
-          <mass>1</mass>
+          <mass>0.1</mass>
         </inertial>
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
@@ -781,4 +781,3 @@
 
   </world>
 </sdf>
-<!-- 3.1415926535897932384626433832795 -->

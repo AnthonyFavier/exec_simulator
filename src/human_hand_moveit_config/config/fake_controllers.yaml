@@ -1,0 +1,10 @@
+controller_list:
+  - name: fake_hand_controller
+    type: $(arg fake_execution_type)
+    joints:
+      - human_joint_world
+initial:  # Define initial robot poses per group
+#  - group: hand
+#    pose: home
+
+  []
