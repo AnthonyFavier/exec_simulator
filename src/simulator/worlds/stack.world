@@ -1,5 +1,6 @@
 <sdf version='1.7'>
   <world name='default'>
+    <plugin name="ros_link_attacher_plugin" filename="libgazebo_ros_link_attacher.so"/>
     <light name='sun' type='directional'>
       <cast_shadows>1</cast_shadows>
       <pose>0 0 10 0 -0 0</pose>
@@ -704,5 +705,80 @@
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.56 -0.4 0.335 0 -0 0</pose>
     </model>
+
+
+    <model name='human_body'>
+      <link name='human_body_link'>
+        <pose>0 0 0 0 -0 0</pose>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+          <mass>1</mass>
+        </inertial>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <gravity>0</gravity>
+        <visual name='human_body_link'>
+          <geometry>
+            <mesh>
+              <uri>/home/afavier/exec_simulator_ws/src/bringup/meshes/human/human.stl</uri>
+              <scale>0.75 0.75 0.75</scale>
+            </mesh>
+          </geometry>
+          <pose>0 0 0 0 -0 0</pose>
+          <transparency>0</transparency>
+          <cast_shadows>1</cast_shadows>
+        </visual>
+      </link>
+      <static>0</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose>2.0 0.0 0.5 0 -0 3.14159265</pose>
+    </model>
+
+    <model name='human_hand'>
+      <link name='human_hand_link'>
+        <pose>0 0 0 0 -0 0</pose>
+        <self_collide>0</self_collide>
+        <inertial>
+          <pose>0 0 0 0 -0 0</pose>
+          <inertia>
+            <ixx>1</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1</iyy>
+            <iyz>0</iyz>
+            <izz>1</izz>
+          </inertia>
+          <mass>1</mass>
+        </inertial>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <gravity>0</gravity>
+        <visual name='human_hand_link'>
+          <geometry>
+            <mesh>
+              <uri>/home/afavier/exec_simulator_ws/src/bringup/meshes/human/hand.stl</uri>
+              <scale>0.75 0.75 0.75</scale>
+            </mesh>
+          </geometry>
+          <pose>0 0 0 0 -0 0</pose>
+          <transparency>0</transparency>
+          <cast_shadows>1</cast_shadows>
+        </visual>
+      </link>
+      <static>0</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose>2.0 0.5 0.8 0 -0 3.14159265</pose>
+    </model>
+
   </world>
 </sdf>
+<!-- 3.1415926535897932384626433832795 -->

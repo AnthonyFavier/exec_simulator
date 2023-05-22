@@ -20,6 +20,12 @@
   <build_depend>gazebo_ros</build_depend>
   <exec_depend>gazebo_ros</exec_depend>
 
+  <buildtool_depend>gazebo_ros_link_attacher</buildtool_depend>
+  <build_depend>gazebo_ros_link_attacher</build_depend>
+  <exec_depend>gazebo_ros_link_attacher</exec_depend>
+
+  
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

@@ -1,0 +1,270 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <world name="default">
+  
+    <plugin name="visual_plugin" filename="libtrajectory_wp.so" />
+    <!-- A gazebo links attacher -->
+    <plugin name="ros_link_attacher_plugin" filename="libgazebo_ros_link_attacher.so"/>
+    <include>
+      <uri>model://sun</uri>
+      <pose>-100 0 100 0 0 0</pose>
+    </include>
+    <model name="window">
+      <link name="window_link">
+        <pose>0 0 0 0 0 0</pose>
+        <collision name="window_collision">
+          <geometry>
+            <mesh>
+              <uri>meshes/window.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="window">
+          <geometry>
+            <mesh>
+              <uri>meshes/window.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <cast_shadows>false</cast_shadows>
+        </visual>
+      </link>
+      <static>true</static>
+    </model>
+      <model name='rings'>
+        <link name='ring_1'>
+          <pose>5 3 2 0 0 0.8</pose>
+          <inertial>
+            <mass>0.05</mass>
+            <inertia>
+              <ixx>0.000265</ixx>
+              <ixy>0</ixy>
+              <ixz>0</ixz>
+              <iyy>0.000265</iyy>
+              <iyz>0</iyz>
+              <izz>0.0002025</izz>
+            </inertia>
+            <pose>0 0 0 0 -0 0</pose>
+            <origin xyz='0 0 0'/>
+          </inertial>
+          <self_collide>0</self_collide>
+          <enable_wind>0</enable_wind>
+          <kinematic>0</kinematic>
+          <gravity>0</gravity>
+          <visual name='ring_1'>
+            <geometry>
+              <mesh>
+                <uri>meshes/ring.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <cast_shadows>0</cast_shadows>
+            <pose>0 0 0 0 -0 0</pose>
+            <transparency>0</transparency>
+          </visual>
+        </link>
+        <link name='ring_2'>
+          <pose>-0.5 5 3 0 0 3.1</pose>
+          <inertial>
+            <mass>0.05</mass>
+            <inertia>
+              <ixx>0.000265</ixx>
+              <ixy>0</ixy>
+              <ixz>0</ixz>
+              <iyy>0.000265</iyy>
+              <iyz>0</iyz>
+              <izz>0.0002025</izz>
+            </inertia>
+            <pose>0 0 0 0 -0 0</pose>
+            <origin xyz='0 0 0'/>
+          </inertial>
+          <self_collide>0</self_collide>
+          <enable_wind>0</enable_wind>
+          <kinematic>0</kinematic>
+          <gravity>0</gravity>
+          <visual name='ring_2'>
+            <geometry>
+              <mesh>
+                <uri>meshes/ring.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <cast_shadows>0</cast_shadows>
+            <pose>0 0 0 0 -0 0</pose>
+            <transparency>0</transparency>
+          </visual>
+        </link>
+        <link name='ring_3'>
+          <pose>-4.5 3 2 0 0 0.8</pose>
+          <inertial>
+            <mass>0.05</mass>
+            <inertia>
+              <ixx>0.000265</ixx>
+              <ixy>0</ixy>
+              <ixz>0</ixz>
+              <iyy>0.000265</iyy>
+              <iyz>0</iyz>
+              <izz>0.0002025</izz>
+            </inertia>
+            <pose>0 0 0 0 -0 0</pose>
+            <origin xyz='0 0 0'/>
+          </inertial>
+          <self_collide>0</self_collide>
+          <enable_wind>0</enable_wind>
+          <kinematic>0</kinematic>
+          <gravity>0</gravity>
+          <visual name='ring_3'>
+            <geometry>
+              <mesh>
+                <uri>meshes/ring.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <cast_shadows>0</cast_shadows>
+            <pose>0 0 0 0 -0 0</pose>
+            <transparency>0</transparency>
+          </visual>
+        </link>
+        <link name='ring_4'>
+          <pose>-3 9 3 0 0 0.0</pose>
+          <inertial>
+            <mass>0.05</mass>
+            <inertia>
+              <ixx>0.000265</ixx>
+              <ixy>0</ixy>
+              <ixz>0</ixz>
+              <iyy>0.000265</iyy>
+              <iyz>0</iyz>
+              <izz>0.0002025</izz>
+            </inertia>
+            <pose>0 0 0 0 -0 0</pose>
+            <origin xyz='0 0 0'/>
+          </inertial>
+          <self_collide>0</self_collide>
+          <enable_wind>0</enable_wind>
+          <kinematic>0</kinematic>
+          <gravity>0</gravity>
+          <visual name='ring_4'>
+            <geometry>
+              <mesh>
+                <uri>meshes/ring.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <cast_shadows>0</cast_shadows>
+            <pose>0 0 0 0 -0 0</pose>
+            <transparency>0</transparency>
+          </visual>
+        </link>
+        <link name='ring_5'>
+          <pose>5 9 2 0 0 0.0</pose>
+          <inertial>
+            <mass>0.05</mass>
+            <inertia>
+              <ixx>0.000265</ixx>
+              <ixy>0</ixy>
+              <ixz>0</ixz>
+              <iyy>0.000265</iyy>
+              <iyz>0</iyz>
+              <izz>0.0002025</izz>
+            </inertia>
+            <pose>0 0 0 0 -0 0</pose>
+            <origin xyz='0 0 0'/>
+          </inertial>
+          <self_collide>0</self_collide>
+          <enable_wind>0</enable_wind>
+          <kinematic>0</kinematic>
+          <gravity>0</gravity>
+          <visual name='ring_5'>
+            <geometry>
+              <mesh>
+                <uri>meshes/ring.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <cast_shadows>0</cast_shadows>
+            <pose>0 0 0 0 -0 0</pose>
+            <transparency>0</transparency>
+          </visual>
+        </link>
+        <link name='ring_6'>
+          <pose>2.0 17 2.5 0 0 2.0</pose>
+          <inertial>
+            <mass>0.05</mass>
+            <inertia>
+              <ixx>0.000265</ixx>
+              <ixy>0</ixy>
+              <ixz>0</ixz>
+              <iyy>0.000265</iyy>
+              <iyz>0</iyz>
+              <izz>0.0002025</izz>
+            </inertia>
+            <pose>0 0 0 0 -0 0</pose>
+            <origin xyz='0 0 0'/>
+          </inertial>
+          <self_collide>0</self_collide>
+          <enable_wind>0</enable_wind>
+          <kinematic>0</kinematic>
+          <gravity>0</gravity>
+          <visual name='ring_6'>
+            <geometry>
+              <mesh>
+                <uri>meshes/ring.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <cast_shadows>0</cast_shadows>
+            <pose>0 0 0 0 -0 0</pose>
+            <transparency>0</transparency>
+          </visual>
+        </link>
+        <link name='ring_7'>
+          <pose>-2 12.5 1.5 0 0 3.1</pose>
+          <inertial>
+            <mass>0.05</mass>
+            <inertia>
+              <ixx>0.000265</ixx>
+              <ixy>0</ixy>
+              <ixz>0</ixz>
+              <iyy>0.000265</iyy>
+              <iyz>0</iyz>
+              <izz>0.0002025</izz>
+            </inertia>
+            <pose>0 0 0 0 -0 0</pose>
+            <origin xyz='0 0 0'/>
+          </inertial>
+          <self_collide>0</self_collide>
+          <enable_wind>0</enable_wind>
+          <kinematic>0</kinematic>
+          <gravity>0</gravity>
+          <visual name='ring_7'>
+            <geometry>
+              <mesh>
+                <uri>meshes/ring.dae</uri>
+                <scale>1 1 1</scale>
+              </mesh>
+            </geometry>
+            <cast_shadows>0</cast_shadows>
+            <pose>0 0 0 0 -0 0</pose>
+            <transparency>0</transparency>
+          </visual>
+        </link>
+        <static>0</static>
+        <allow_auto_disable>1</allow_auto_disable>
+      </model>
+    <gui fullscreen='0'>
+      <camera name="user_camera">
+        <track_visual>
+          <name>target_model</name>
+          <static>true</static>
+          <use_model_frame>true</use_model_frame>
+          <xyz>-2 0 0</xyz>
+          <inherit_yaw>true</inherit_yaw>
+        </track_visual>
+      </camera>
+      <grid>0</grid>
+    </gui>
+    <grid>0</grid>
+  </world>
+</sdf>

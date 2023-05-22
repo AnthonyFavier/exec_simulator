@@ -21,15 +21,4 @@
 
     </include>
 
-    <include file="$(find bringup)/launch/_launch_robot.launch">
-        <arg name="robot_name" value="panda2"/> <!-- HUMAN -->
-        <arg name="init_world_pose" value="-x 1.3 -y 0 -z 0.3 -R 0 -P 0 -Y 3.14159265"/>
-
-        <!-- <arg name="init_joint_positions" value="-J panda2_joint1 -2.44346 -J panda2_joint2 1.20428 -J panda2_joint3 0.785398 -J panda2_joint4 -2.44346 -J panda2_joint5 1.15192 -J panda2_joint6 0.785398 -J panda2_joint7 -2.30383"/> -->
-        <!-- <arg name="init_joint_positions" value="-J panda2_joint1 -2.44346 -J panda2_joint2 1.20428 -J panda2_joint3 0.785398 -J panda2_joint4 -2.44346 -J panda2_joint5 1.15192 -J panda2_joint6 0.785398 -J panda2_joint7 -2.30383"/> -->
-        <!-- <arg name="init_joint_positions" value="-J panda2_joint1 3.839725307 -J panda2_joint2 1.20428 -J panda2_joint3 0.785398 -J panda2_joint4 3.839725307 -J panda2_joint5 1.15192 -J panda2_joint6 0.785398 -J panda2_joint7 3.979355307"/> -->
-        <!-- <arg name="init_joint_positions" value="-J panda2_joint1 -1.0 -J panda2_joint2 1.0"/> -->
-
-    </include>
-
 </launch>

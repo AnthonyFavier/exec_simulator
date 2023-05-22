@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
     rviz_visual_tools
     moveit_visual_tools
     sim_msgs
+    gazebo_ros_link_attacher
 )
 
 find_package(Eigen3)
@@ -40,8 +41,11 @@ pick_box
 init_static_scene
 new_move_multiple
 move_arm
-sim_controller
+# sim_controller
 )
+
+add_executable(sim_controller src/sim_controller.cpp)
+target_link_libraries(sim_controller ${catkin_LIBRARIES})
 
 foreach(NODE ${EXEC_LIST})
     add_executable(${NODE} src/${NODE}.cpp)

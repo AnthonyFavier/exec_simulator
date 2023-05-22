@@ -6,6 +6,8 @@ bool action_done[2] = {false, false};
 ros::ServiceClient move_arm_pose_client[2];
 ros::ServiceClient move_arm_named_client[2];
 ros::ServiceClient attach_obj_client[2];
+ros::ServiceClient attach_plg_client[2];
+ros::ServiceClient deattach_plg_client[2];
 ros::ServiceClient get_model_state_client[2];
 ros::ServiceClient set_model_state_client[2];
 ros::ServiceClient attach_reset_client[2];
@@ -231,22 +233,38 @@ void move_named_target(AGENT agent, const std::string &named_target)
 void grab_obj(AGENT agent, const std::string &object)
 {
     ROS_INFO("\t\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
-    sim_msgs::AttachObj srv;
-    srv.request.type=sim_msgs::AttachObj::Request::GRAB;
-    srv.request.obj_name = object;
-    if(!attach_obj_client[agent].call(srv) || !srv.response.success)
+
+
+    gazebo_ros_link_attacher::Attach srv;
+    srv.request.model_name_1 = "human_hand";
+    srv.request.link_name_1 = "human_hand_link";
+    srv.request.model_name_2 = object;
+    srv.request.link_name_2 = "link";
+    if(!attach_plg_client[agent].call(srv) || !srv.response.ok)
         throw ros::Exception("Calling service attach_obj failed...");
+
+    // sim_msgs::AttachObj srv;
+    // srv.request.type=sim_msgs::AttachObj::Request::GRAB;
+    // srv.request.obj_name = object;
+    // if(!attach_obj_client[agent].call(srv) || !srv.response.success)
+    //     throw ros::Exception("Calling service attach_obj failed...");
+
+
+
     ROS_INFO("\t\t%s GRAB_OBJ END", get_agent_str(agent).c_str());
 }
 
 void drop(AGENT agent)
 {
     ROS_INFO("\t\t%s DROP START", get_agent_str(agent).c_str());
+
     sim_msgs::AttachObj srv;
     srv.request.type=sim_msgs::AttachObj::Request::DROP;
     if(!attach_obj_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service attach_obj failed...");
+        
     set_obj_rpy(agent, srv.response.obj_dropped_name, 0,0,0);
+
     ROS_INFO("\t\t%s DROP END", get_agent_str(agent).c_str());
 }
 
@@ -419,6 +437,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "sim_controller");
     ros::NodeHandle node_handle;
 
+
     ros::Subscriber robot_action = node_handle.subscribe("/robot_action", 1, robot_action_cb);
     ros::Subscriber human_action = node_handle.subscribe("/human_action", 1, human_action_cb);
 
@@ -426,14 +445,19 @@ int main(int argc, char **argv)
     ros::Publisher r_home_pub = node_handle.advertise<std_msgs::Empty>("/r_home", 1);
 
     move_arm_pose_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_pose_target");
-    move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda2/move_pose_target");
+    // move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda2/move_pose_target");
 
     move_arm_named_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_named_target");
-    move_arm_named_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda2/move_named_target");
+    // move_arm_named_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda2/move_named_target");
 
 
     attach_obj_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::AttachObj>("/panda1/attach_obj");
-    attach_obj_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::AttachObj>("/panda2/attach_obj");
+    // attach_obj_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::AttachObj>("/panda2/attach_obj");
+
+    attach_plg_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/attach");
+    attach_plg_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/attach");
+    deattach_plg_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/deattach");
+    deattach_plg_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/deattach");
 
     ros::Publisher step_over_pub = node_handle.advertise<std_msgs::Empty>("/step_over", 10);
     std_msgs::Empty empty_msg;
@@ -446,7 +470,7 @@ int main(int argc, char **argv)
 
     ros::ServiceServer reset_service = node_handle.advertiseService("reset_obj", reset_obj_server);
     attach_reset_client[AGENT::ROBOT] = node_handle.serviceClient<std_srvs::Empty>("/panda1/attach_reset");
-    attach_reset_client[AGENT::HUMAN] = node_handle.serviceClient<std_srvs::Empty>("/panda2/attach_reset");
+    // attach_reset_client[AGENT::HUMAN] = node_handle.serviceClient<std_srvs::Empty>("/panda2/attach_reset");
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
 
@@ -458,11 +482,13 @@ int main(int argc, char **argv)
     gazebo_start_client.call(empty_srv);
     
     ros::service::waitForService("/panda1/move_pose_target");
-    ros::service::waitForService("/panda2/move_pose_target");
+    // ros::service::waitForService("/panda2/move_pose_target");
     ros::service::waitForService("/panda1/move_named_target");
-    ros::service::waitForService("/panda2/move_named_target");
-    r_home_pub.publish(empty_msg); // msg to use cb thread and parallelize
-    move_named_target(AGENT::HUMAN, "home");
+    // ros::service::waitForService("/panda2/move_named_target");
+
+    move_named_target(AGENT::ROBOT, "home");
+    // r_home_pub.publish(empty_msg); // msg to use cb thread and parallelize
+    // move_named_target(AGENT::HUMAN, "home");
 
     ROS_INFO("Controllers Ready!");
 

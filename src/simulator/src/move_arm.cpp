@@ -114,6 +114,8 @@ int main(int argc, char **argv)
   move_group_interface->clearPathConstraints();
   move_group_interface->clearTrajectoryConstraints();
 
+
+
   traj_pub = node_handle.advertise<trajectory_msgs::JointTrajectory>(ROBOT_NAME + "_arm_controller/command", 10);
   ros::ServiceServer move_pose_target_service = node_handle.advertiseService("move_pose_target", move_pose_target_server);
   // ros::ServiceServer move_pose_cart_target_service = node_handle.advertiseService("move_pose_cart_target", move_pose_cart_target_server);

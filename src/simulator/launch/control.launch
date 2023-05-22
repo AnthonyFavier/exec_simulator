@@ -9,10 +9,10 @@
         <node name="attach_obj" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name1)" respawn="false" output="screen"/>
     </group>
     
-    <group ns="$(arg robot_name2)">
+    <!-- <group ns="$(arg robot_name2)">
         <node name="move_arm" type="move_arm" pkg="simulator" args="$(arg robot_name2)" respawn="false" output="screen"/>
         <node name="attach_obj" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name2)" respawn="false" output="screen"/>
-    </group>
+    </group> -->
 
     <node name="sim_controller" pkg="simulator" type="sim_controller" respawn="false" output="screen"/>
 

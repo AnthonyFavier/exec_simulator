@@ -15,7 +15,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <std_srvs/Empty.h>
-
+#include "gazebo_ros_link_attacher/Attach.h"
 
 enum AGENT{ROBOT, HUMAN};
 
