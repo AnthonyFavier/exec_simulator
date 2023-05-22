@@ -526,6 +526,9 @@ def compute_msg_action(a):
         msg.type=Action.PUSH
     elif "open_box"==a.name:
         msg.type=Action.OPEN_BOX
+    elif "drop"==a.name:
+        msg.type=Action.DROP 
+
     elif a.is_passive():
         msg.type=Action.PASSIVE
 

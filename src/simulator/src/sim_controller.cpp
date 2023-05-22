@@ -174,6 +174,16 @@ void open_box(AGENT agent)
     move_named_target(agent, "home");
 }
 
+void drop_cube(AGENT agent)
+{
+    move_pose_target(agent, init_poses["cube_b"]);
+
+    drop(agent);
+
+    move_named_target(agent, "home");
+}
+
+
 // ************************************************************************ //
 
 // ************************* LOW LEVEL ACTIONS **************************** //
@@ -362,6 +372,9 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             break;
         case sim_msgs::Action::OPEN_BOX:
             open_box(agent);
+            break;
+        case sim_msgs::Action::DROP:
+            drop_cube(agent);
             break;
         case sim_msgs::Action::PASSIVE:
             wait(agent);

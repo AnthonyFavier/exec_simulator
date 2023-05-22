@@ -16,6 +16,7 @@ uint8 PLACE_4   =   12
 uint8 PLACE_5   =   13
 uint8 PUSH      =   14
 uint8 OPEN_BOX  =   15
+uint8 DROP      =   16
 
 
 # PARAMS:
