@@ -388,6 +388,11 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
     }
 }
 
+void r_home_cb(std_msgs::Empty msg)
+{
+    move_named_target(AGENT::ROBOT, "home");
+}
+
 // ************************************************************************ //
 
 bool reset_obj_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
@@ -416,6 +421,9 @@ int main(int argc, char **argv)
 
     ros::Subscriber robot_action = node_handle.subscribe("/robot_action", 1, robot_action_cb);
     ros::Subscriber human_action = node_handle.subscribe("/human_action", 1, human_action_cb);
+
+    ros::Subscriber r_home = node_handle.subscribe("/r_home", 1, r_home_cb);
+    ros::Publisher r_home_pub = node_handle.advertise<std_msgs::Empty>("/r_home", 1);
 
     move_arm_pose_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_pose_target");
     move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda2/move_pose_target");
@@ -453,9 +461,8 @@ int main(int argc, char **argv)
     ros::service::waitForService("/panda2/move_pose_target");
     ros::service::waitForService("/panda1/move_named_target");
     ros::service::waitForService("/panda2/move_named_target");
-    move_named_target(AGENT::ROBOT, "home");
+    r_home_pub.publish(empty_msg); // msg to use cb thread and parallelize
     move_named_target(AGENT::HUMAN, "home");
-    // Publish message to parallelize
 
     ROS_INFO("Controllers Ready!");
 
