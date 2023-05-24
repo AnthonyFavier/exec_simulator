@@ -2,23 +2,24 @@
 
     <!-- this opens gazebo -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="$(find simulator)/worlds/stack.world" />
+        <arg name="world_name" value="$(find simulator)/worlds/stack_new.world" />
         <arg name="gui" value="true" />
         <arg name="paused" value="true"/>
     </include>
+
+    <arg name="rviz" default="false"/>
 
     <!-- BE CAREFUL -->
     <!-- TO MATCH THE URDF JOINT_WORLD OF EACH ROBOT -->
     <!-- WITH THEIR CORRESPONDING init_world_pose BELOW -->
     <include file="$(find bringup)/launch/_launch_robot.launch">
-        <arg name="robot_name" value="panda1"/> <!-- ROBOT -->
+        <arg name="robot_name" value="panda1"/>
         <arg name="init_world_pose" value="-x 0.2 -y 0 -z 0.3 -R 0 -P 0 -Y 0"/>
-        
-        <!-- <arg name="init_joint_positions" value="-J panda1_joint1 -2.44346 -J panda1_joint2 1.20428 -J panda1_joint3 0.785398 -J panda1_joint4 -2.44346 -J panda1_joint5 1.15192 -J panda1_joint6 0.785398 -J panda1_joint7 -2.30383"/> -->
-        <!-- <arg name="init_joint_positions" value="-J panda1_joint1 -2.44346 -J panda1_joint2 1.20428"/> -->
-        <!-- <arg name="init_joint_positions" value="-J panda1_joint1 0.698132654 -J panda1_joint2 0.20428 -J panda1_joint3 -0.214602 -J panda1_joint4 0.698132654 -J panda1_joint5 0.15192 -J panda1_joint6 -0.214602 -J panda1_joint7 2.979355307"/> -->
-        <!-- <arg name="init_joint_positions" value="-J panda1_joint1 3.839725307 -J panda1_joint2 1.20428 -J panda1_joint3 0.785398 -J panda1_joint4 3.839725307 -J panda1_joint5 1.15192 -J panda1_joint6 0.785398 -J panda1_joint7 3.979355307"/> -->
+        <arg name="rviz" value="$(arg rviz)"/>
+    </include>
 
+    <include file="$(find bringup)/launch/_launch_hand.launch">
+        <arg name="rviz" value="$(arg rviz)"/>
     </include>
 
 </launch>

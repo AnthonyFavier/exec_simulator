@@ -41,6 +41,7 @@ pick_box
 init_static_scene
 new_move_multiple
 move_arm
+move_hand
 # sim_controller
 )
 
