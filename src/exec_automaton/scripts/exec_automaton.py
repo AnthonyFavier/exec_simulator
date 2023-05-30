@@ -31,14 +31,11 @@ sys.path.insert(0, path)
 
 import ConcurrentModule as ConM
 import CommonModule as CM
-from stack_simple_simu import *
+from stack_paper_task import *
 # from stack_equi import *
 # from arrangement import *
 # from conflict_pick import *
 # from simple import *
-
-
-
 
 step_over = True
 
@@ -57,7 +54,7 @@ def load_solution():
     Loads the previously produced solution.
     The domain name is retreived and returned and as well as the solution tree and the initial step.
     """
-    dom_n_sol = dill.load(open(path + "dom_n_sol.p", "rb"))
+    dom_n_sol = dill.load(open(CM.path + "dom_n_sol.p", "rb"))
 
     domain_name = dom_n_sol[0]
     solution_tree = dom_n_sol[1]
@@ -661,6 +658,20 @@ if __name__ == "__main__":
     # Solution loading + characterization 
     domain_name, solution_tree, begin_step = load_solution()
     estimations = {
+        "optimal": [[
+            ("TimeTaskCompletion",  False),
+            ("GlobalEffort",        False),
+            ("TimeEndHumanDuty",    False),
+            ("HumanEffort",         False),
+            # ("RiskConflict",      False),
+        ],[
+            ("TimeTaskCompletion",  False),
+            ("GlobalEffort",        False),
+            ("TimeEndHumanDuty",    False),
+            ("HumanEffort",         False),
+            # ("RiskConflict",      False),
+        ]],
+
         "aligned": [[
             ("TimeEndHumanDuty",    False),
             ("HumanEffort",         False),
@@ -717,8 +728,8 @@ if __name__ == "__main__":
             # ("RiskConflict",      False),
         ]],
     }
-    r_criteria = estimations["aligned"][0]
-    h_criteria = estimations["aligned"][1]
+    r_criteria = estimations["optimal"][0]
+    h_criteria = estimations["optimal"][1]
     r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
 
     # Execution simulation
