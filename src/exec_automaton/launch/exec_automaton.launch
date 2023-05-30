@@ -1,0 +1,6 @@
+<launch>
+
+    <rosparam command="load" file="/home/afavier/ws/HATPEHDA/domains_and_results/dom_name.p"/>
+    <node name="exec_automaton" pkg="exec_automaton" type="exec_automaton.py" respawn="false" output="screen" />
+
+</launch>

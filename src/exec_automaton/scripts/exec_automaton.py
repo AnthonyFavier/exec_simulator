@@ -15,6 +15,7 @@ from std_msgs.msg import Int32, Empty, Bool
 import matplotlib.pyplot as plt
 from progress.bar import IncrementalBar
 from sim_msgs.srv import Int, IntResponse
+import importlib
 
 class IdResult(Enum):
     NOT_NEEDED=0
@@ -28,14 +29,16 @@ INPUT = False
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
-
 import ConcurrentModule as ConM
 import CommonModule as CM
-from stack_paper_task import *
-# from stack_equi import *
-# from arrangement import *
-# from conflict_pick import *
-# from simple import *
+
+# Dynamically loads domain file
+g_domain_name = rospy.get_param("/domain_name")
+spec = importlib.util.spec_from_file_location(g_domain_name, path+g_domain_name+".py")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+sys.modules["domain"] = module
+from domain import *
 
 step_over = True
 
@@ -59,6 +62,9 @@ def load_solution():
     domain_name = dom_n_sol[0]
     solution_tree = dom_n_sol[1]
     init_step = solution_tree[0]
+
+    if domain_name!=g_domain_name:
+        raise Exception("Mismatching domain names!")
 
     return domain_name, solution_tree, init_step
 
