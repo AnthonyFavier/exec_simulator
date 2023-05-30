@@ -499,35 +499,19 @@ def compute_msg_action(a):
     msg.type = -1
 
     if "pick"==a.name:
-        if "r"==a.parameters[0]:
-            msg.type=Action.PICK_R
-        elif "g"==a.parameters[0]:
-            msg.type=Action.PICK_G
-        elif "b"==a.parameters[0]:
-            msg.type=Action.PICK_B
-        elif "y"==a.parameters[0]:
-            msg.type=Action.PICK_Y
-        elif "w"==a.parameters[0]:
-            msg.type=Action.PICK_W
-        elif "p"==a.parameters[0]:
-            msg.type=Action.PICK_P
+        msg.type=Action.PICK_OBJ
+        msg.obj="cube_" + a.parameters[0]
     elif "place"==a.name:
-        if "l1"==a.parameters[1]:
-            msg.type=Action.PLACE_1
-        elif "l2"==a.parameters[1]:
-            msg.type=Action.PLACE_2
-        elif "l3"==a.parameters[1]:
-            msg.type=Action.PLACE_3
-        elif "l4"==a.parameters[1]:
-            msg.type=Action.PLACE_4
-        elif "l5"==a.parameters[1]:
-            msg.type=Action.PLACE_5
+        msg.type=Action.PLACE_OBJ
+        msg.obj="cube_" + a.parameters[0]
+        msg.location=a.parameters[1]
     elif "push"==a.name:
         msg.type=Action.PUSH
     elif "open_box"==a.name:
         msg.type=Action.OPEN_BOX
     elif "drop"==a.name:
-        msg.type=Action.DROP 
+        msg.type=Action.DROP
+        msg.obj=a.parameters[0]
 
     elif a.is_passive():
         msg.type=Action.PASSIVE
@@ -591,7 +575,7 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
     global default_human_passive_action, default_robot_passive_action
 
     # Mock Delays
-    WAIT_START_DELAY    = 0.5
+    WAIT_START_DELAY    = 0.0
     TIMEOUT_DELAY       = 10.0
     # TIMEOUT_DELAY       = 500.0
     ID_DELAY            = 1.0

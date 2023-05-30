@@ -14,20 +14,21 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://bringup/meshes/visual/hand.obj" />
+        <!-- <mesh filename="package://bringup/meshes/visual/hand.obj" /> -->
+        <mesh filename="package://bringup/meshes/human/hand.dae" />
       </geometry>
-      <material name="panda_white" />
+      <!-- <material name="panda_white" /> -->
     </visual>
     <collision>
       <geometry>
         <mesh filename="package://bringup/meshes/visual/hand.obj" />
       </geometry>
-      <material name="panda_white" />
+      <!-- <material name="panda_white" /> -->
     </collision>
   </link>
   <!-- TO MATCH WITH INIT POSE IN bringup.launch -->
   <joint name="human_joint_world" type="floating">
-    <origin xyz="0.0 0 0.0" rpy="0 0 0" />
+    <origin xyz="2 0.5 0.7" rpy="0 -0 3.14159" />
     <parent link="world" />
     <child link="human_hand" />
   </joint>

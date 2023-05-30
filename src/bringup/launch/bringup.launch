@@ -1,5 +1,7 @@
 <launch>
 
+    <arg name="rviz" default="true"/>
+
     <!-- this opens gazebo -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" value="$(find simulator)/worlds/stack_new.world" />
@@ -7,14 +9,13 @@
         <arg name="paused" value="true"/>
     </include>
 
-    <arg name="rviz" default="false"/>
 
     <!-- BE CAREFUL -->
     <!-- TO MATCH THE URDF JOINT_WORLD OF EACH ROBOT -->
     <!-- WITH THEIR CORRESPONDING init_world_pose BELOW -->
     <include file="$(find bringup)/launch/_launch_robot.launch">
         <arg name="robot_name" value="panda1"/>
-        <arg name="init_world_pose" value="-x 0.2 -y 0 -z 0.3 -R 0 -P 0 -Y 0"/>
+        <arg name="init_world_pose" value="-x 0.2 -y 0 -z 0.6 -R 0 -P 0 -Y 0"/>
         <arg name="rviz" value="$(arg rviz)"/>
     </include>
 

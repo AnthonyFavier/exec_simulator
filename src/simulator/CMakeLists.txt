@@ -14,6 +14,7 @@ find_package(catkin REQUIRED
     moveit_visual_tools
     sim_msgs
     gazebo_ros_link_attacher
+    tf
 )
 
 find_package(Eigen3)
