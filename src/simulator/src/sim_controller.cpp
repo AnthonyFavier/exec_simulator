@@ -1,8 +1,26 @@
 #include "sim_controller.h"
 
+class Cube
+{
+public:
+    Cube(std::string color, std::string side, std::string name)
+    {
+        m_color = color;
+        m_side = side;
+        m_name = name;
+        m_on_table = true;
+    }
+    std::string m_color;
+    std::string m_side;
+    std::string m_name;
+    bool m_on_table;
+};
+std::vector<Cube> g_cubes;
+
 bool waiting_step_start = true;
 bool action_received[2] = {false, false};
 bool action_done[2] = {false, false};
+std::string g_holding[2] = {"", ""};
 ros::ServiceClient move_arm_pose_client[2];
 ros::ServiceClient move_arm_named_client[2];
 ros::ServiceClient attach_obj_client[2];
@@ -58,8 +76,18 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
     {"table_slot_0",   make_pose(make_point(0.86, 0.44, 0.7),           make_quaternion(0, -0, 0))},
 };
 
-
 geometry_msgs::Pose init_human_hand_pose = make_pose(make_point(1.38, 0.5, 0.87), make_quaternion_RPY(0, 0, 3.14159));
+
+void init_cubes()
+{
+    g_cubes.push_back( Cube("r", "R", "cube_r_R") );
+    g_cubes.push_back( Cube("r", "H", "cube_r") );
+    g_cubes.push_back( Cube("y", "C", "cube_y") );
+    g_cubes.push_back( Cube("p", "H", "cube_p") );
+    g_cubes.push_back( Cube("b", "H", "cube_b") );
+    g_cubes.push_back( Cube("b", "R", "cube_b_R") );
+    g_cubes.push_back( Cube("w", "R", "cube_w") );
+}
 
 const double tolerance = 0.01;
 const double z_offset_grasp = 0.05;
@@ -129,13 +157,26 @@ bool isRobot(AGENT agent)
 
 // ************************* HIGH LEVEL ACTIONS *************************** //
 
-void Pick(AGENT agent, const std::string &obj)
+void Pick(AGENT agent, const std::string &color, const std::string &side)
 {
     ROS_INFO("\t%s PICK START", get_agent_str(agent).c_str());
     
+    /* FIND OBJ NAME & UPDATE CUBES */
+    std::string obj_name;
+    for(unsigned int i=0; i<g_cubes.size(); i++)
+    {
+        if(g_cubes[i].m_on_table && g_cubes[i].m_side==side && g_cubes[i].m_color==color)
+        {
+            obj_name = g_cubes[i].m_name;
+            g_cubes[i].m_on_table = false;
+            g_holding[agent] = obj_name;
+            break;
+        }
+    }
+
     /* GET OBJ POSE + GRASP OFFSET */
     gazebo_msgs::GetModelState srv;
-    srv.request.model_name = obj;
+    srv.request.model_name = obj_name;
     if (!get_model_state_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service get_model_state failed...");
     geometry_msgs::Pose obj_pose = srv.response.pose;
@@ -147,14 +188,14 @@ void Pick(AGENT agent, const std::string &obj)
     move_pose_target(agent, obj_pose);
 
     /* GRAB OBJ */
-    grab_obj(agent, obj);
+    grab_obj(agent, obj_name);
 
     /* HOME POSITION */
     move_home(agent);
     ROS_INFO("\t%s PICK END", get_agent_str(agent).c_str());
 }
 
-void PlacePose(AGENT agent, geometry_msgs::Pose pose, const std::string &obj)
+void PlacePose(AGENT agent, geometry_msgs::Pose pose)
 {
     ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
 
@@ -166,16 +207,16 @@ void PlacePose(AGENT agent, geometry_msgs::Pose pose, const std::string &obj)
     move_pose_target(agent, pose);
 
     /* DROP OBJ */
-    drop(agent, obj);
+    drop(agent, g_holding[agent]);
 
     /* HOME POSITION */
     move_home(agent);
     ROS_INFO("\t%s PLACE_POSE END", get_agent_str(agent).c_str());
 }
 
-void PlaceLocation(AGENT agent, const std::string &location, const std::string &obj)
+void PlaceLocation(AGENT agent, const std::string &location)
 {
-    PlacePose(agent, locations[location], obj);
+    PlacePose(agent, locations[location]);
 }
 
 void Wait(AGENT agent)
@@ -220,14 +261,22 @@ void OpenBox(AGENT agent)
     move_named_target(agent, "home");
 }
 
-void DropCube(AGENT agent, const std::string &obj)
+void DropCube(AGENT agent)
 {
-    std::string obj_name = obj;
-    if(isRobot(agent) && (obj=="cube_b" || obj=="cube_r"))
-        obj_name = obj_name + "_R";
+    std::string obj_name = g_holding[agent];
     move_pose_target(agent, init_poses[obj_name]);
 
-    drop(agent, obj);
+    drop(agent, obj_name);
+
+    /* UPDATE CUBES */
+    for(unsigned int i=0; i<g_cubes.size(); i++)
+    {
+        if(g_cubes[i].m_name==obj_name)
+        {
+            g_cubes[i].m_on_table = true;
+            break;
+        }
+    }
 
     move_named_target(agent, "home");
 }
@@ -405,83 +454,18 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         switch (action.type)
         {
         case sim_msgs::Action::PICK_OBJ:
-            if (action.obj == "")
-                ROS_ERROR("%d Missing object in action msg!", agent);
+            if (action.color=="")
+                ROS_ERROR("%d Missing color in action msg!", agent);
+            else if(action.side=="")
+                ROS_ERROR("%d Missing side in action msg!", agent);
             else
-            {
-                if(action.obj=="cube_b" && isRobot(agent))
-                    Pick(agent, "cube_b_R");
-                else if(action.obj=="cube_r" && isRobot(agent))
-                    Pick(agent, "cube_r_R");
-                else
-                   Pick(agent, action.obj);
-            }
-            break;
-        case sim_msgs::Action::PICK_R:
-            if(isRobot(agent))
-                Pick(agent, "cube_r_R");
-            else if(agent==AGENT::HUMAN)
-                Pick(agent, "cube_r");
-            break;
-        case sim_msgs::Action::PICK_G:
-            Pick(agent, "cube_g");
-            break;
-        case sim_msgs::Action::PICK_B:
-            if(isRobot(agent))
-                Pick(agent, "cube_b_R");
-            else if(agent==AGENT::HUMAN)
-                Pick(agent, "cube_b");
-            break;
-        case sim_msgs::Action::PICK_Y:
-            Pick(agent, "cube_y");
-            break;
-        case sim_msgs::Action::PICK_P:
-            Pick(agent, "cube_p");
-            break;
-        case sim_msgs::Action::PICK_W:
-            Pick(agent, "cube_w");
+                Pick(agent, action.color, action.side);
             break;
         case sim_msgs::Action::PLACE_OBJ:
-            if (action.location == "")
+            if (action.location=="")
                 ROS_ERROR("%d Missing location in action msg!", agent);
-            else if (action.obj == "")
-                ROS_ERROR("%d Missing object in action msg!", agent);
             else
-                if(action.obj=="cube_b" && isRobot(agent))
-                    PlaceLocation(agent, action.location, "cube_b_R");
-                else if(action.obj=="cube_r" && isRobot(agent))
-                    PlaceLocation(agent, action.location, "cube_r_R");
-                else
-                    PlaceLocation(agent, action.location, action.obj);
-            break;
-        case sim_msgs::Action::PLACE_1:
-            if (action.obj == "")
-                ROS_ERROR("%d Missing object in action msg!", agent);
-            PlaceLocation(agent, "l1", action.obj);
-            break;        
-        case sim_msgs::Action::PLACE_2:
-            if (action.obj == "")
-                ROS_ERROR("%d Missing object in action msg!", agent);
-            else
-                PlaceLocation(agent, "l2", action.obj);
-            break;        
-        case sim_msgs::Action::PLACE_3:
-            if (action.obj == "")
-                ROS_ERROR("%d Missing object in action msg!", agent);
-            else
-                PlaceLocation(agent, "l3", action.obj);
-            break;        
-        case sim_msgs::Action::PLACE_4:
-            if (action.obj == "")
-                ROS_ERROR("%d Missing object in action msg!", agent);
-            else
-                PlaceLocation(agent, "l4", action.obj);
-            break;        
-        case sim_msgs::Action::PLACE_5:
-            if (action.obj == "")
-                ROS_ERROR("%d Missing object in action msg!", agent);
-            else
-                PlaceLocation(agent, "l5", action.obj);
+                PlaceLocation(agent, action.location);
             break;
         case sim_msgs::Action::PUSH:
             Pushing(agent);
@@ -490,15 +474,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             OpenBox(agent);
             break;
         case sim_msgs::Action::DROP:
-            if (action.obj == "")
-                ROS_ERROR("%d Missing object in action msg!", agent);
-            else
-                if(action.obj=="cube_b" && isRobot(agent))
-                    DropCube(agent, "cube_b_R");
-                else if(action.obj=="cube_r" && isRobot(agent))
-                    DropCube(agent, "cube_r_R");
-                else
-                    DropCube(agent, action.obj);
+            DropCube(agent);
             break;
         case sim_msgs::Action::PASSIVE:
             Wait(agent);
@@ -558,6 +534,8 @@ bool reset_world_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response
 
 int main(int argc, char **argv)
 {
+    init_cubes();
+
     ros::init(argc, argv, "sim_controller");
     ros::NodeHandle node_handle;
 

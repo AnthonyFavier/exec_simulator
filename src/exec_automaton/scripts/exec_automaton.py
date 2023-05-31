@@ -543,10 +543,10 @@ def compute_msg_action(a):
 
     if "pick"==a.name:
         msg.type=Action.PICK_OBJ
-        msg.obj="cube_" + a.parameters[0]
+        msg.color=a.parameters[0]
+        msg.side=a.parameters[1]
     elif "place"==a.name:
         msg.type=Action.PLACE_OBJ
-        msg.obj="cube_" + a.parameters[0]
         msg.location=a.parameters[1]
     elif "push"==a.name:
         msg.type=Action.PUSH
@@ -554,7 +554,6 @@ def compute_msg_action(a):
         msg.type=Action.OPEN_BOX
     elif "drop"==a.name:
         msg.type=Action.DROP
-        msg.obj=a.parameters[0]
 
     elif a.is_passive():
         msg.type=Action.PASSIVE

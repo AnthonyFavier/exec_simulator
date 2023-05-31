@@ -189,7 +189,7 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
   else
   {
     // Apply time ratio on traj
-    float time_ratio = 0.5; // 1.0=normal speed, 0.5=half speed,  2.0=double speed
+    float time_ratio = 0.7; // 1.0=normal speed, 0.5=half speed,  2.0=double speed
     std::vector<trajectory_msgs::MultiDOFJointTrajectoryPoint>::iterator it;
     for(it = plan.trajectory_.multi_dof_joint_trajectory.points.begin(); it!=plan.trajectory_.multi_dof_joint_trajectory.points.end(); it++)
       (*it).time_from_start = ros::Duration( (*it).time_from_start.toSec() / time_ratio );

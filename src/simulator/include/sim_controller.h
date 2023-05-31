@@ -35,13 +35,13 @@ void show_pose(geometry_msgs::Pose pose);
 std::string get_agent_str(AGENT agent);
 
 /* HIGH LEVEL ACTIONS */
-void Pick(AGENT agent, const std::string &obj);
-void PlacePose(AGENT agent, geometry_msgs::Pose pose, const std::string &obj);
-void PlaceLocation(AGENT agent, const std::string &location, const std::string &obj);
+void Pick(AGENT agent, const std::string &color, const std::string &side);
+void PlacePose(AGENT agent, geometry_msgs::Pose pose);
+void PlaceLocation(AGENT agent, const std::string &location);
 void Wait(AGENT agent);
 void Pushing(AGENT agent);
 void OpenBox(AGENT agent);
-void DropCube(AGENT agent, const std::string &obj);
+void DropCube(AGENT agent);
 
 /* LOW LEVEL ACTIONS */
 void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target);
