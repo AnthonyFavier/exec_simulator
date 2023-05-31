@@ -8,7 +8,7 @@ roslaunch bringup bringup.launch
 roslaunch simulator control.launch
 
 #3 Start the execution automaton
-rosrun exec_automaton exec_automaton.py
+roslaunch exec_automaton exec_automaton.launch
 
 #4 Start the HMI
 rosrun simple_hmi hmi.py
