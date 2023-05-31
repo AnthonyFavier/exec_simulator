@@ -30,7 +30,7 @@
         <joint name="panda1_joint4" value="-1.5708"/>
         <joint name="panda1_joint5" value="0"/>
         <joint name="panda1_joint6" value="0"/>
-        <joint name="panda1_joint7" value="0"/>
+        <joint name="panda1_joint7" value="0.7963"/>
     </group_state>
     <group_state name="up" group="panda1_arm">
         <joint name="panda1_joint1" value="0"/>

@@ -11,6 +11,7 @@ ros::ServiceClient detach_plg_client[2];
 ros::ServiceClient get_model_state_client[2];
 ros::ServiceClient set_model_state_client[2];
 ros::ServiceClient attach_reset_client[2];
+ros::ServiceClient get_world_properties;
 
 // world2
 // std::map<std::string, geometry_msgs::Pose> locations =
@@ -44,13 +45,19 @@ std::map<std::string, geometry_msgs::Pose> locations =
 };
 
 std::map<std::string, geometry_msgs::Pose> init_poses =
-    {
-        {"cube_r", make_pose(make_point(0.75, -0.22, 0.75), make_quaternion())},
-        {"cube_y", make_pose(make_point(0.86, -0.18, 0.75), make_quaternion())},
-        {"cube_b", make_pose(make_point(0.88, -0.33, 0.75), make_quaternion())},
-        {"cube_p", make_pose(make_point(0.58, -0.32, 0.75), make_quaternion())},
-        {"cube_w", make_pose(make_point(0.75, -0.44, 0.75), make_quaternion())},
+{
+    {"box",            make_pose(make_point(0.5, -0.57, 0.7),           make_quaternion(0, -0, 0))},
+    {"cube_b",         make_pose(make_point(1.2141, -0.496866, 0.75),   make_quaternion(0, -0, 0))},
+    {"cube_b_R",       make_pose(make_point(0.5, -0.57, 0.75),          make_quaternion(0, -0, 0))},
+    {"cube_p",         make_pose(make_point(1.22, -0.19, 0.75),         make_quaternion(0, -0, 0))},
+    {"cube_r",         make_pose(make_point(1.20994, -0.674646, 0.75),  make_quaternion(0, -0, 0))},
+    {"cube_r_R",       make_pose(make_point(0.5, -0.34, 0.75),          make_quaternion(0, -0, 0))},
+    {"cube_w",         make_pose(make_point(0.5, -0.14, 0.75),          make_quaternion(0, -0, 0))},
+    {"cube_y",         make_pose(make_point(0.86, -0.38, 0.75),         make_quaternion(0, -0, 0))},
+    {"table_slot",     make_pose(make_point(0.86, 0.24, 0.7),           make_quaternion(0, -0, 0))},
+    {"table_slot_0",   make_pose(make_point(0.86, 0.44, 0.7),           make_quaternion(0, -0, 0))},
 };
+
 
 geometry_msgs::Pose init_human_hand_pose = make_pose(make_point(1.38, 0.5, 0.87), make_quaternion_RPY(0, 0, 3.14159));
 
@@ -215,7 +222,10 @@ void OpenBox(AGENT agent)
 
 void DropCube(AGENT agent, const std::string &obj)
 {
-    move_pose_target(agent, init_poses[obj]);
+    std::string obj_name = obj;
+    if(isRobot(agent) && (obj=="cube_b" || obj=="cube_r"))
+        obj_name = obj_name + "_R";
+    move_pose_target(agent, init_poses[obj_name]);
 
     drop(agent, obj);
 
@@ -283,13 +293,13 @@ void grab_obj(AGENT agent, const std::string &object)
     gazebo_ros_link_attacher::Attach srv;
     if(agent==AGENT::ROBOT)
     {
-        srv.request.model_name_1 = "panda1";
-        srv.request.link_name_1 = "panda1_link7";
+        srv.request.model_name_1 = ROBOT_ATTACH_MODEL_NAME;
+        srv.request.link_name_1 = ROBOT_ATTACH_LINK_NAME;
     }
     else if(agent==AGENT::HUMAN)
     {
-        srv.request.model_name_1 = "human_hand";
-        srv.request.link_name_1 = "human_hand_link";
+        srv.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
+        srv.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
     }
     srv.request.model_name_2 = object;
     srv.request.link_name_2 = "link";
@@ -306,13 +316,13 @@ void drop(AGENT agent, const std::string &object)
     gazebo_ros_link_attacher::Attach srv;
     if(agent==AGENT::ROBOT)
     {
-        srv.request.model_name_1 = "panda1";
-        srv.request.link_name_1 = "panda1_link7";
+        srv.request.model_name_1 = ROBOT_ATTACH_MODEL_NAME;
+        srv.request.link_name_1 = ROBOT_ATTACH_LINK_NAME;
     }
     else if(agent==AGENT::HUMAN)
     {
-        srv.request.model_name_1 = "human_hand";
-        srv.request.link_name_1 = "human_hand_link";
+        srv.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
+        srv.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
     }
     srv.request.model_name_2 = object;
     srv.request.link_name_2 = "link";
@@ -401,18 +411,23 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             {
                 if(action.obj=="cube_b" && isRobot(agent))
                     Pick(agent, "cube_b_R");
+                else if(action.obj=="cube_r" && isRobot(agent))
+                    Pick(agent, "cube_r_R");
                 else
                    Pick(agent, action.obj);
             }
             break;
         case sim_msgs::Action::PICK_R:
-            Pick(agent, "cube_r");
+            if(isRobot(agent))
+                Pick(agent, "cube_r_R");
+            else if(agent==AGENT::HUMAN)
+                Pick(agent, "cube_r");
             break;
         case sim_msgs::Action::PICK_G:
             Pick(agent, "cube_g");
             break;
         case sim_msgs::Action::PICK_B:
-            if(agent==AGENT::ROBOT)
+            if(isRobot(agent))
                 Pick(agent, "cube_b_R");
             else if(agent==AGENT::HUMAN)
                 Pick(agent, "cube_b");
@@ -434,6 +449,8 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             else
                 if(action.obj=="cube_b" && isRobot(agent))
                     PlaceLocation(agent, action.location, "cube_b_R");
+                else if(action.obj=="cube_r" && isRobot(agent))
+                    PlaceLocation(agent, action.location, "cube_r_R");
                 else
                     PlaceLocation(agent, action.location, action.obj);
             break;
@@ -478,6 +495,8 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             else
                 if(action.obj=="cube_b" && isRobot(agent))
                     DropCube(agent, "cube_b_R");
+                else if(action.obj=="cube_r" && isRobot(agent))
+                    DropCube(agent, "cube_r_R");
                 else
                     DropCube(agent, action.obj);
             break;
@@ -500,22 +519,40 @@ void r_home_cb(std_msgs::Empty msg)
 
 // ************************************************************************ //
 
-bool reset_obj_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+bool reset_world_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-    // reset attach
-    std_srvs::Empty srv_e;
-    attach_reset_client[AGENT::ROBOT].call(srv_e);
-    attach_reset_client[AGENT::HUMAN].call(srv_e);
+    // Get world models
+    gazebo_msgs::GetWorldProperties srv;
+    if(!get_world_properties.call(srv) || !srv.response.success)
+        throw ros::Exception("Calling get_world_properties failed...");
 
-    // set obj to init pose
-    gazebo_msgs::SetModelState srv;
-    std::vector<std::string> list_obj = {"cube_r", "cube_g", "cube_b"};
-    for(std::vector<std::string>::iterator it=list_obj.begin(); it!=list_obj.end(); ++it)
+    gazebo_ros_link_attacher::Attach srv_attach;
+    gazebo_msgs::SetModelState srv_set;
+    // set_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
+
+    for(std::vector<std::string>::iterator it=srv.response.model_names.begin(); it!=srv.response.model_names.end(); it++)
     {
-        srv.request.model_state.model_name = *it;
-        srv.request.model_state.pose = init_poses[*it];
-        set_model_state_client[AGENT::ROBOT].call(srv);
+        if("scene"      != (*it)
+        && "human_body" != (*it)
+        && "human_hand" != (*it)
+        && "panda1"     != (*it)
+        )
+        {
+            // std::cout << (*it) << std::endl;
+            srv_attach.request.model_name_2 = (*it);
+            srv_attach.request.link_name_2  = "link";
+            srv_attach.request.model_name_1 = ROBOT_ATTACH_MODEL_NAME;
+            srv_attach.request.link_name_1  = ROBOT_ATTACH_LINK_NAME;
+            detach_plg_client[AGENT::ROBOT].call(srv_attach);
+            srv_attach.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
+            srv_attach.request.link_name_1  = HUMAN_ATTACH_LINK_NAME;
+            detach_plg_client[AGENT::HUMAN].call(srv_attach);
+            srv_set.request.model_state.model_name = (*it);
+            srv_set.request.model_state.pose = init_poses[(*it)];
+            set_model_state_client[AGENT::ROBOT].call(srv_set);
+        }
     }
+
     return true;
 }
 
@@ -533,31 +570,24 @@ int main(int argc, char **argv)
 
     move_arm_pose_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_pose_target");
     move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/human_hand/move_hand_pose_target");
-
     move_arm_named_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_named_target");
     move_arm_named_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/human_hand/move_hand_named_target");
-
-
-    // attach_obj_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::AttachObj>("/panda1/attach_obj");
-    // attach_obj_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::AttachObj>("/panda2/attach_obj");
 
     attach_plg_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/attach");
     attach_plg_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/attach");
     detach_plg_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/detach");
     detach_plg_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/detach");
 
+    ros::ServiceServer reset_world_service = node_handle.advertiseService("reset_world", reset_world_server);
+    get_world_properties = node_handle.serviceClient<gazebo_msgs::GetWorldProperties>("/gazebo/get_world_properties");
+
     ros::Publisher step_over_pub = node_handle.advertise<std_msgs::Empty>("/step_over", 10);
     std_msgs::Empty empty_msg;
 
     get_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
     get_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
-
     set_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
     set_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
-
-    ros::ServiceServer reset_service = node_handle.advertiseService("reset_obj", reset_obj_server);
-    attach_reset_client[AGENT::ROBOT] = node_handle.serviceClient<std_srvs::Empty>("/panda1/attach_reset");
-    // attach_reset_client[AGENT::HUMAN] = node_handle.serviceClient<std_srvs::Empty>("/panda2/attach_reset");
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
 

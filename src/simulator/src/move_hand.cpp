@@ -188,19 +188,26 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
     ROS_INFO("Failed to plan...");
   else
   {
+    // Apply time ratio on traj
+    float time_ratio = 0.5; // 1.0=normal speed, 0.5=half speed,  2.0=double speed
+    std::vector<trajectory_msgs::MultiDOFJointTrajectoryPoint>::iterator it;
+    for(it = plan.trajectory_.multi_dof_joint_trajectory.points.begin(); it!=plan.trajectory_.multi_dof_joint_trajectory.points.end(); it++)
+      (*it).time_from_start = ros::Duration( (*it).time_from_start.toSec() / time_ratio );
+
+    // Execute
     ros::Rate rate(50);
     ros::Time time_start = ros::Time::now();
     gazebo_msgs::SetLinkState link_state;
     link_state.request.link_state.link_name = "human_hand_link";
-    std::vector<trajectory_msgs::MultiDOFJointTrajectoryPoint>::iterator it;
+    // std::vector<trajectory_msgs::MultiDOFJointTrajectoryPoint>::iterator it;
     std::vector<trajectory_msgs::MultiDOFJointTrajectoryPoint>::iterator it_n;
     it = plan.trajectory_.multi_dof_joint_trajectory.points.begin();
     it_n = it+1;
-    ROS_INFO("a, b =\n%s\n%s", get_transform_str((*it).transforms[0]).c_str(), get_transform_str((*it_n).transforms[0]).c_str());
+    // ROS_INFO("a, b =\n%s\n%s", get_transform_str((*it).transforms[0]).c_str(), get_transform_str((*it_n).transforms[0]).c_str());
     while(it_n != plan.trajectory_.multi_dof_joint_trajectory.points.end())
     {
       geometry_msgs::Transform tr = interpolate((*it),(*it_n),ros::Time::now()-time_start);
-      ROS_INFO("\ti = %s", get_transform_str(tr).c_str());
+      // ROS_INFO("\ti = %s", get_transform_str(tr).c_str());
       link_state.request.link_state.pose.position.x = tr.translation.x;
       link_state.request.link_state.pose.position.y = tr.translation.y;
       link_state.request.link_state.pose.position.z = tr.translation.z;
@@ -214,10 +221,10 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
       {
         it = it_n;
         it_n++;
-        if(it_n != plan.trajectory_.multi_dof_joint_trajectory.points.end())
-          ROS_INFO("a, b =\n%s\n%s", get_transform_str((*it).transforms[0]).c_str(), get_transform_str((*it_n).transforms[0]).c_str());
-        else
-          ROS_INFO("a, b =\n%s\nEND", get_transform_str((*it).transforms[0]).c_str());
+        // if(it_n != plan.trajectory_.multi_dof_joint_trajectory.points.end())
+        //   ROS_INFO("a, b =\n%s\n%s", get_transform_str((*it).transforms[0]).c_str(), get_transform_str((*it_n).transforms[0]).c_str());
+        // else
+        //   ROS_INFO("a, b =\n%s\nEND", get_transform_str((*it).transforms[0]).c_str());
       }
       rate.sleep();
     }
@@ -241,8 +248,6 @@ int main(int argc, char **argv)
   move_group_interface = new moveit::planning_interface::MoveGroupInterface("hand");
   ROS_INFO("ok");
   move_group_interface->setPlanningTime(1.0);
-  move_group_interface->setMaxVelocityScalingFactor(1.0);
-  move_group_interface->setMaxAccelerationScalingFactor(1.0);
   named_targets = move_group_interface->getNamedTargets();
 
   move_group_interface->clearPathConstraints();

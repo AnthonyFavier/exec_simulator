@@ -8,6 +8,7 @@
 #include "sim_msgs/Action.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <gazebo_msgs/GetModelState.h>
+#include <gazebo_msgs/GetWorldProperties.h>
 #include "sim_msgs/MoveArm.h"
 #include "sim_msgs/AttachObj.h"
 #include <gazebo_msgs/ModelState.h>
@@ -16,6 +17,12 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <std_srvs/Empty.h>
 #include "gazebo_ros_link_attacher/Attach.h"
+
+#define ROBOT_ATTACH_MODEL_NAME "panda1"
+#define ROBOT_ATTACH_LINK_NAME "panda1_link7"
+#define HUMAN_ATTACH_MODEL_NAME "human_hand"
+#define HUMAN_ATTACH_LINK_NAME "human_hand_link"
+
 
 enum AGENT{ROBOT, HUMAN};
 
@@ -53,6 +60,5 @@ void robot_action_cb(const sim_msgs::Action &msg);
 void human_action_cb(const sim_msgs::Action &msg);
 void manage_action(AGENT agent, const sim_msgs::Action &action);
 void r_home_cb(std_msgs::Empty msg);
-bool reset_obj_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
 #endif

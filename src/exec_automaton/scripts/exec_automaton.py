@@ -243,7 +243,29 @@ def adjust_robot_preferences(begin_step,r_pref,h_pref):
 
 def MOCK_update_hmi_human_choices(curr_step, RA):
     if not is_human_acting():
-        update_vha(find_HAs_compliant_with_RA(curr_step, RA), False)
+        compliant_pairs = find_compliant_pairs_with_RA(curr_step, RA)
+        compliant_human_actions = [p.human_action for p in compliant_pairs]
+        # compliant_human_actions = find_HAs_compliant_with_RA(curr_step, RA)
+        update_vha(compliant_human_actions, False)
+
+        # find best human action in compliant actions
+        # find best pair
+        best_rank_i = 0
+        best_rank_v = compliant_pairs[best_rank_i].best_rank_h
+        for i,p in enumerate(compliant_pairs[1:]):
+            if p.best_rank_h < best_rank_v:
+                best_rank_i = i
+                best_rank_v = p.best_rank_h
+        # find id of corresponding best action
+        best_ha = Int32()
+        if compliant_pairs[best_rank_i].human_action.is_passive():
+            best_ha.data = -1
+        else:
+            for i,ho in enumerate(curr_step.human_options):
+                if CM.Action.are_similar( ho.human_action, compliant_pairs[best_rank_i].human_action ):
+                    best_ha.data = i+1
+                    break
+        g_best_human_action.publish(best_ha)
 
 def find_HAs_compliant_with_RA(curr_step: ConM.Step, RA):
     compliant_human_actions = []
@@ -253,6 +275,13 @@ def find_HAs_compliant_with_RA(curr_step: ConM.Step, RA):
             compliant_human_actions.append(pair.human_action)
 
     return compliant_human_actions
+
+def find_compliant_pairs_with_RA(curr_step: ConM.Step, RA):
+    compliant_pairs = []
+    for pair in curr_step.get_pairs():
+        if CM.Action.are_similar(pair.robot_action, RA):
+            compliant_pairs.append(pair)
+    return compliant_pairs
 
 ##########################
 ## MOCK Robot execution ##
@@ -340,9 +369,19 @@ def wait_step_start(step: ConM.Step):
     possible_human_actions = [ho.human_action for ho in step.human_options]
     update_vha(possible_human_actions, True)
 
-    rospy.loginfo("Waiting for human to act...")
-    bar = IncrementalBar('Waiting', max=TIMEOUT_DELAY)
+    # Find best human action id, sent to hmi mock
+    best_ha = Int32()
+    if step.best_human_pair.human_action.is_passive():
+        best_ha.data = -1
+    else:
+        for i,ho in enumerate(step.human_options):
+            if CM.Action.are_similar(ho.human_action, step.best_human_pair.human_action):
+                best_ha.data = i+1
+                break
+    g_best_human_action.publish(best_ha)
 
+    rospy.loginfo("Waiting for human to act...")
+    bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
     start_waiting_time = rospy.get_rostime()
     g_previous_elapsed = -1
     timeout_reached = True
@@ -354,6 +393,7 @@ def wait_step_start(step: ConM.Step):
             timeout_reached = False
             break
         rospy.sleep(0.1)
+    bar.goto(TIMEOUT_DELAY)
     bar.finish()
 
     if timeout_reached:
@@ -579,9 +619,8 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
 
     # Mock Delays
     WAIT_START_DELAY    = 0.0
-    TIMEOUT_DELAY       = 10.0
-    # TIMEOUT_DELAY       = 500.0
-    ID_DELAY            = 1.0
+    TIMEOUT_DELAY       = 5.0
+    ID_DELAY            = 0.5
     # Mock ID phase Probabilities
     P_SUCCESS_ID_PHASE  = 1.0
     P_WRONG_ID          = 0.0
@@ -640,6 +679,7 @@ g_hmi_timeout_max_client = None
 g_hmi_timeout_reached_pub = None
 g_hmi_enable_buttons_pub = None
 g_hmi_finish_pub = None
+g_best_human_action = None
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
@@ -652,6 +692,7 @@ if __name__ == "__main__":
     g_hmi_timeout_reached_pub = rospy.Publisher('/hmi_timeout_reached', Empty, queue_size=1)
     g_hmi_enable_buttons_pub = rospy.Publisher('/hmi_enable_buttons', Bool, queue_size=1)
     g_hmi_finish_pub = rospy.Publisher('/hmi_finish', Empty, queue_size=1)
+    g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
     step_over_sub = rospy.Subscriber('/step_over', Empty, step_over_cb)
     human_choice_sub = rospy.Subscriber('/human_choice', Int32, human_choice_cb)
     rospy.loginfo("Wait pub/sub to be initialized...")
