@@ -44,7 +44,7 @@ void OpenBox(AGENT agent);
 void DropCube(AGENT agent);
 
 /* LOW LEVEL ACTIONS */
-void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target);
+void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool human_home=false);
 void move_location_target(AGENT agent, const std::string &loc_name);
 void move_obj_target(AGENT agent, const std::string &obj_name);
 void move_home(AGENT agent);
@@ -60,5 +60,7 @@ void robot_action_cb(const sim_msgs::Action &msg);
 void human_action_cb(const sim_msgs::Action &msg);
 void manage_action(AGENT agent, const sim_msgs::Action &action);
 void r_home_cb(std_msgs::Empty msg);
+
+void home_agents();
 
 #endif

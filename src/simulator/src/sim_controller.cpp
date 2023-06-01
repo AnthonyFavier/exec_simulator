@@ -30,41 +30,23 @@ ros::ServiceClient get_model_state_client[2];
 ros::ServiceClient set_model_state_client[2];
 ros::ServiceClient attach_reset_client[2];
 ros::ServiceClient get_world_properties;
+ros::Publisher r_home_pub;
 
-// world2
-// std::map<std::string, geometry_msgs::Pose> locations =
-//     {
-//         {"loc1", make_pose(make_point(0.62, 0.30, 0.41), make_quaternion())},
-//         {"loc2", make_pose(make_point(0.60, -0.29, 0.42), make_quaternion())},
-//         {"handover", make_pose(make_point(0.75, 0.0, 0.7), make_quaternion())},
-//         {"loc_1", make_pose(make_point(0.75, -0.08, 0.38), make_quaternion())},
-//         {"loc_2", make_pose(make_point(0.75, 0.15, 0.38), make_quaternion())},
-//         {"loc_3", make_pose(make_point(0.75, 0.38, 0.38), make_quaternion())},
-//         {"loc_3above", make_pose(make_point(0.65, 0.38, 0.38), make_quaternion())},
-//         {"loc_3below", make_pose(make_point(0.85, 0.38, 0.38), make_quaternion())},
-// };
-
-// std::map<std::string, geometry_msgs::Pose> init_poses =
-//     {
-//         {"cube_r", make_pose(make_point(0.75, -0.42, 0.40), make_quaternion())},
-//         {"cube_g", make_pose(make_point(0.62, -0.33, 0.40), make_quaternion())},
-//         {"cube_b", make_pose(make_point(0.88, -0.33, 0.40), make_quaternion())},
-// };
-
-// Stack_new
+// Stack domain
 std::map<std::string, geometry_msgs::Pose> locations =
-    {
-        {"l1", make_pose(make_point(0.86, 0.24, 0.75), make_quaternion())},
-        {"l2", make_pose(make_point(0.86, 0.44, 0.75), make_quaternion())},
-        {"l3", make_pose(make_point(0.86, 0.34, 0.85), make_quaternion())},
-        {"l4", make_pose(make_point(0.86, 0.24, 0.95), make_quaternion())},
-        {"l5", make_pose(make_point(0.86, 0.44, 0.95), make_quaternion())},
-        {"box", make_pose(make_point(0.5, -0.57, 0.80), make_quaternion())},
+{
+    {"l1",  make_pose(make_point(0.86, 0.24, 0.75), make_quaternion())},
+    {"l2",  make_pose(make_point(0.86, 0.44, 0.75), make_quaternion())},
+    {"l3",  make_pose(make_point(0.86, 0.34, 0.85), make_quaternion())},
+    {"l4",  make_pose(make_point(0.86, 0.24, 0.95), make_quaternion())},
+    {"l5",  make_pose(make_point(0.86, 0.44, 0.95), make_quaternion())},
+    {"box", make_pose(make_point(0.5, -0.57, 0.80), make_quaternion())},
 };
 
 std::map<std::string, geometry_msgs::Pose> init_poses =
 {
     {"box",            make_pose(make_point(0.5, -0.57, 0.7),           make_quaternion(0, -0, 0))},
+    {"box_lid",        make_pose(make_point(0.5, -0.57, 0.7),           make_quaternion(0, -0, 0))},
     {"cube_b",         make_pose(make_point(1.2141, -0.496866, 0.75),   make_quaternion(0, -0, 0))},
     {"cube_b_R",       make_pose(make_point(0.5, -0.57, 0.75),          make_quaternion(0, -0, 0))},
     {"cube_p",         make_pose(make_point(1.22, -0.19, 0.75),         make_quaternion(0, -0, 0))},
@@ -174,14 +156,12 @@ void Pick(AGENT agent, const std::string &color, const std::string &side)
         }
     }
 
-    /* GET OBJ POSE + GRASP OFFSET */
+    /* GET OBJ POSE */
     gazebo_msgs::GetModelState srv;
     srv.request.model_name = obj_name;
     if (!get_model_state_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service get_model_state failed...");
     geometry_msgs::Pose obj_pose = srv.response.pose;
-    if(!isRobot(agent))
-        obj_pose.position.z += z_offset_grasp;
     show_pose(obj_pose);
 
     /* MOVE ARM TO OBJ */
@@ -198,10 +178,6 @@ void Pick(AGENT agent, const std::string &color, const std::string &side)
 void PlacePose(AGENT agent, geometry_msgs::Pose pose)
 {
     ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
-
-    /* OFFSET POSE*/
-    if(!isRobot(agent))
-        pose.position.z += z_offset_grasp;
 
     /* MOVE ARM TO POSE */
     move_pose_target(agent, pose);
@@ -242,23 +218,26 @@ void Pushing(AGENT agent)
     drop(agent, "cube_r");
 
     // move home
-    move_named_target(agent, "home");
+    move_home(agent);
 }
 
 void OpenBox(AGENT agent)
 {
+    // Move to box
     move_pose_target(agent, locations["box"]);
 
+    // Open box lid (move to hidden place)
     gazebo_msgs::SetModelState srv_set;
     tf2::Quaternion myQuaternion;
     geometry_msgs::Point point;
-    srv_set.request.model_state.model_name = "box";
+    srv_set.request.model_state.model_name = "box_lid";
     point.z = -1.0;
     srv_set.request.model_state.pose.position = point;
     srv_set.request.model_state.pose.orientation = tf2::toMsg(myQuaternion);
     set_model_state_client[agent].call(srv_set);
 
-    move_named_target(agent, "home");
+    // Move home
+    move_home(agent);
 }
 
 void DropCube(AGENT agent)
@@ -278,7 +257,7 @@ void DropCube(AGENT agent)
         }
     }
 
-    move_named_target(agent, "home");
+    move_home(agent);
 }
 
 
@@ -286,11 +265,16 @@ void DropCube(AGENT agent)
 
 // ************************* LOW LEVEL ACTIONS **************************** //
 
-void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target)
+void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool human_home)
 {
     ROS_INFO("\t\t%s MOVE_POSE_TARGET START", get_agent_str(agent).c_str());
     sim_msgs::MoveArm srv;
     srv.request.pose_target = pose_target;
+
+    /* OFFSET POSE if human and not home */
+    if(!isRobot(agent) && !human_home)
+        srv.request.pose_target.position.z += z_offset_grasp;
+        
     if(!move_arm_pose_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service move_arm_pose_target failed...");
     ROS_INFO("\t\t%s MOVE_POSE_TARGET END", get_agent_str(agent).c_str());
@@ -312,7 +296,6 @@ void move_obj_target(AGENT agent, const std::string &obj_name)
     else
         obj_pose = srv.response.pose;
     show_pose(obj_pose);
-    obj_pose.position.z += z_offset_grasp;
     move_pose_target(agent, obj_pose);
     ROS_INFO("\t\t%s MOVE_OBJ END", get_agent_str(agent).c_str());
 }
@@ -322,7 +305,7 @@ void move_home(AGENT agent)
     if(agent==AGENT::ROBOT)
         move_named_target(agent, "home");
     else if(agent==AGENT::HUMAN)
-        move_pose_target(agent, init_human_hand_pose);
+        move_pose_target(agent, init_human_hand_pose, true);
 }
 
 void move_named_target(AGENT agent, const std::string &named_target)
@@ -490,13 +473,16 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 
 void r_home_cb(std_msgs::Empty msg)
 {
-    move_named_target(AGENT::ROBOT, "home");
+    move_home(AGENT::ROBOT);
 }
 
 // ************************************************************************ //
 
 bool reset_world_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
+    // Home agents
+    home_agents();
+
     // Get world models
     gazebo_msgs::GetWorldProperties srv;
     if(!get_world_properties.call(srv) || !srv.response.success)
@@ -529,7 +515,16 @@ bool reset_world_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response
         }
     }
 
+    ROS_INFO("World reset ok");
+
     return true;
+}
+
+void home_agents()
+{
+    std_msgs::Empty msg;
+    r_home_pub.publish(msg);
+    move_home(AGENT::HUMAN);
 }
 
 int main(int argc, char **argv)
@@ -544,7 +539,7 @@ int main(int argc, char **argv)
     ros::Subscriber human_action = node_handle.subscribe("/human_action", 1, human_action_cb);
 
     ros::Subscriber r_home = node_handle.subscribe("/r_home", 1, r_home_cb);
-    ros::Publisher r_home_pub = node_handle.advertise<std_msgs::Empty>("/r_home", 1);
+    r_home_pub = node_handle.advertise<std_msgs::Empty>("/r_home", 1);
 
     move_arm_pose_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_pose_target");
     move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/human_hand/move_hand_pose_target");
@@ -580,9 +575,7 @@ int main(int argc, char **argv)
     ros::service::waitForService("/human_hand/move_hand_pose_target");
     ros::service::waitForService("/panda1/move_named_target");
 
-    move_named_target(AGENT::ROBOT, "home");
-    // r_home_pub.publish(empty_msg); // msg to use cb thread and parallelize
-    // move_named_target(AGENT::HUMAN, "home");
+    home_agents();
 
     ROS_INFO("Controllers Ready!");
 
