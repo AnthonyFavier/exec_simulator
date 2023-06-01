@@ -10,6 +10,27 @@ public:
         m_name = name;
         m_on_table = true;
     }
+    std::string getColor()
+    {
+        return m_color;
+    }
+    std::string getSide()
+    {
+        return m_side;
+    }
+    std::string getName()
+    {
+        return m_name;
+    }
+    bool getOnTable()
+    {
+        return m_on_table;
+    }
+    void setOnTable(bool v)
+    {
+        m_on_table = v;
+    }
+private:
     std::string m_color;
     std::string m_side;
     std::string m_name;
@@ -147,14 +168,16 @@ void Pick(AGENT agent, const std::string &color, const std::string &side)
     std::string obj_name;
     for(unsigned int i=0; i<g_cubes.size(); i++)
     {
-        if(g_cubes[i].m_on_table && g_cubes[i].m_side==side && g_cubes[i].m_color==color)
+        if(g_cubes[i].getOnTable() && g_cubes[i].getSide()==side && g_cubes[i].getColor()==color)
         {
-            obj_name = g_cubes[i].m_name;
-            g_cubes[i].m_on_table = false;
+            obj_name = g_cubes[i].getName();
+            g_cubes[i].setOnTable(false);
             g_holding[agent] = obj_name;
             break;
         }
     }
+    if(obj_name=="")
+        throw ros::Exception("PICK Obj_name for "+color+" "+side+" not found...");
 
     /* GET OBJ POSE */
     gazebo_msgs::GetModelState srv;
@@ -250,9 +273,9 @@ void DropCube(AGENT agent)
     /* UPDATE CUBES */
     for(unsigned int i=0; i<g_cubes.size(); i++)
     {
-        if(g_cubes[i].m_name==obj_name)
+        if(g_cubes[i].getName()==obj_name)
         {
-            g_cubes[i].m_on_table = true;
+            g_cubes[i].setOnTable(true);
             break;
         }
     }
@@ -483,15 +506,18 @@ bool reset_world_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response
     // Home agents
     home_agents();
 
+    // Reset g_cubes
+    for(unsigned int i=0; i<g_cubes.size(); i++)
+        g_cubes[i].setOnTable(true);
+
     // Get world models
     gazebo_msgs::GetWorldProperties srv;
     if(!get_world_properties.call(srv) || !srv.response.success)
         throw ros::Exception("Calling get_world_properties failed...");
 
+    // Detach and reset pose of world models
     gazebo_ros_link_attacher::Attach srv_attach;
     gazebo_msgs::SetModelState srv_set;
-    // set_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
-
     for(std::vector<std::string>::iterator it=srv.response.model_names.begin(); it!=srv.response.model_names.end(); it++)
     {
         if("scene"      != (*it)
