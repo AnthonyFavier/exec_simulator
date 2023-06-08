@@ -24,6 +24,12 @@ sys.path.insert(0, path)
 ## LOGGER ##
 logging.config.fileConfig(path + 'log.conf')
 
+g_vha = None
+g_vha_received = False
+g_step_over = False
+g_timeout_max = 0
+g_best_human_action = 0
+
 #################
 ## HumanPolicy ##
 #################
@@ -31,7 +37,22 @@ class HumanChoice(Enum):
     WAIT = 0
     PASS = 1
     ACT = 2
+
 class HumanPolicy:
+    def __init__(self) -> None:
+        pass
+    def start_delay(self):
+        raise Exception("HumanPolicy method not overrided!")
+    def compliant_delay(self):
+        raise Exception("HumanPolicy method not overrided!")
+    def make_start_choice(self):
+        raise Exception("HumanPolicy method not overrided!")
+    def make_compliant_choice(self):
+        raise Exception("HumanPolicy method not overrided!")
+    def select_action(self):
+        raise Exception("HumanPolicy method not overrided!")
+
+class ActingPolicy(HumanPolicy):
     def __init__(self) -> None:
         pass
 
@@ -78,6 +99,113 @@ class HumanPolicy:
         i = g_best_human_action
         return i
     
+class RandomPolicy(HumanPolicy):
+    def __init__(self) -> None:
+        choice = None
+
+    def start_delay(self):
+        choice = None
+
+        # DEFINE duration of delay
+        duration = random.uniform(0.0, 0.9*g_timeout_max)
+
+        # WAIT with progress bar
+        bar = IncrementalBar('Start Delay', max=duration, suffix='%(index).1f/%(max).1fs')
+        start_time = rospy.Time.now()
+        while not rospy.is_shutdown() and (rospy.Time.now()-start_time).to_sec() < duration:
+            rospy.sleep(0.01)
+            bar.goto((rospy.Time.now()-start_time).to_sec())
+        bar.finish()
+
+    def compliant_delay(self):
+        # DEFINE duration of delay
+        duration = random.uniform(1.0, 3.0)
+
+        # WAIT with progress bar
+        bar = IncrementalBar('Compliant Delay', max=duration, suffix='%(index).1f/%(max).1fs')
+        start_time = rospy.Time.now()
+        while not rospy.is_shutdown() and (rospy.Time.now()-start_time).to_sec() < duration:
+            rospy.sleep(0.01)
+            bar.goto((rospy.Time.now()-start_time).to_sec())
+            if g_step_over:
+                bar.finish()
+                return True
+        bar.finish()
+        return False
+    
+    def make_start_choice(self):
+        self.choice = random.choice( range(0, len(g_vha.valid_human_actions)+1) )
+        # print(f"self.choice={self.choice}")
+        if self.choice == 0:
+        # if g_vha.valid_human_actions[self.choice-1][:7]=="PASSIVE":
+            return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
+        else:
+            return HumanChoice.ACT
+    
+    def make_compliant_choice(self):
+        self.choice = random.choice( range(0, len(g_vha.valid_human_actions)+1) )
+        # print(f"self.choice={self.choice}")
+        if self.choice == 0:
+            return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
+        else:
+            return HumanChoice.ACT
+
+    def select_action(self):
+        return self.choice
+
+
+class LazyPolicy(HumanPolicy):
+    def __init__(self) -> None:
+        pass
+
+    def start_delay(self):
+        # DEFINE duration of delay
+        # duration = 2.0
+        duration = random.uniform(0.0, 0.9*g_timeout_max)
+
+        # WAIT with progress bar
+        bar = IncrementalBar('Start Delay', max=duration, suffix='%(index).1f/%(max).1fs')
+        start_time = rospy.Time.now()
+        while not rospy.is_shutdown() and (rospy.Time.now()-start_time).to_sec() < duration:
+            rospy.sleep(0.01)
+            bar.goto((rospy.Time.now()-start_time).to_sec())
+        bar.finish()
+
+    def compliant_delay(self):
+        # DEFINE duration of delay
+        # duration = 3.0
+        duration = random.uniform(1.0, 3.0)
+
+        # WAIT with progress bar
+        bar = IncrementalBar('Compliant Delay', max=duration, suffix='%(index).1f/%(max).1fs')
+        start_time = rospy.Time.now()
+        while not rospy.is_shutdown() and (rospy.Time.now()-start_time).to_sec() < duration:
+            rospy.sleep(0.01)
+            bar.goto((rospy.Time.now()-start_time).to_sec())
+            if g_step_over:
+                bar.finish()
+                return True
+        bar.finish()
+        return False
+    
+    def make_start_choice(self):
+        self.choice = random.choice( range(0, len(g_vha.valid_human_actions)+1) )
+        if self.choice != 0 and g_vha.valid_human_actions[self.choice-1] in ["pick('p', 'H')", "place('p', 'l3')"]:
+            return HumanChoice.ACT
+        else:
+            self.choice = 0
+            return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
+    
+    def make_compliant_choice(self):
+        self.choice = random.choice( range(0, len(g_vha.valid_human_actions)+1) )
+        if self.choice != 0 and g_vha.valid_human_actions[self.choice-1] in ["pick('p', 'H')", "place('p', 'l3')"]:
+            return HumanChoice.ACT
+        else:
+            self.choice = 0
+            return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
+
+    def select_action(self):
+        return self.choice
 
 #########
 ## ROS ##
@@ -103,11 +231,7 @@ def best_human_action_cb(msg):
 ##########
 ## MAIN ##
 ##########
-g_vha = None
-g_vha_received = False
-g_step_over = False
-g_timeout_max = 0
-g_best_human_action = 0
+
 def main():
     global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action
     sys.setrecursionlimit(100000)
@@ -133,7 +257,9 @@ def main():
     h_choice_msg = Int32()
 
     # Define human policy
-    h_policy = HumanPolicy()
+    # h_policy = ActingPolicy()
+    h_policy = RandomPolicy()
+    # h_policy = LazyPolicy()
 
     # LOOP
         # Wait receive available actions
@@ -166,7 +292,7 @@ def main():
         if HumanChoice.ACT == choice:
             # Select action among VHA and send
             h_choice_msg.data = h_policy.select_action()
-            print(f"ACT {h_choice_msg.data}: ", end="")
+            print(f"ACT FIRST {h_choice_msg.data}: ", end="")
             if h_choice_msg.data==-1:
                 print(f"PASS")
             else:
@@ -200,7 +326,7 @@ def main():
                 if HumanChoice.ACT == choice:
                     # Select action among VHA and send
                     h_choice_msg.data = h_policy.select_action()
-                    print(f"ACT {h_choice_msg.data}: ", end="")
+                    print(f"ACT AFTER {h_choice_msg.data}: ", end="")
                     if h_choice_msg.data==-1:
                         print(f"PASS")
                     else:
