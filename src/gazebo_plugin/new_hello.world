@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <world name="default">
+    <plugin name="system_gui" filename="/home/afavier/exec_simulator_ws/src/gazebo_plugin/build/libsystem_gui.so"/>
+  </world>
+</sdf>

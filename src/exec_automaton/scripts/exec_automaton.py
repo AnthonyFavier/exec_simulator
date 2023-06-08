@@ -94,13 +94,10 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
         MOCK_save_best_reachable_solution_for_human(curr_step)
         # MOCK_H_action_choice(curr_step)
 
-        result_id = IdResult.NOT_NEEDED
-
-
         ## 1 & 2 & 3 ##
-        if is_human_acting(): 
+        if human_active(): 
             ## 1 & 2 ##
-            if is_ID_needed(curr_step): 
+            if ID_needed(curr_step): 
                 result_id = MOCK_run_id_phase(curr_step)
                 ## 1 ##
                 if ID_successful(result_id): 
@@ -124,7 +121,7 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
 
         wait_step_end()
         
-        HA = MOCK_assess_human_action(result_id, RA)
+        HA = MOCK_assess_human_action(RA)
 
         # Check Passive Step
         if RA.is_passive() and HA.is_passive():
@@ -242,7 +239,7 @@ def adjust_robot_preferences(begin_step,r_pref,h_pref):
     return (r_ranked_leaves, h_ranked_leaves)
 
 def MOCK_update_hmi_human_choices(curr_step, RA):
-    if not is_human_acting():
+    if not human_active():
         compliant_pairs = find_compliant_pairs_with_RA(curr_step, RA)
         compliant_human_actions = [p.human_action for p in compliant_pairs]
         # compliant_human_actions = find_HAs_compliant_with_RA(curr_step, RA)
@@ -292,31 +289,20 @@ def MOCK_execute_RA(RA: CM.Action):
 def MOCK_run_id_phase(step: ConM.Step):
     """
     Simulate the identification phase.
-    LRD are always identified.
-    For other human actions, the ID phase has a P_SUCCESS_ID_PHASE chance to succeed.
-    If successful, there is a P_WRONG_ID chance that the ID the actually wrong.
+    Wait ID_DELAY then identify human action with a P_SUCCESS_ID chance. 
     """
     rospy.loginfo("Start ID phase...")
     rospy.sleep(ID_DELAY)
-    if HC.name=="LRD":
+    if random.random()<P_SUCCESS_ID_PHASE:
+        rospy.loginfo("ID Success")
         id_result = HC
     else:
-        if random.random()<P_SUCCESS_ID_PHASE:
-            possible_other_human_actions = [ho.human_action for ho in step.human_options if not ho.human_action.name in ["LRD", HC.name]]
-            if len(possible_other_human_actions)>0 and random.random()<P_WRONG_ID:
-                id_result = random.choice(possible_other_human_actions)
-            else:
-                id_result = HC
-        else:
-            rospy.loginfo("ID failed...")
-            id_result = IdResult.FAILED
-
-    if id_result!=IdResult.FAILED:
-        rospy.loginfo(f"ID successful: {id_result}")
+        rospy.loginfo("ID failed...")
+        id_result = None
     
     return id_result
 
-def MOCK_assess_human_action(result_id, RA):
+def MOCK_assess_human_action(RA):
     global HC
     # If Human didn't choose, we try to find passive human action
     if HC==None:
@@ -427,16 +413,20 @@ def update_hmi_timeout_progress(elapsed):
 ##################
 ## SubFonctions ##
 ##################
-def is_human_acting():
+def human_active():
     return HC!=None and not HC.is_passive()
 
-def is_ID_needed(step: ConM.Step):
-    #TODO
-    # Only with best robot choice not a CRA
-    return True
+def ID_needed(step: ConM.Step):
+    best_ra = step.human_options[0].best_robot_pair.robot_action
+    for ho in step.human_options[1:]:
+        if not CM.Action.are_similar( best_ra, ho.best_robot_pair.robot_action ):
+            rospy.loginfo("ID Needed")
+            return True
+    rospy.loginfo("ID NOT Needed")
+    return False
 
 def ID_successful(result: CM.Action | None):
-    return result!=IdResult.FAILED and result!=IdResult.NOT_NEEDED
+    return result!=None
 
 def pick_best_RA(curr_step: ConM.Step):
     return curr_step.best_robot_pair.robot_action
@@ -613,16 +603,15 @@ def show_solution_exec():
     ConM.render_tree(begin_step)
 
 def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves):
-    global P_SUCCESS_ID_PHASE, P_WRONG_ID, HUMAN_TYPE, HUMAN_UPDATING, P_LET_ROBOT_DECIDE, P_LEAVE_ROBOT_DO, WAIT_START_DELAY, TIMEOUT_DELAY, ID_DELAY
+    global P_SUCCESS_ID_PHASE, HUMAN_TYPE, HUMAN_UPDATING, P_LET_ROBOT_DECIDE, P_LEAVE_ROBOT_DO, WAIT_START_DELAY, TIMEOUT_DELAY, ID_DELAY
     global default_human_passive_action, default_robot_passive_action
 
     # Mock Delays
-    WAIT_START_DELAY    = 0.0
-    TIMEOUT_DELAY       = 5.0
-    ID_DELAY            = 0.5
+    TIMEOUT_DELAY       = 2.0
+    WAIT_START_DELAY    = 0.5
+    ID_DELAY            = 1.0
     # Mock ID phase Probabilities
     P_SUCCESS_ID_PHASE  = 1.0
-    P_WRONG_ID          = 0.0
 
     # Mock human behavior 
     #   "POLICY"  => 
@@ -650,7 +639,7 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
     default_robot_passive_action = CM.Action.create_passive(CM.g_robot_name, "PASS")
 
     if INPUT:
-        print("Press Enter to start...")
+        rospy.loginfo("Press Enter to start...")
         input()
 
     try:
@@ -773,6 +762,20 @@ if __name__ == "__main__":
             ("TimeTaskCompletion",  False),
             # ("RiskConflict",      False),
         ]],
+
+        "test": [[
+            ("TimeTaskCompletion",  False),
+            ("GlobalEffort",        False),
+            ("TimeEndHumanDuty",    False),
+            ("HumanEffort",         False),
+            # ("RiskConflict",      False),
+        ],[
+            ("HumanEffort",         False),
+            ("TimeEndHumanDuty",    False),
+            ("GlobalEffort",        False),
+            ("TimeTaskCompletion",  False),
+            # ("RiskConflict",      False),
+        ]],
     }
     r_criteria = estimations["optimal"][0]
     h_criteria = estimations["optimal"][1]
@@ -785,7 +788,7 @@ if __name__ == "__main__":
     do_plot=False
     solutions = []
     if result[0]==-1:
-        print("Failed... -1")
+        rospy.loginfo("Failed... -1")
     else:
         (id, r_score, h_score, seed, r_ranked_leaves, h_ranked_leaves) = result
 
@@ -816,7 +819,7 @@ if __name__ == "__main__":
             plt.xlabel("score human solution")
             plt.ylabel("score robot solution")
             plt.show()
-    print("\nfinish")
+    rospy.loginfo("\nfinish")
 
     # dill.dump(solutions, open("/home/afavier/ws/HATPEHDA/domains_and_results/solution_exec.p", "wb"))
     # print(solutions)
