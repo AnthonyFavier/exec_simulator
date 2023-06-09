@@ -146,7 +146,8 @@ class RandomPolicy(HumanPolicy):
         self.choice = random.choice( range(0, len(g_vha.valid_human_actions)+1) )
         # print(f"self.choice={self.choice}")
         if self.choice == 0:
-            return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
+            # return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
+            return HumanChoice.WAIT
         else:
             return HumanChoice.ACT
 
@@ -244,7 +245,7 @@ def main():
     random.seed(seed)
     lg.debug(f"\nSeed was: {seed}")
 
-    rospy.init_node('mock_human')
+    rospy.init_node('mock_human', log_level=rospy.INFO)
     human_choice_pub = rospy.Publisher("human_choice", Int32, queue_size=1)
     human_vha_sub = rospy.Subscriber("hmi_vha", VHA, incoming_vha_cb, queue_size=1)
     step_over_sub = rospy.Subscriber("step_over", EmptyM, step_over_cb, queue_size=1)
@@ -276,7 +277,7 @@ def main():
     # LOOP
     while not rospy.is_shutdown():
         # Wait receive available actions
-        print("New step, waiting to receive vha...")
+        rospy.loginfo("New step, waiting to receive vha...")
         while not rospy.is_shutdown() and not g_vha_received:
             rospy.sleep(0.05)
         g_vha_received = False
@@ -292,20 +293,21 @@ def main():
         if HumanChoice.ACT == choice:
             # Select action among VHA and send
             h_choice_msg.data = h_policy.select_action()
-            print(f"ACT FIRST {h_choice_msg.data}: ", end="")
+            s = f"ACT FIRST {h_choice_msg.data}: "
             if h_choice_msg.data==-1:
-                print(f"PASS")
+                s += "PASS"
             else:
-                print(f"{g_vha.valid_human_actions[h_choice_msg.data-1]}")
+                s += f"{g_vha.valid_human_actions[h_choice_msg.data-1]}"
+            rospy.loginfo(s)
             human_choice_pub.publish(h_choice_msg)
         else:
             if HumanChoice.PASS == choice:
                 # Send pass choice
-                print("PASS")
+                rospy.loginfo("PASS")
                 h_choice_msg.data = -1
                 human_choice_pub.publish(h_choice_msg)
             elif HumanChoice.WAIT == choice:
-                print("WAIT")
+                rospy.loginfo("WAIT")
                 while not rospy.is_shutdown() and not g_vha_received:
                     rospy.sleep(0.05)
 
@@ -326,22 +328,23 @@ def main():
                 if HumanChoice.ACT == choice:
                     # Select action among VHA and send
                     h_choice_msg.data = h_policy.select_action()
-                    print(f"ACT AFTER {h_choice_msg.data}: ", end="")
+                    s = f"ACT AFTER {h_choice_msg.data}: "
                     if h_choice_msg.data==-1:
-                        print(f"PASS")
+                        s += "PASS"
                     else:
-                        print(f"{g_vha.valid_human_actions[h_choice_msg.data-1]}")
+                        s += f"{g_vha.valid_human_actions[h_choice_msg.data-1]}"
+                    rospy.loginfo(s)
                     human_choice_pub.publish(h_choice_msg)
                     pass
                 else:
                     ## PASSIVE ##
                     if HumanChoice.PASS == choice:
-                        print("PASS")
+                        rospy.loginfo("PASS")
                         # Send pass choice
                         h_choice_msg.data = -1
                         human_choice_pub.publish(h_choice_msg)
                     elif HumanChoice.WAIT == choice:
-                        print("WAIT")
+                        rospy.loginfo("WAIT")
                         # Wait for step_over
                         while not rospy.is_shutdown() and not g_step_over:
                             rospy.sleep(0.05)

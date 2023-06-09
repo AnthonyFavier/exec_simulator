@@ -11,6 +11,7 @@ from sim_msgs.srv import Int, IntResponse
 from copy import deepcopy
 from std_srvs.srv import EmptyResponse
 from std_srvs.srv import Empty as EmptyS
+from std_srvs.srv import SetBool, SetBoolResponse
 
 class MyQtWidget(QWidget):
 
@@ -41,6 +42,8 @@ class MyQtWidget(QWidget):
 
         self._started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())
         self._timeout_max_service = rospy.Service("hmi_timeout_max", Int, self.set_timeout_max)
+        self._r_idle_service = rospy.Service("hmi_r_idle", SetBool, self.set_r_idle)
+        self.r_idle = False
         
         self.sig_timeout_val.connect(self.timeout_value)
         self.sig_timeout_max.connect(self.timeout_max)
@@ -54,6 +57,7 @@ class MyQtWidget(QWidget):
         self.max_timeout = -1
         self.nb_human_action = 0
         self.first = True
+        self.vha = None
         self.setup_ui()
 
     def shutdown(self):
@@ -124,6 +128,7 @@ class MyQtWidget(QWidget):
 
     #########
 
+
     # hmi_timeout_value CB + Sig #
     def timeout_value_cb(self, msg):
         self.sig_timeout_val.emit(msg.data)
@@ -136,6 +141,8 @@ class MyQtWidget(QWidget):
         self.sig_timeout_max.emit(0)
         self.sig_info_label.emit("Timeout reached, Robot starts acting. Human can still perform a compliant action..")
         self.sig_wait_label.emit("Waiting for both agents' actions to be over...")
+        self._button_pass.setEnabled(False)
+
     @QtCore.pyqtSlot(int)
     def timeout_max(self, val):
         self._progress_bar.setMaximum(val)
@@ -160,6 +167,11 @@ class MyQtWidget(QWidget):
         self._progress_bar.setMaximum(self.max_timeout)
         self._progress_bar.reset()
 
+    # hmi_r_idle Srv #
+    def set_r_idle(self, req):
+        self.r_idle = req.data
+        return SetBoolResponse()
+
     # hmi_timeout_max Srv #
     def set_timeout_max(self, req):
         self.max_timeout = req.data
@@ -174,7 +186,8 @@ class MyQtWidget(QWidget):
             self.sig_enable_buttons.emit(True)
             self.sig_info_label.emit("")
             self.sig_wait_label.emit("Waiting for human choice...")
-        
+
+        self.vha = msg
         for ha in msg.valid_human_actions:
             self.sig_add_ha.emit(ha)
         while self.nb_human_action<len(msg.valid_human_actions):
@@ -213,10 +226,15 @@ class MyQtWidget(QWidget):
         self.sig_timeout_max.emit(0)
 
         if choice!=-1:
+            print(f"ACT {self.vha.valid_human_actions[choice-1]}")
             self.sig_enable_buttons.emit(False)
             self.sig_info_label.emit("Human is active.")
         else:
-            self._button_pass.setEnabled(False)
+            print("PASS")
+            if self.r_idle:
+                self._button_pass.setEnabled(False)
+            else:
+                self.sig_enable_buttons.emit(False)
             self.sig_info_label.emit("Human is passive, Robot starts acting. Human can still perform a compliant action.")
         self.sig_wait_label.emit("Waiting for both agents' actions to be over...")
 

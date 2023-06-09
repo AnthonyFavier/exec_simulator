@@ -51,6 +51,7 @@ ros::ServiceClient get_model_state_client[2];
 ros::ServiceClient set_model_state_client[2];
 ros::ServiceClient attach_reset_client[2];
 ros::ServiceClient get_world_properties;
+ros::ServiceClient move_hand_pass_signal_client;
 ros::Publisher r_home_pub;
 
 // Stack domain
@@ -218,10 +219,22 @@ void PlaceLocation(AGENT agent, const std::string &location)
     PlacePose(agent, locations[location]);
 }
 
-void Wait(AGENT agent)
+void BePassive(AGENT agent)
 {
-    // Be inactive...
-    ros::Duration(2.0).sleep();
+    if(isRobot(agent))
+    {
+        // Be inactive...
+        // ros::Duration(2.0).sleep();
+        // move_named_target(agent, "idle");
+        // Visual signal ?
+    }
+    else
+    {
+        // Visual signal
+        std_srvs::Empty srv;
+        move_hand_pass_signal_client.call(srv);
+    }
+    // ros::Duration(0.5).sleep();
 }
 
 void Pushing(AGENT agent)
@@ -446,8 +459,6 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         ROS_ERROR("Agent %d is already performing an action... New action skipped.", agent);
     else
     {
-        action_received[agent] = true;
-
         if (waiting_step_start)
         {
             waiting_step_start = false;
@@ -457,40 +468,43 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 
         std_msgs::String str_msg;
         ROS_INFO("%d type=%d", agent, action.type);
-        switch (action.type)
-        {
-        case sim_msgs::Action::PICK_OBJ:
-            if (action.color=="")
-                ROS_ERROR("%d Missing color in action msg!", agent);
-            else if(action.side=="")
-                ROS_ERROR("%d Missing side in action msg!", agent);
-            else
-                Pick(agent, action.color, action.side);
-            break;
-        case sim_msgs::Action::PLACE_OBJ:
-            if (action.location=="")
-                ROS_ERROR("%d Missing location in action msg!", agent);
-            else
-                PlaceLocation(agent, action.location);
-            break;
-        case sim_msgs::Action::PUSH:
-            Pushing(agent);
-            break;
-        case sim_msgs::Action::OPEN_BOX:
-            OpenBox(agent);
-            break;
-        case sim_msgs::Action::DROP:
-            DropCube(agent);
-            break;
-        case sim_msgs::Action::PASSIVE:
-            Wait(agent);
-            break;
-        default:
-            throw ros::Exception("Action type unknown...");
-            break;
-        }
 
-        action_done[agent] = true;
+        if(sim_msgs::Action::PASSIVE==action.type)
+            BePassive(agent);
+        else
+        {
+            action_received[agent] = true;
+            switch (action.type)
+            {
+            case sim_msgs::Action::PICK_OBJ:
+                if (action.color=="")
+                    ROS_ERROR("%d Missing color in action msg!", agent);
+                else if(action.side=="")
+                    ROS_ERROR("%d Missing side in action msg!", agent);
+                else
+                    Pick(agent, action.color, action.side);
+                break;
+            case sim_msgs::Action::PLACE_OBJ:
+                if (action.location=="")
+                    ROS_ERROR("%d Missing location in action msg!", agent);
+                else
+                    PlaceLocation(agent, action.location);
+                break;
+            case sim_msgs::Action::PUSH:
+                Pushing(agent);
+                break;
+            case sim_msgs::Action::OPEN_BOX:
+                OpenBox(agent);
+                break;
+            case sim_msgs::Action::DROP:
+                DropCube(agent);
+                break;
+            default:
+                throw ros::Exception("Action type unknown...");
+                break;
+            }
+            action_done[agent] = true;
+        }
     }
 }
 
@@ -546,6 +560,18 @@ bool reset_world_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response
     return true;
 }
 
+bool go_idle_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+    move_named_target(AGENT::ROBOT, "idle");
+    return true;
+}
+
+bool go_home_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+    move_named_target(AGENT::ROBOT, "home");
+    return true;
+}
+
 void home_agents()
 {
     std_msgs::Empty msg;
@@ -571,6 +597,7 @@ int main(int argc, char **argv)
     move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/human_hand/move_hand_pose_target");
     move_arm_named_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_named_target");
     move_arm_named_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/human_hand/move_hand_named_target");
+    move_hand_pass_signal_client = node_handle.serviceClient<std_srvs::Empty>("/human_hand/move_hand_pass_signal");
 
     attach_plg_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/attach");
     attach_plg_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/attach");
@@ -579,6 +606,10 @@ int main(int argc, char **argv)
 
     ros::ServiceServer reset_world_service = node_handle.advertiseService("reset_world", reset_world_server);
     get_world_properties = node_handle.serviceClient<gazebo_msgs::GetWorldProperties>("/gazebo/get_world_properties");
+
+    ros::ServiceServer go_idle_pose_service = node_handle.advertiseService("go_idle_pose", go_idle_pose_server);
+    ros::ServiceServer go_home_pose_service = node_handle.advertiseService("go_home_pose", go_home_pose_server);
+
 
     ros::Publisher step_over_pub = node_handle.advertise<std_msgs::Empty>("/step_over", 10);
     std_msgs::Empty empty_msg;
@@ -590,7 +621,7 @@ int main(int argc, char **argv)
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
 
-    ros::AsyncSpinner spinner(4);
+    ros::AsyncSpinner spinner(10);
     spinner.start();
 
     std_srvs::Empty empty_srv;
@@ -606,14 +637,15 @@ int main(int argc, char **argv)
     ROS_INFO("Controllers Ready!");
 
     ros::Rate loop(50);
-    bool transi_step_over = true;
     while (ros::ok())
     {
+        // ROS_INFO("%d-%d %d-%d", action_received[AGENT::ROBOT], action_done[AGENT::ROBOT], action_received[AGENT::HUMAN], action_done[AGENT::HUMAN]);
         if ((action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]) 
         || (action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && !action_received[AGENT::HUMAN] && !action_done[AGENT::HUMAN]) 
         || (!action_received[AGENT::ROBOT] && !action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]))
         {
             ROS_INFO("=> STEP OVER");
+            // move_named_target(AGENT::ROBOT, "home"); // Reset robot
             step_over_pub.publish(empty_msg);
             action_received[AGENT::ROBOT] = false;
             action_done[AGENT::ROBOT] = false;

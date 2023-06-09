@@ -11,6 +11,7 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <Eigen/Dense>
+#include <std_srvs/Empty.h>
 
 std::string ROBOT_NAME = "";
 
@@ -127,6 +128,47 @@ std::string get_transform_str(geometry_msgs::Transform tr)
   return str;
 }
 
+bool pass_signal_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+  ROS_INFO("Hand Pass Signal");
+
+  // Get Start Position
+  gazebo_msgs::GetLinkState get_link_state;
+  get_link_state.request.link_name = "human_hand_link";
+  get_link_state_client.call(get_link_state);
+
+  gazebo_msgs::SetLinkState link_state;
+  link_state.request.link_state.link_name = "human_hand_link";
+  link_state.request.link_state.pose = get_link_state.response.link_state.pose;
+
+  double rotation = 0.0;
+  tf2::Quaternion q;
+  int nb_steps(20);
+  ros::Duration dur(0.7);
+
+  for(int i=0; i<nb_steps; i++)
+  {
+    if(i<nb_steps/2)
+      rotation -= 1.570796327/(nb_steps/2);
+    else
+      rotation += 1.570796327/(nb_steps/2);
+
+    q.setRPY(0, rotation, -3.14159265356);
+    q.normalize();
+
+    link_state.request.link_state.pose.orientation.x = q.getX();
+    link_state.request.link_state.pose.orientation.y = q.getY();
+    link_state.request.link_state.pose.orientation.z = q.getZ();
+    link_state.request.link_state.pose.orientation.w = q.getW();
+
+    set_link_state_client.call(link_state);
+
+    ros::Duration(dur.toSec()/nb_steps).sleep();
+  }
+
+  return true;
+}
+
 bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmResponse &res)
 {
   ROS_INFO("Pose target received.");
@@ -174,7 +216,6 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
     joint_values.push_back(1.0); // z
     joint_values.push_back(0.0); // w
   }
-
   
   move_group_interface->setJointValueTarget(joint_values);
 
@@ -261,6 +302,7 @@ int main(int argc, char **argv)
   p_scene = new planning_scene::PlanningScene(robot_model);
 
   ros::ServiceServer move_pose_target_service = node_handle.advertiseService("move_hand_pose_target", move_pose_target_server);
+  ros::ServiceServer pass_signal_service = node_handle.advertiseService("move_hand_pass_signal", pass_signal_server);
 
   ros::Rate loop(50);
   while(ros::ok())

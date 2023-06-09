@@ -11,11 +11,14 @@ import logging as lg
 import logging.config
 import rospy
 from sim_msgs.msg import Action, VHA
-from std_msgs.msg import Int32, Empty, Bool
+from std_msgs.msg import Int32, Bool
+from std_msgs.msg import Empty as EmptyM
 import matplotlib.pyplot as plt
 from progress.bar import IncrementalBar
 from sim_msgs.srv import Int, IntResponse
 import importlib
+from std_srvs.srv import Empty as EmptyS
+from std_srvs.srv import SetBool
 
 class IdResult(Enum):
     NOT_NEEDED=0
@@ -90,33 +93,42 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
     curr_step = get_first_step(begin_step)
     nb_of_degradation = 0
     while not exec_over(curr_step) and not rospy.is_shutdown():
-        wait_step_start(curr_step)
-        MOCK_save_best_reachable_solution_for_human(curr_step)
-        # MOCK_H_action_choice(curr_step)
 
-        ## 1 & 2 & 3 ##
-        if human_active(): 
-            ## 1 & 2 ##
-            if ID_needed(curr_step): 
-                result_id = MOCK_run_id_phase(curr_step)
-                ## 1 ##
-                if ID_successful(result_id): 
-                    RA = pick_best_valid_RA(curr_step, result_id)
-                ## 2 ##
+        wait_new_step(curr_step)
+
+        if curr_step.isRInactive():
+            go_idle_pose()
+            RA = pick_valid_passive(curr_step)
+            wait_human_start_acting(curr_step)
+
+        else:
+            wait_human_choice(curr_step)
+            MOCK_save_best_reachable_solution_for_human(curr_step)
+            # MOCK_H_action_choice(curr_step)
+
+            ## 1 & 2 & 3 ##
+            if human_active(): 
+                ## 1 & 2 ##
+                if ID_needed(curr_step): 
+                    result_id = MOCK_run_id_phase(curr_step)
+                    ## 1 ##
+                    if ID_successful(result_id): 
+                        RA = pick_best_valid_RA(curr_step, result_id)
+                    ## 2 ##
+                    else: 
+                        RA = pick_valid_passive(curr_step)
+                ## 3 ##
                 else: 
-                    RA = pick_valid_passive(curr_step)
-            ## 3 ##
+                    lg.debug("ID not needed.")
+                    RA = pick_best_RA(curr_step)
+            ## 4 & 5 ##
             else: 
-                lg.debug("ID not needed.")
-                RA = pick_best_RA(curr_step)
-        ## 4 & 5 ##
-        else: 
-            RA = pick_best_RA_H_passive(curr_step)
+                RA = pick_best_RA_H_passive(curr_step)
 
 
-        execute_RA(RA)
-        
-        MOCK_update_hmi_human_choices(curr_step, RA)
+            execute_RA(RA)
+            
+            MOCK_update_hmi_human_choices(curr_step, RA)
                   
 
         wait_step_end()
@@ -129,7 +141,12 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             reset_human()
             rospy.sleep(0.1)
         else:
-            curr_step = get_next_step(curr_step, HA, RA)
+            next_step = get_next_step(curr_step, HA, RA)
+
+            if curr_step.isRInactive() and not next_step.isRInactive():
+                go_home_pose()
+
+            curr_step = next_step
 
             MOCK_save_best_reachable_solution_for_human_after_robot_choice(curr_step)
             if MOCK_robot_has_degraded_human_best_solution():
@@ -141,7 +158,7 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             rospy.sleep(0.1)
 
     lg.debug(f"END => {curr_step}")
-    g_hmi_finish_pub.publish(Empty())
+    g_hmi_finish_pub.publish(EmptyM())
     # return int(curr_step.id)
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
 
@@ -324,7 +341,7 @@ def MOCK_wait_step_end():
         if INPUT:
             input()
 
-def MOCK_wait_step_start(step: ConM.Step):
+def MOCK_wait_human_choice(step: ConM.Step):
     # i.e. wait for human to start acting
     lg.debug("\nCurrent step:")
     lg.debug(CM.str_agents(get_agents_before_step(step)))
@@ -346,8 +363,16 @@ def get_agents_before_step(step: ConM.Step):
 def exec_over(step):
     return step.is_final
 
-def wait_step_start(step: ConM.Step):
-    global HC, step_over, possible_human_actions, g_previous_elapsed
+def go_idle_pose():
+    g_go_idle_pose_client.call()
+    g_hmi_r_idle_client.call(True)
+
+def go_home_pose():
+    g_go_home_pose_client.call()
+    g_hmi_r_idle_client.call(False)
+
+def wait_new_step(step: ConM.Step):
+    global possible_human_actions
     # i.e. wait for human to start acting or timeout reached
     rospy.loginfo("Current step:\n"+CM.str_agents(get_agents_before_step(step)))
     rospy.loginfo("\n" + step.str())
@@ -366,6 +391,23 @@ def wait_step_start(step: ConM.Step):
                 break
     g_best_human_action.publish(best_ha)
 
+def wait_human_start_acting(step: ConM.Step):
+    global HC, step_over, g_previous_elapsed
+
+    rospy.loginfo("Waiting for human to act...")
+    while not rospy.is_shutdown():
+        if HC!=None and not HC.is_passive():
+            break
+        rospy.sleep(0.1)
+
+    rospy.sleep(WAIT_START_DELAY)
+    rospy.loginfo("Step start detected!")
+
+    step_over = False
+
+def wait_human_choice(step: ConM.Step):
+    global HC, step_over, g_previous_elapsed
+
     rospy.loginfo("Waiting for human to act...")
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
     start_waiting_time = rospy.get_rostime()
@@ -383,7 +425,7 @@ def wait_step_start(step: ConM.Step):
     bar.finish()
 
     if timeout_reached:
-        g_hmi_timeout_reached_pub.publish(Empty()) # Rename with step started
+        g_hmi_timeout_reached_pub.publish(EmptyM()) # Rename with step started
 
     if HC==None:
         rospy.loginfo("Timeout reached, human not acting...")
@@ -456,7 +498,7 @@ def pick_valid_passive(step: ConM.Step):
 
 def wait_step_end():
     rospy.loginfo("Waiting step end...")
-    while not step_over and not rospy.is_shutdown():
+    while not rospy.is_shutdown() and not step_over:
         rospy.sleep(0.1)
     rospy.loginfo("Current step is over.")
 
@@ -586,9 +628,11 @@ def human_choice_cb(msg):
         HC = possible_human_actions[msg.data-1]
 
     rospy.loginfo(f"\nHuman choice: {HC}")
-    if not HC.is_passive():
-        msg = compute_msg_action(HC)
-        g_human_action_pub.publish(msg)
+    # if not HC.is_passive():
+    #     msg = compute_msg_action(HC)
+    #     g_human_action_pub.publish(msg)
+    msg = compute_msg_action(HC)
+    g_human_action_pub.publish(msg)
 
 def step_over_cb(msg):
     global step_over, HC, possible_human_actions
@@ -607,7 +651,7 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
     global default_human_passive_action, default_robot_passive_action
 
     # Mock Delays
-    TIMEOUT_DELAY       = 2.0
+    TIMEOUT_DELAY       = 3.0
     WAIT_START_DELAY    = 0.5
     ID_DELAY            = 1.0
     # Mock ID phase Probabilities
@@ -668,6 +712,9 @@ g_hmi_timeout_reached_pub = None
 g_hmi_enable_buttons_pub = None
 g_hmi_finish_pub = None
 g_best_human_action = None
+g_go_idle_pose_client = None
+g_go_home_pose_client = None
+g_hmi_r_idle_client = None
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
@@ -677,11 +724,11 @@ if __name__ == "__main__":
     g_robot_action_pub = rospy.Publisher('/robot_action', Action, queue_size=1)
     g_human_action_pub = rospy.Publisher('/human_action', Action, queue_size=1)
     g_hmi_timeout_value_pub = rospy.Publisher('/hmi_timeout_value', Int32, queue_size=1)
-    g_hmi_timeout_reached_pub = rospy.Publisher('/hmi_timeout_reached', Empty, queue_size=1)
+    g_hmi_timeout_reached_pub = rospy.Publisher('/hmi_timeout_reached', EmptyM, queue_size=1)
     g_hmi_enable_buttons_pub = rospy.Publisher('/hmi_enable_buttons', Bool, queue_size=1)
-    g_hmi_finish_pub = rospy.Publisher('/hmi_finish', Empty, queue_size=1)
+    g_hmi_finish_pub = rospy.Publisher('/hmi_finish', EmptyM, queue_size=1)
     g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
-    step_over_sub = rospy.Subscriber('/step_over', Empty, step_over_cb)
+    step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
     human_choice_sub = rospy.Subscriber('/human_choice', Int32, human_choice_cb)
     rospy.loginfo("Wait pub/sub to be initialized...")
     rospy.sleep(0.5)
@@ -689,6 +736,9 @@ if __name__ == "__main__":
     rospy.wait_for_service("hmi_started")
     rospy.sleep(0.5)
     g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
+    g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
+    g_go_home_pose_client = rospy.ServiceProxy("go_home_pose", EmptyS)
+    g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
     
     # Solution loading + characterization 
     domain_name, solution_tree, begin_step = load_solution()

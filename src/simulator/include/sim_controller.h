@@ -38,7 +38,7 @@ std::string get_agent_str(AGENT agent);
 void Pick(AGENT agent, const std::string &color, const std::string &side);
 void PlacePose(AGENT agent, geometry_msgs::Pose pose);
 void PlaceLocation(AGENT agent, const std::string &location);
-void Wait(AGENT agent);
+void BePassive(AGENT agent);
 void Pushing(AGENT agent);
 void OpenBox(AGENT agent);
 void DropCube(AGENT agent);
