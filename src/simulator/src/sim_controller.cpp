@@ -53,6 +53,7 @@ ros::ServiceClient attach_reset_client[2];
 ros::ServiceClient get_world_properties;
 ros::ServiceClient move_hand_pass_signal_client;
 ros::Publisher r_home_pub;
+ros::Publisher event_log_pub[2];
 
 // Stack domain
 std::map<std::string, geometry_msgs::Pose> locations =
@@ -221,8 +222,16 @@ void PlaceLocation(AGENT agent, const std::string &location)
 
 void BePassive(AGENT agent)
 {
+    sim_msgs::EventLog event;
+    event.timestamp = ros::Time::now().toSec();
+    event.name = "S_PASS";
+    event_log_pub[agent].publish(event);
+
     if(isRobot(agent))
     {
+        sim_msgs::EventLog event;
+        event.timestamp = ros::Time::now().toSec();
+        event.name = "S_PASSIVE";
         // Be inactive...
         // ros::Duration(2.0).sleep();
         // move_named_target(agent, "idle");
@@ -474,6 +483,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         else
         {
             action_received[agent] = true;
+            pub_log_action(agent, action, true);
             switch (action.type)
             {
             case sim_msgs::Action::PICK_OBJ:
@@ -503,6 +513,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
                 throw ros::Exception("Action type unknown...");
                 break;
             }
+            pub_log_action(agent, action, false);
             action_done[agent] = true;
         }
     }
@@ -515,10 +526,51 @@ void r_home_cb(std_msgs::Empty msg)
 
 // ************************************************************************ //
 
+void pub_log_action(AGENT agent, sim_msgs::Action action, bool start)
+{
+    sim_msgs::EventLog event;
+    event.timestamp = ros::Time::now().toSec();
+
+    if(start)
+        event.name = "S_";
+    else
+        event.name = "E_";
+
+    if(isRobot(agent))
+        event.name += "RA_";
+    else
+        event.name += "HA_";
+
+    switch(action.type)
+    {
+        case sim_msgs::Action::PICK_OBJ:
+            event.name += "Pick("+action.color+","+action.side+")";
+            break;
+        case sim_msgs::Action::PLACE_OBJ:
+            event.name += "Place("+action.color+","+action.location+")";
+            break;
+        case sim_msgs::Action::PUSH:
+            event.name += "Push()";
+            break;
+        case sim_msgs::Action::OPEN_BOX:
+            event.name += "OpenBox()";
+            break;
+        case sim_msgs::Action::DROP:
+            event.name += "DropCube("+action.color+")";
+            break;
+    }
+
+    event_log_pub[agent].publish(event);
+}
+
 bool reset_world_server(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
     // Home agents
     home_agents();
+    action_received[AGENT::ROBOT] = false;
+    action_received[AGENT::HUMAN] = false;
+    action_done[AGENT::ROBOT] = false;
+    action_done[AGENT::HUMAN] = false;
 
     // Reset g_cubes
     for(unsigned int i=0; i<g_cubes.size(); i++)
@@ -566,11 +618,22 @@ bool go_idle_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &r
     return true;
 }
 
+void go_idle_pose_cb(const std_msgs::Empty &msg)
+{
+    move_named_target(AGENT::ROBOT, "idle");
+}
+
 bool go_home_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
 {
     move_named_target(AGENT::ROBOT, "home");
     return true;
 }
+
+void go_home_pose_cb(const std_msgs::Empty &msg)
+{
+    move_named_target(AGENT::ROBOT, "home");
+}
+
 
 void home_agents()
 {
@@ -607,8 +670,13 @@ int main(int argc, char **argv)
     ros::ServiceServer reset_world_service = node_handle.advertiseService("reset_world", reset_world_server);
     get_world_properties = node_handle.serviceClient<gazebo_msgs::GetWorldProperties>("/gazebo/get_world_properties");
 
+    // ros::Subscriber go_idle_pose_sub = node_handle.subscribe("/go_idle_pose", 1, go_idle_pose_cb);
+    // ros::Subscriber go_home_pose_sub = node_handle.subscribe("/go_home_pose", 1, go_home_pose_cb);
     ros::ServiceServer go_idle_pose_service = node_handle.advertiseService("go_idle_pose", go_idle_pose_server);
     ros::ServiceServer go_home_pose_service = node_handle.advertiseService("go_home_pose", go_home_pose_server);
+
+    event_log_pub[AGENT::ROBOT] = node_handle.advertise<sim_msgs::EventLog>("/r_event_log", 10);
+    event_log_pub[AGENT::HUMAN] = node_handle.advertise<sim_msgs::EventLog>("/h_event_log", 10);
 
 
     ros::Publisher step_over_pub = node_handle.advertise<std_msgs::Empty>("/step_over", 10);

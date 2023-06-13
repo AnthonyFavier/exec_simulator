@@ -16,7 +16,9 @@ from sim_msgs.srv import Int, IntResponse
 from std_srvs.srv import Empty as EmptyS
 from std_srvs.srv import EmptyResponse
 from progress.bar import IncrementalBar
+from sim_msgs.msg import EventLog
 import importlib
+from std_srvs.srv import SetBool, SetBoolResponse
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
@@ -54,7 +56,7 @@ class HumanPolicy:
 
 class ActingPolicy(HumanPolicy):
     def __init__(self) -> None:
-        pass
+        self.r_idle = False
 
     def start_delay(self):
         # DEFINE duration of delay
@@ -99,12 +101,21 @@ class ActingPolicy(HumanPolicy):
         i = g_best_human_action
         return i
     
+    def wait_robot_start_acting(self):
+        if not self.r_idle:
+            global g_vha_received
+            while not rospy.is_shutdown() and not g_vha_received:
+                rospy.sleep(0.05)
+            g_vha_received = False
+    
 class RandomPolicy(HumanPolicy):
     def __init__(self) -> None:
-        choice = None
+        self.choice = None
+        self.r_idle = False
 
     def start_delay(self):
-        choice = None
+        log_human("S_SDELAY")
+        self.choice = None
 
         # DEFINE duration of delay
         duration = random.uniform(0.0, 0.9*g_timeout_max)
@@ -117,7 +128,11 @@ class RandomPolicy(HumanPolicy):
             bar.goto((rospy.Time.now()-start_time).to_sec())
         bar.finish()
 
+        log_human("E_SDELAY")
+
     def compliant_delay(self):
+        log_human("S_CDELAY")
+
         # DEFINE duration of delay
         duration = random.uniform(1.0, 3.0)
 
@@ -131,33 +146,39 @@ class RandomPolicy(HumanPolicy):
                 bar.finish()
                 return True
         bar.finish()
+        log_human("E_CDELAY")
         return False
     
     def make_start_choice(self):
         self.choice = random.choice( range(0, len(g_vha.valid_human_actions)+1) )
-        # print(f"self.choice={self.choice}")
         if self.choice == 0:
-        # if g_vha.valid_human_actions[self.choice-1][:7]=="PASSIVE":
-            return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
+            if self.r_idle:
+                return HumanChoice.PASS
+            else:
+                return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
         else:
             return HumanChoice.ACT
     
     def make_compliant_choice(self):
         self.choice = random.choice( range(0, len(g_vha.valid_human_actions)+1) )
-        # print(f"self.choice={self.choice}")
-        if self.choice == 0:
-            # return random.choice([HumanChoice.PASS, HumanChoice.WAIT])
+        if self.choice == 0 and not self.r_idle:
             return HumanChoice.WAIT
         else:
             return HumanChoice.ACT
 
     def select_action(self):
         return self.choice
-
+    
+    def wait_robot_start_acting(self):
+        if not self.r_idle:
+            global g_vha_received
+            while not rospy.is_shutdown() and not g_vha_received:
+                rospy.sleep(0.05)
+            g_vha_received = False
 
 class LazyPolicy(HumanPolicy):
     def __init__(self) -> None:
-        pass
+        self.r_idle = False
 
     def start_delay(self):
         # DEFINE duration of delay
@@ -207,6 +228,13 @@ class LazyPolicy(HumanPolicy):
 
     def select_action(self):
         return self.choice
+    
+    def wait_robot_start_acting(self):
+        if not self.r_idle:
+            global g_vha_received
+            while not rospy.is_shutdown() and not g_vha_received:
+                rospy.sleep(0.05)
+            g_vha_received = False
 
 #########
 ## ROS ##
@@ -229,12 +257,25 @@ def best_human_action_cb(msg):
     global g_best_human_action
     g_best_human_action = msg.data
 
+def log_human(name):
+    msg = EventLog()
+    msg.name = name
+    msg.timestamp = rospy.get_time()
+    g_h_event_log_pub.publish(msg)
+
+def set_r_idle(req):
+    global g_h_policy
+    g_h_policy.r_idle = req.data
+    return SetBoolResponse()
+
 ##########
 ## MAIN ##
 ##########
 
+g_h_event_log_pub = None
+g_h_policy = None # type: HumanPolicy | None
 def main():
-    global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action
+    global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_h_event_log_pub, g_h_policy
     sys.setrecursionlimit(100000)
 
     # domain_name, solution_tree, begin_step = load_solution()
@@ -251,16 +292,20 @@ def main():
     step_over_sub = rospy.Subscriber("step_over", EmptyM, step_over_cb, queue_size=1)
     best_human_action_sub = rospy.Subscriber("mock_best_human_action", Int32, best_human_action_cb, queue_size=1)
 
+    g_h_event_log_pub = rospy.Publisher("/h_event_log", EventLog, queue_size=10)
+
     started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())
     timeout_max_service = rospy.Service("hmi_timeout_max", Int, set_timeout_max)
+    idle_service = rospy.Service("hmi_r_idle", SetBool, set_r_idle)
+
 
 
     h_choice_msg = Int32()
 
     # Define human policy
-    # h_policy = ActingPolicy()
-    h_policy = RandomPolicy()
-    # h_policy = LazyPolicy()
+    # g_h_policy = ActingPolicy()
+    g_h_policy = RandomPolicy()
+    # g_h_policy = LazyPolicy()
 
     # LOOP
         # Wait receive available actions
@@ -284,15 +329,15 @@ def main():
         g_step_over = False
 
         # Random delay [0, To]
-        h_policy.start_delay()
+        g_h_policy.start_delay()
 
         # According to policy, either WAIT, PASS, ACT
-        choice = h_policy.make_start_choice()
+        choice = g_h_policy.make_start_choice()
 
         ## ACT FIRST ##
         if HumanChoice.ACT == choice:
             # Select action among VHA and send
-            h_choice_msg.data = h_policy.select_action()
+            h_choice_msg.data = g_h_policy.select_action()
             s = f"ACT FIRST {h_choice_msg.data}: "
             if h_choice_msg.data==-1:
                 s += "PASS"
@@ -312,22 +357,19 @@ def main():
                     rospy.sleep(0.05)
 
             # Random delay [0, ?] (is interrupted by step over event => Continue)
-            if h_policy.compliant_delay():
+            if g_h_policy.compliant_delay():
                 # True: has been interrupted
                 g_vha_received = False
                 continue
             else:
-                # Be sure we received a new set of human actions
-                while not rospy.is_shutdown() and not g_vha_received:
-                    rospy.sleep(0.05)
-                g_vha_received = False
+                g_h_policy.wait_robot_start_acting()
 
-                choice = h_policy.make_compliant_choice()
+                choice = g_h_policy.make_compliant_choice()
 
                 ## ACT AFTER ##
                 if HumanChoice.ACT == choice:
                     # Select action among VHA and send
-                    h_choice_msg.data = h_policy.select_action()
+                    h_choice_msg.data = g_h_policy.select_action()
                     s = f"ACT AFTER {h_choice_msg.data}: "
                     if h_choice_msg.data==-1:
                         s += "PASS"

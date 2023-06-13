@@ -11,6 +11,7 @@ add_message_files(
   FILES
   Action.msg
   VHA.msg
+  EventLog.msg
 )
 add_service_files(
   FILES

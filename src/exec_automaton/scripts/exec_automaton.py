@@ -19,6 +19,7 @@ from sim_msgs.srv import Int, IntResponse
 import importlib
 from std_srvs.srv import Empty as EmptyS
 from std_srvs.srv import SetBool
+from sim_msgs.msg import EventLog
 
 class IdResult(Enum):
     NOT_NEEDED=0
@@ -142,10 +143,8 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             rospy.sleep(0.1)
         else:
             next_step = get_next_step(curr_step, HA, RA)
-
             if curr_step.isRInactive() and not next_step.isRInactive():
                 go_home_pose()
-
             curr_step = next_step
 
             MOCK_save_best_reachable_solution_for_human_after_robot_choice(curr_step)
@@ -157,7 +156,8 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             reset_human()
             rospy.sleep(0.1)
 
-    lg.debug(f"END => {curr_step}")
+    log_both("OVER")
+    lg.info(f"END => {curr_step}")
     g_hmi_finish_pub.publish(EmptyM())
     # return int(curr_step.id)
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
@@ -308,6 +308,8 @@ def MOCK_run_id_phase(step: ConM.Step):
     Simulate the identification phase.
     Wait ID_DELAY then identify human action with a P_SUCCESS_ID chance. 
     """
+    log_robot("S_ID")
+
     rospy.loginfo("Start ID phase...")
     rospy.sleep(ID_DELAY)
     if random.random()<P_SUCCESS_ID_PHASE:
@@ -317,11 +319,15 @@ def MOCK_run_id_phase(step: ConM.Step):
         rospy.loginfo("ID failed...")
         id_result = None
     
+    log_robot("E_ID")
+    
     return id_result
 
 def MOCK_assess_human_action(RA):
     global HC
     # If Human didn't choose, we try to find passive human action
+    log_robot("S_ASSESS")
+
     if HC==None:
         for ha in possible_human_actions:
             if ha.is_passive():
@@ -333,6 +339,10 @@ def MOCK_assess_human_action(RA):
             HC = default_human_passive_action
     else:
         rospy.loginfo(f"Assessed Human action: {HC}")
+
+    rospy.sleep(ASSESS_DELAY)
+    log_robot("E_ASSESS")
+    
     return HC
 
 def MOCK_wait_step_end():
@@ -364,12 +374,18 @@ def exec_over(step):
     return step.is_final
 
 def go_idle_pose():
-    g_go_idle_pose_client.call()
+    log_robot("S_GO_IDLE")
+    # g_go_idle_pose_pub.publish(EmptyM())
     g_hmi_r_idle_client.call(True)
+    g_go_idle_pose_client.call()
+    log_robot("E_GO_IDLE")
 
 def go_home_pose():
-    g_go_home_pose_client.call()
+    log_robot("S_END_IDLE")
+    # g_go_home_pose_pub.publish(EmptyM())
     g_hmi_r_idle_client.call(False)
+    g_go_home_pose_client.call()
+    log_robot("E_END_IDLE")
 
 def wait_new_step(step: ConM.Step):
     global possible_human_actions
@@ -379,6 +395,7 @@ def wait_new_step(step: ConM.Step):
 
     possible_human_actions = [ho.human_action for ho in step.human_options]
     update_vha(possible_human_actions, True)
+    log_both("NewStep")
 
     # Find best human action id, sent to hmi mock
     best_ha = Int32()
@@ -408,6 +425,8 @@ def wait_human_start_acting(step: ConM.Step):
 def wait_human_choice(step: ConM.Step):
     global HC, step_over, g_previous_elapsed
 
+    log_robot("S_WAIT_HC")
+
     rospy.loginfo("Waiting for human to act...")
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
     start_waiting_time = rospy.get_rostime()
@@ -426,14 +445,14 @@ def wait_human_choice(step: ConM.Step):
 
     if timeout_reached:
         g_hmi_timeout_reached_pub.publish(EmptyM()) # Rename with step started
-
     if HC==None:
         rospy.loginfo("Timeout reached, human not acting...")
+        log_both("TIMEOUT")
         human_acting = False
     else:
         rospy.sleep(WAIT_START_DELAY)
         rospy.loginfo("Step start detected!")
-
+        log_robot("E_WAIT_HC")
         if HC.is_passive():
             rospy.loginfo("Human not acting...")
             human_acting = False
@@ -455,6 +474,25 @@ def update_hmi_timeout_progress(elapsed):
 ##################
 ## SubFonctions ##
 ##################
+def log_robot(name):
+    msg = EventLog()
+    msg.name = name
+    msg.timestamp = rospy.get_time()
+    g_r_event_log_pub.publish(msg)
+
+def log_human(name):
+    msg = EventLog()
+    msg.name = name
+    msg.timestamp = rospy.get_time()
+    g_h_event_log_pub.publish(msg)
+
+def log_both(name):
+    msg = EventLog()
+    msg.name = name
+    msg.timestamp = rospy.get_time()
+    g_r_event_log_pub.publish(msg)
+    g_h_event_log_pub.publish(msg)
+
 def human_active():
     return HC!=None and not HC.is_passive()
 
@@ -501,6 +539,8 @@ def wait_step_end():
     while not rospy.is_shutdown() and not step_over:
         rospy.sleep(0.1)
     rospy.loginfo("Current step is over.")
+    log_robot("E_WAIT_END_HA")
+    # log_robot("STEPOVER")
 
 def get_executed_pair(step: ConM.Step, HA: CM.Action, RA: CM.Action):
     for ho in step.human_options:
@@ -579,6 +619,7 @@ def compute_msg_action(a):
         msg.side=a.parameters[1]
     elif "place"==a.name:
         msg.type=Action.PLACE_OBJ
+        msg.color=a.parameters[0]
         msg.location=a.parameters[1]
     elif "push"==a.name:
         msg.type=Action.PUSH
@@ -586,6 +627,7 @@ def compute_msg_action(a):
         msg.type=Action.OPEN_BOX
     elif "drop"==a.name:
         msg.type=Action.DROP
+        msg.color=a.parameters[0]
 
     elif a.is_passive():
         msg.type=Action.PASSIVE
@@ -611,6 +653,7 @@ def human_choice_cb(msg):
 
     # IF PASS
     if msg.data==-1:
+        # log_human("PASS")
         # Human is passive
         # find passive action
         pass_ha = None
@@ -647,13 +690,14 @@ def show_solution_exec():
     ConM.render_tree(begin_step)
 
 def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves):
-    global P_SUCCESS_ID_PHASE, HUMAN_TYPE, HUMAN_UPDATING, P_LET_ROBOT_DECIDE, P_LEAVE_ROBOT_DO, WAIT_START_DELAY, TIMEOUT_DELAY, ID_DELAY
+    global P_SUCCESS_ID_PHASE, HUMAN_TYPE, HUMAN_UPDATING, P_LET_ROBOT_DECIDE, P_LEAVE_ROBOT_DO, WAIT_START_DELAY, TIMEOUT_DELAY, ID_DELAY, ASSESS_DELAY
     global default_human_passive_action, default_robot_passive_action
 
     # Mock Delays
     TIMEOUT_DELAY       = 3.0
     WAIT_START_DELAY    = 0.5
     ID_DELAY            = 1.0
+    ASSESS_DELAY        = 0.5
     # Mock ID phase Probabilities
     P_SUCCESS_ID_PHASE  = 1.0
 
@@ -712,9 +756,13 @@ g_hmi_timeout_reached_pub = None
 g_hmi_enable_buttons_pub = None
 g_hmi_finish_pub = None
 g_best_human_action = None
+g_hmi_r_idle_client = None
+g_r_event_log_pub = None
+g_h_event_log_pub = None
+g_go_idle_pose_pub = None
+g_go_home_pose_pub = None
 g_go_idle_pose_client = None
 g_go_home_pose_client = None
-g_hmi_r_idle_client = None
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
@@ -728,6 +776,10 @@ if __name__ == "__main__":
     g_hmi_enable_buttons_pub = rospy.Publisher('/hmi_enable_buttons', Bool, queue_size=1)
     g_hmi_finish_pub = rospy.Publisher('/hmi_finish', EmptyM, queue_size=1)
     g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
+    g_r_event_log_pub = rospy.Publisher('/r_event_log', EventLog, queue_size=10)
+    g_h_event_log_pub = rospy.Publisher('/h_event_log', EventLog, queue_size=10)
+    # g_go_idle_pose_pub = rospy.Publisher("/go_idle_pose", EmptyM, queue_size=1)
+    # g_go_home_pose_pub = rospy.Publisher("/go_home_pose", EmptyM, queue_size=1)
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
     human_choice_sub = rospy.Subscriber('/human_choice', Int32, human_choice_cb)
     rospy.loginfo("Wait pub/sub to be initialized...")
@@ -736,10 +788,10 @@ if __name__ == "__main__":
     rospy.wait_for_service("hmi_started")
     rospy.sleep(0.5)
     g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
+    g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
     g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
     g_go_home_pose_client = rospy.ServiceProxy("go_home_pose", EmptyS)
-    g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
-    
+
     # Solution loading + characterization 
     domain_name, solution_tree, begin_step = load_solution()
     estimations = {

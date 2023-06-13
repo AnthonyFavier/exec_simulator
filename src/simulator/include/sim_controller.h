@@ -17,6 +17,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <std_srvs/Empty.h>
 #include "gazebo_ros_link_attacher/Attach.h"
+#include "sim_msgs/EventLog.h"
 
 #define ROBOT_ATTACH_MODEL_NAME "panda1"
 #define ROBOT_ATTACH_LINK_NAME "panda1_link7"
@@ -60,6 +61,9 @@ void robot_action_cb(const sim_msgs::Action &msg);
 void human_action_cb(const sim_msgs::Action &msg);
 void manage_action(AGENT agent, const sim_msgs::Action &action);
 void r_home_cb(std_msgs::Empty msg);
+
+void pub_log_action(AGENT agent, sim_msgs::Action action, bool start);
+
 
 void home_agents();
 
