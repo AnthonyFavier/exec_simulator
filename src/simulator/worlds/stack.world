@@ -14,7 +14,8 @@
       </link>
     </model>
     <gui>
-      <plugin name="NewGui" filename="libGUITextPlugin.so" />
+      <plugin name="GUITextPlugin" filename="libGUITextPlugin.so" />
+      <!-- <plugin name="GUIZones" filename="libGUIZones.so" /> -->
     </gui>
     <!-- END PLUGINS -->
 

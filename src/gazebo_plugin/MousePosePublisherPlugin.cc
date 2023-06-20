@@ -47,7 +47,7 @@ namespace gazebo
   public:
     bool OnMousePress(const common::MouseEvent &_event)
     {
-      std::cout << "Mouse press detected:";
+      std::cout << "Mouse press detected: ";
       std::cout << _event.Pos().X() << "," << _event.Pos().Y() << std::endl;
       geometry_msgs::Point msg;
       msg.x = _event.Pos().X();

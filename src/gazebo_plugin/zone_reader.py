@@ -14,13 +14,12 @@ img_rgb = mpimg.imread(PATH+FILENAME)[...,:3]
 def is_white(p):
     return p[0]==1.0 and p[1]==1.0 and p[2]==1.0
 
-NOT_DEF = '@'
 
 class Segment:
     def __init__(self, y) -> None:
-        self.y = y          #type: str | int
-        self.x1 = NOT_DEF   #type: str | int
-        self.x2 = NOT_DEF   #type: str | int
+        self.y = y          
+        self.x1 = -1   
+        self.x2 = -1   
 
     def __repr__(self) -> str:
         return f"({self.y},{self.x1}-{self.x2})"
@@ -28,11 +27,11 @@ class Segment:
 class Zone:
     def __init__(self) -> None:
         # Right-Upper corner (x1,y1)
-        self.x1 = NOT_DEF   #type: str | int
-        self.y1 = NOT_DEF   #type: str | int
+        self.x1 = -1   
+        self.y1 = -1   
         # Left-Lower corner (x2,y2)
-        self.x2 = NOT_DEF   #type: str | int
-        self.y2 = NOT_DEF   #type: str | int
+        self.x2 = -1   
+        self.y2 = -1   
 
     def __repr__(self) -> str:
         return f"({self.x1}-{self.y1},{self.x2}-{self.y2})"
