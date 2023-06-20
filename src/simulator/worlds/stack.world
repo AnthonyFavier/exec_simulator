@@ -1,6 +1,23 @@
 <sdf version='1.7'>
   <world name='default'>
-    <plugin name="ros_link_attacher_plugin" filename="libgazebo_ros_link_attacher.so"/>
+  
+    <!-- PLUGINS -->
+    <plugin name="ros_link_attacher_plugin" filename="libgazebo_ros_link_attacher.so" />
+    <model name="set_camera_pose_model">
+      <link name="link">
+        <visual name="visual">
+          <geometry>
+            <empty />
+          </geometry>
+          <plugin name="CameraSimPlugin" filename="libCameraLockPlugin.so" />
+        </visual>
+      </link>
+    </model>
+    <gui>
+      <plugin name="NewGui" filename="libGUITextPlugin.so" />
+    </gui>
+    <!-- END PLUGINS -->
+
     <light name='sun' type='directional'>
       <cast_shadows>1</cast_shadows>
       <pose>0 0 10 0 -0 0</pose>
@@ -21,7 +38,7 @@
     </light>
     <gravity>0 0 -9.8</gravity>
     <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
-    <atmosphere type='adiabatic'/>
+    <atmosphere type='adiabatic' />
     <physics type='ode'>
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1</real_time_factor>
@@ -32,7 +49,7 @@
       <background>0.7 0.7 0.7 1</background>
       <shadows>1</shadows>
     </scene>
-    <wind/>
+    <wind />
     <spherical_coordinates>
       <surface_model>EARTH_WGS84</surface_model>
       <latitude_deg>0</latitude_deg>

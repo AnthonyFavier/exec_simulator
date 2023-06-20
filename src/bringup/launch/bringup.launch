@@ -3,10 +3,11 @@
     <arg name="rviz" default="false"/>
 
     <!-- this opens gazebo -->
-    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <include file="$(find bringup)/launch/_new_empty_world.launch">
         <arg name="world_name" value="$(find simulator)/worlds/stack.world" />
         <arg name="gui" value="true" />
         <arg name="paused" value="true"/>
+        <arg name="extra_gazebo_client_args" value="--verbose -g libMousePosePublisherPlugin.so"/>
     </include>
 
 
