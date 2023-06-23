@@ -18,6 +18,7 @@
 #include <std_srvs/Empty.h>
 #include "gazebo_ros_link_attacher/Attach.h"
 #include "sim_msgs/EventLog.h"
+#include "gazebo_msgs/SetLinkState.h"
 
 #define ROBOT_ATTACH_MODEL_NAME "panda1"
 #define ROBOT_ATTACH_LINK_NAME "panda1_link7"

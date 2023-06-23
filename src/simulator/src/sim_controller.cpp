@@ -68,17 +68,17 @@ std::map<std::string, geometry_msgs::Pose> locations =
 
 std::map<std::string, geometry_msgs::Pose> init_poses =
 {
-    {"box",            make_pose(make_point(0.5, -0.57, 0.7),           make_quaternion(0, -0, 0))},
-    {"box_lid",        make_pose(make_point(0.5, -0.57, 0.7),           make_quaternion(0, -0, 0))},
-    {"cube_b",         make_pose(make_point(1.2141, -0.496866, 0.75),   make_quaternion(0, -0, 0))},
-    {"cube_b_R",       make_pose(make_point(0.5, -0.57, 0.75),          make_quaternion(0, -0, 0))},
-    {"cube_p",         make_pose(make_point(1.22, -0.19, 0.75),         make_quaternion(0, -0, 0))},
-    {"cube_r",         make_pose(make_point(1.20994, -0.674646, 0.75),  make_quaternion(0, -0, 0))},
-    {"cube_r_R",       make_pose(make_point(0.5, -0.34, 0.75),          make_quaternion(0, -0, 0))},
-    {"cube_w",         make_pose(make_point(0.5, -0.14, 0.75),          make_quaternion(0, -0, 0))},
-    {"cube_y",         make_pose(make_point(0.86, -0.38, 0.75),         make_quaternion(0, -0, 0))},
-    {"table_slot",     make_pose(make_point(0.86, 0.24, 0.7),           make_quaternion(0, -0, 0))},
-    {"table_slot_0",   make_pose(make_point(0.86, 0.44, 0.7),           make_quaternion(0, -0, 0))},
+    {"box",            make_pose(make_point(0.5, -0.57, 0.7),           make_quaternion())},
+    {"box_lid",        make_pose(make_point(0.5, -0.57, 0.7),           make_quaternion())},
+    {"cube_b",         make_pose(make_point(1.2141, -0.496866, 0.75),   make_quaternion())},
+    {"cube_b_R",       make_pose(make_point(0.5, -0.57, 0.75),          make_quaternion())},
+    {"cube_p",         make_pose(make_point(1.22, -0.19, 0.75),         make_quaternion())},
+    {"cube_r",         make_pose(make_point(1.20994, -0.674646, 0.75),  make_quaternion())},
+    {"cube_r_R",       make_pose(make_point(0.5, -0.34, 0.75),          make_quaternion())},
+    {"cube_w",         make_pose(make_point(0.5, -0.14, 0.75),          make_quaternion())},
+    {"cube_y",         make_pose(make_point(0.86, -0.38, 0.75),         make_quaternion())},
+    {"table_slot",     make_pose(make_point(0.86, 0.24, 0.7),           make_quaternion())},
+    {"table_slot_0",   make_pose(make_point(0.86, 0.44, 0.7),           make_quaternion())},
 };
 
 geometry_msgs::Pose init_human_hand_pose = make_pose(make_point(1.38, 0.5, 0.87), make_quaternion_RPY(0, 0, 3.14159));

@@ -1,6 +1,6 @@
 <sdf version='1.7'>
   <world name='default'>
-  
+
     <!-- PLUGINS -->
     <plugin name="ros_link_attacher_plugin" filename="libgazebo_ros_link_attacher.so" />
     <model name="set_camera_pose_model">
@@ -13,9 +13,13 @@
         </visual>
       </link>
     </model>
-    <gui>
+    <gui fullscreen='1'>
       <plugin name="GUITextPlugin" filename="libGUITextPlugin.so" />
-      <!-- <plugin name="GUIZones" filename="libGUIZones.so" /> -->
+      <camera name='user_camera'>
+        <pose>2.23755 0.0 2.49211 0 0.85836 3.13435</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
     </gui>
     <!-- END PLUGINS -->
 
@@ -76,13 +80,7 @@
         <falloff>1</falloff>
       </spot>
     </light>
-    <gui fullscreen='0'>
-      <camera name='user_camera'>
-        <pose>2.23755 0.0 2.49211 0 0.85836 3.13435</pose>
-        <view_controller>orbit</view_controller>
-        <projection_type>perspective</projection_type>
-      </camera>
-    </gui>
+    
     <model name='scene'>
       <link name='link'>
         <inertial>

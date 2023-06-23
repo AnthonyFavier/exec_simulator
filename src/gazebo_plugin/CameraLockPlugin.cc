@@ -32,7 +32,7 @@ namespace gazebo
         {
             // publish pose
             ignition::math::Pose3d custom_pose = ignition::math::Pose3d(
-                2.23755, 0.0, 2.49211, 0, 0.85836, 3.13435);
+                2.24, 0.0, 2.49, 0, 0.86, 3.14);
 
             // set pose
             m_camera->SetWorldPose(custom_pose);

@@ -19,7 +19,9 @@ from progress.bar import IncrementalBar
 from sim_msgs.msg import EventLog
 import importlib
 from std_srvs.srv import SetBool, SetBoolResponse
-from geometry_msgs.msg import Point
+from gazebo_msgs.srv import SetLinkState, SetLinkStateRequest
+from gazebo_msgs.srv import SpawnModel
+from geometry_msgs.msg import Pose, Twist, Point, Quaternion
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
@@ -29,7 +31,7 @@ logging.config.fileConfig(path + 'log.conf')
 
 
 class Zone:
-    def __init__(self, id, x1, y1, x2, y2) -> None:
+    def __init__(self, id, x1, y1, x2, y2, pose) -> None:
         self.id = id
         # Right-Upper corner (x1,y1)
         self.x1 = x1
@@ -37,6 +39,8 @@ class Zone:
         # Left-Lower corner (x2,y2)
         self.x2 = x2
         self.y2 = y2
+
+        self.world_pose = pose
 
     def __repr__(self) -> str:
         return f"{self.id}-({self.x1},{self.y1})-({self.x2},{self.y2})"
@@ -47,19 +51,40 @@ g_step_over = False
 g_timeout_max = 0
 g_best_human_action = 0
 
+
+g_far_zone_pose = Pose(Point(0,0,-2), Quaternion(0,0,0,1))
+g_init_pose_zones = {
+    0: Pose(Point(0.99, 0.29, 1),  Quaternion(0, 0.2672133, 0, 0.9636374)),
+    1: Pose(Point(1.06, -0.33, 1), Quaternion(0, 0.2672133, 0, 0.9636374)),
+    2: Pose(Point(1.36, -0.58, 1), Quaternion(0, 0.2672133, 0, 0.9636374)),
+    3: Pose(Point(1.36, -0.43, 1), Quaternion(0, 0.2672133, 0, 0.9636374)),
+    4: Pose(Point(1.36, -0.17, 1), Quaternion(0, 0.2672133, 0, 0.9636374)),
+    5: Pose(Point(1.45, 0.44, 1),  Quaternion(0, 0.2672133, 0, 0.9636374)),
+}
+
 g_zones = []
-
-g_zones.append( Zone(0,904,361,1127,552))
-g_zones.append( Zone(1,515,447,616,550))
-g_zones.append( Zone(2,269,630,382,740))
-g_zones.append( Zone(3,406,637,505,747))
-g_zones.append( Zone(4,553,643,791,745))
-g_zones.append( Zone(5,1113,657,1282,850))
-
-
+f = open('/home/afavier/exec_simulator_ws/src/gazebo_plugin/zones_coords.txt', 'r')
+for l in f:
+    l = l[:-1]
+    if l=="":
+        continue
+    l = l.split(',')
+    l = [int(i) for i in l]
+    z = Zone(l[0], l[1], l[2], l[3], l[4], g_init_pose_zones[l[0]])
+    g_zones.append(z)
 
 def isInZone(pose: Point, zone: Zone):
     return pose.x>=zone.x1 and pose.x<=zone.x2 and pose.y>=zone.y1 and pose.y<=zone.y2
+
+def hide_zones():
+    srv = SetLinkStateRequest()
+    for z in g_zones:
+        srv.link_state.link_name = f"z{z.id}"
+        srv.link_state.pose = g_far_zone_pose
+        srv.link_state.twist = Twist()
+        srv.link_state.reference_frame = "world" 
+        g_set_link_state_client(srv)
+    
 
 #########
 ## ROS ##
@@ -71,9 +96,10 @@ def incoming_vha_cb(msg):
     g_vha = msg
     g_vha_received = True
 
-def mouse_pressed_cb(msg: Point):
-    print("oboib")
+    # update zones
 
+
+def mouse_pressed_cb(msg: Point):
     zone_clicked = None
     for z in g_zones:
         if isInZone(msg, z):
@@ -130,12 +156,13 @@ def mouse_pressed_cb(msg: Point):
         elif    10 == zone_clicked.id:
             pass
 
+
 ##########
 ## MAIN ##
 ##########
 
 def main():
-    global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_human_choice_pub
+    global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_human_choice_pub, g_set_link_state_client
 
     rospy.init_node('mouse_human', log_level=rospy.INFO)
     g_human_choice_pub = rospy.Publisher("human_choice", Int32, queue_size=1)
@@ -146,6 +173,19 @@ def main():
     started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())
     timeout_max_service = rospy.Service("hmi_timeout_max", Int, lambda req: IntResponse())
     r_idle_service = rospy.Service("hmi_r_idle", SetBool, lambda req: SetBoolResponse())
+
+    g_set_link_state_client = rospy.ServiceProxy("/gazebo/set_link_state", SetLinkState)
+
+    # Spawn zones
+    f = open('/home/afavier/exec_simulator_ws/src/simulator/worlds/zones.sdf','r')
+    sdff = f.read()
+
+    rospy.wait_for_service('gazebo/spawn_sdf_model')
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    spawn_model_prox("zones", sdff, "", Pose(), "world")
+
+    # rospy.sleep(2.0)
+    # hide_zones()
 
     rospy.spin()
 

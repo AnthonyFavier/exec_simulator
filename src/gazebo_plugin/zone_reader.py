@@ -114,15 +114,19 @@ small_font_size = int(font_size/3)
 mySmallFont = ImageFont.truetype('FreeMono.ttf', small_font_size)
 print("Zones:")
 for i,z in enumerate(zones):
-    s = f"{i}-({z.x1},{z.y1})-({z.x2},{z.y2})"
+    # s = f"{i}-({z.x1},{z.y1})-({z.x2},{z.y2})"
+    s = f"{i},{z.x1},{z.y1},{z.x2},{z.y2}"
     print(f"\t{s}")
     f.write(f"{s}\n")
     I1.text( ( (z.x2+z.x1)/2, (z.y2+z.y1)/2 ), f"{i}", fill=(0,0,0), font=myFont, anchor='mm')
     I1.text( ( (z.x2+z.x1)/2, (z.y2+z.y1)/2+2*small_font_size ), f"({z.x1},{z.y1})-({z.x2},{z.y2})", fill=(0,0,0), font=mySmallFont, anchor='mm')
 f.close()
 
+# Display edited image
+img.show()
+
+# Demande renuméroté
+
 # Save the edited image
 img.save(PATH+FILENAME[:-4]+"_numbered.png")
 
-# Display edited image
-img.show()
