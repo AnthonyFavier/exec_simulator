@@ -2,22 +2,25 @@
 #define SIM_CONTROLLER
 
 #include <ros/ros.h>
-#include <std_msgs/String.h>
+#include <thread>
 #include <geometry_msgs/Pose.h>
+#include <std_msgs/String.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Int32.h>
+#include <std_srvs/Empty.h>
 #include "sim_msgs/Action.h"
+#include "sim_msgs/MoveArm.h"
+#include "sim_msgs/AttachObj.h"
+#include "sim_msgs/EventLog.h"
+#include "sim_msgs/Signal.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <gazebo_msgs/GetModelState.h>
 #include <gazebo_msgs/GetWorldProperties.h>
-#include "sim_msgs/MoveArm.h"
-#include "sim_msgs/AttachObj.h"
 #include <gazebo_msgs/ModelState.h>
 #include <gazebo_msgs/SetModelState.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <std_srvs/Empty.h>
 #include "gazebo_ros_link_attacher/Attach.h"
-#include "sim_msgs/EventLog.h"
 #include "gazebo_msgs/SetLinkState.h"
 
 #define ROBOT_ATTACH_MODEL_NAME "panda1"
@@ -63,7 +66,7 @@ void human_action_cb(const sim_msgs::Action &msg);
 void manage_action(AGENT agent, const sim_msgs::Action &action);
 void r_home_cb(std_msgs::Empty msg);
 
-void pub_log_action(AGENT agent, sim_msgs::Action action, bool start);
+void pub_log_action(AGENT agent, sim_msgs::Action action, bool start, float delay);
 
 
 void home_agents();

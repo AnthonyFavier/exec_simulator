@@ -30,7 +30,8 @@ class MyQtWidget(QWidget):
     def __init__(self, parent=None, modules=[]):
         QWidget.__init__(self, parent=parent)
         self._publishers = {}
-        self._publishers["human_choice"] = rospy.Publisher("human_choice", Int32, queue_size=1)
+        # self._publishers["human_choice"] = rospy.Publisher("human_choice", Int32, queue_size=1)
+        self._publishers["human_decision"] = rospy.Publisher("human_decision", Int32, queue_size=1)
         self._publishers["step_over"] = rospy.Publisher("step_over", EmptyM, queue_size=1)
 
         self._subscribers = []
@@ -44,6 +45,8 @@ class MyQtWidget(QWidget):
         self._timeout_max_service = rospy.Service("hmi_timeout_max", Int, self.set_timeout_max)
         self._r_idle_service = rospy.Service("hmi_r_idle", SetBool, self.set_r_idle)
         self.r_idle = False
+
+        self._start_human_action_prox = rospy.ServiceProxy("start_human_action", Int)
         
         self.sig_timeout_val.connect(self.timeout_value)
         self.sig_timeout_max.connect(self.timeout_max)
@@ -220,9 +223,11 @@ class MyQtWidget(QWidget):
     # button_human_action.clicked.connect
     @QtCore.pyqtSlot(int)
     def pressed_publish_human_choice(self, choice):
-        msg = Int32()
-        msg.data = choice
-        self._publishers["human_choice"].publish(msg)
+        # msg = Int32()
+        # msg.data = choice
+        # self._publishers["human_choice"].publish(msg)
+        self._start_human_action_prox(choice)
+
         self.sig_timeout_max.emit(0)
 
         if choice!=-1:

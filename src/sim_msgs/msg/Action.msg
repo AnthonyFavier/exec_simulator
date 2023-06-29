@@ -1,3 +1,4 @@
+int32 id
 uint8 type
 # TYPES:
 uint8 PASSIVE   =   0   

@@ -12,6 +12,7 @@ add_message_files(
   Action.msg
   VHA.msg
   EventLog.msg
+  Signal.msg
 )
 add_service_files(
   FILES
