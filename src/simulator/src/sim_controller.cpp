@@ -180,7 +180,7 @@ void Pick(AGENT agent, const std::string &color, const std::string &side)
         }
     }
     if(obj_name=="")
-        throw ros::Exception("PICK Obj_name for "+color+" "+side+" not found...");
+        throw ros::Exception(agent+" PICK Obj_name for "+color+" "+side+" not found...");
 
     /* GET OBJ POSE */
     gazebo_msgs::GetModelState srv;

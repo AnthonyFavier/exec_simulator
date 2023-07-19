@@ -33,10 +33,3 @@ target_link_libraries(GUITextPlugin ${GAZEBO_LIBRARIES}
     ${Qt5Core_LIBRARIES}
     ${Qt5Widgets_LIBRARIES}
     ${PROTOBUF_LIBRARIES})  
-
-    add_library(GUIZones SHARED ${headers_MOC}
-    GUIZones.cc)
-  target_link_libraries(GUIZones ${GAZEBO_LIBRARIES}
-      ${Qt5Core_LIBRARIES}
-      ${Qt5Widgets_LIBRARIES}
-      ${PROTOBUF_LIBRARIES})  

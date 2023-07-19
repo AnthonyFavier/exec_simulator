@@ -7,6 +7,10 @@ $ cd src/gazebo_plugin/build
 $ cmake ..
 $ make
 
+#3 Install Progress package
+$ cd src/progress
+$ python setup.py install --user 
+
 Launching the simulation is a 4 step process.
 This implies that the planning and characterization processes has been already ran.
 

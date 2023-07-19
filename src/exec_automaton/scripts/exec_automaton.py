@@ -12,14 +12,16 @@ import logging as lg
 import logging.config
 from enum import Enum
 import matplotlib.pyplot as plt
-from progress.bar import IncrementalBar
+sys.path.insert(0, "/home/afavier/exec_simulator_ws/src/progress/")
+from progress.bar import IncrementalBar, StrBar
 from std_msgs.msg import Int32, Bool
 from std_msgs.msg import Empty as EmptyM
+from std_msgs.msg import String
 from std_srvs.srv import Empty as EmptyS
 from std_srvs.srv import SetBool
 from sim_msgs.msg import Action, VHA
 from sim_msgs.msg import EventLog
-from sim_msgs.srv import Int, IntResponse
+from sim_msgs.srv import Int, IntResponse, IntRequest
 from sim_msgs.msg import Signal
 
 class IdResult(Enum):
@@ -132,6 +134,10 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             else: 
                 RA = pick_best_RA_H_passive(curr_step)
 
+            if RA.is_passive():
+                g_text_plugin_pub.publish(String("Robot is passive..."))
+            else:
+                g_text_plugin_pub.publish(String("Robot is acting"))
             start_execute_RA(RA)
             MOCK_update_hmi_human_choices(curr_step, RA)
                   
@@ -263,6 +269,7 @@ def MOCK_run_id_phase(step: ConM.Step):
     Wait ID_DELAY then identify human action with a P_SUCCESS_ID chance. 
     """
     log_event("R_S_ID")
+    g_text_plugin_pub.publish(String("Indentifying Human action"))
 
     rospy.loginfo("Start ID phase...")
     rospy.sleep(ID_DELAY)
@@ -364,21 +371,29 @@ def wait_human_choice(step: ConM.Step):
 
     log_event("R_S_WAIT_HC")
 
+
     rospy.loginfo("Waiting for human to act...")
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
+    str_bar = StrBar(max=TIMEOUT_DELAY, width=15)
     start_waiting_time = rospy.get_rostime()
     g_previous_elapsed = -1
     timeout_reached = True
     while not rospy.is_shutdown() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY:
         elapsed = (rospy.get_rostime()-start_waiting_time).to_sec()
         bar.goto(elapsed)
+        str_bar.goto(elapsed)
+        g_text_plugin_pub.publish(String(f"Step started\nRobot waiting for human decision...\n{str_bar.get_str()}"))
         update_hmi_timeout_progress(elapsed)
         if HC!=None:
             timeout_reached = False
             break
         rospy.sleep(0.1)
-    bar.goto(TIMEOUT_DELAY)
+    bar.goto(bar.max)
+    str_bar.goto(str_bar.max)
+    g_text_plugin_pub.publish(String(f"Step started\nRobot waiting for human decision...\n{str_bar.get_str()}"))
     bar.finish()
+    str_bar.finish()
+    
 
     if timeout_reached:
         g_hmi_timeout_reached_pub.publish(EmptyM()) # Rename with step started
@@ -461,7 +476,10 @@ def pick_valid_passive(step: ConM.Step):
 
 def wait_step_end():
     rospy.loginfo("Waiting step end...")
+    text_updated = False
     while not rospy.is_shutdown() and not step_over:
+        if not text_updated and g_robot_action_over:
+            g_text_plugin_pub.publish(String("Waiting end of human action..."))
         rospy.sleep(0.1)
     rospy.loginfo("Current step is over.")
     log_event("R_E_WAIT_END_HA")
@@ -513,8 +531,10 @@ def convert_rank_to_score(rank, nb):
 
 def reset_human():
     global HC, g_possible_human_actions
+    global g_robot_action_over
     HC = None
     g_possible_human_actions = []
+    g_robot_action_over = False
 
 #########
 ## ROS ##
@@ -602,10 +622,7 @@ def start_human_action_server(req):
 def human_visual_signal_cb(msg: Signal):
     global HC, g_possible_human_actions, step_over
 
-    print(f"CB human visual signal: {msg}")
-    print("Signal.H_PASS= ", Signal.H_PASS)
-    print("Signal.S_HA= ", Signal.S_HA)
-    print("Signal.E_HA= ", Signal.E_HA)
+    print(f"\nCB human visual signal: {msg}")
 
     # Human is passive
     if msg.type == Signal.H_PASS:
@@ -626,6 +643,13 @@ def human_visual_signal_cb(msg: Signal):
         HC = g_possible_human_actions[msg.id-1]
         rospy.loginfo(f"\nHuman visual : {HC}")
 
+g_robot_action_over = False
+def robot_visual_signal_cb(msg: Signal):
+    global g_robot_action_over
+    if msg.type == Signal.E_RA:
+        g_robot_action_over = True
+        rospy.loginfo("Robot action over.")
+
 
 ##########
 ## MAIN ##
@@ -637,8 +661,11 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
     global P_SUCCESS_ID_PHASE, HUMAN_TYPE, HUMAN_UPDATING, P_LET_ROBOT_DECIDE, P_LEAVE_ROBOT_DO, WAIT_START_DELAY, TIMEOUT_DELAY, ID_DELAY, ASSESS_DELAY
     global default_human_passive_action, default_robot_passive_action
 
+    rospy.loginfo("READY TO START, PRESS RETURN")
+    input()
+
     # Mock Delays
-    TIMEOUT_DELAY       = 4.0
+    TIMEOUT_DELAY       = 20.0
     WAIT_START_DELAY    = 0.5
     ID_DELAY            = 1.0
     ASSESS_DELAY        = 0.5
@@ -691,24 +718,6 @@ def find_r_rank_of_id(steps, id):
             return s.get_f_leaf().branch_rank_r
 
 
-g_update_VHA_pub = None
-g_robot_action_pub = None
-g_human_action_pub = None
-g_hmi_timeout_value_pub = None
-g_hmi_timeout_max_client = None
-g_hmi_timeout_reached_pub = None
-g_hmi_enable_buttons_pub = None
-g_hmi_finish_pub = None
-g_best_human_action = None
-g_hmi_r_idle_client = None
-g_r_event_log_pub = None
-g_h_event_log_pub = None
-g_go_idle_pose_pub = None
-g_go_home_pose_pub = None
-g_go_idle_pose_client = None
-g_go_home_pose_client = None
-g_robot_pass_pub = None
-g_event_log_pub = None
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
@@ -729,9 +738,11 @@ if __name__ == "__main__":
     g_robot_next_step_pub = rospy.Publisher("/ns", EmptyM, queue_size=1)
     g_robot_start_action_pub = rospy.Publisher("/s_ra", EmptyM, queue_size=1)
     g_robot_pass_pub = rospy.Publisher("/r_pass", EmptyM, queue_size=1)
+    g_text_plugin_pub = rospy.Publisher("/text_gazebo_label", String, queue_size=1)
 
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
+    robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
 
 
     rospy.loginfo("Wait pub/sub to be initialized...")

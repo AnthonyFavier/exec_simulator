@@ -51,7 +51,10 @@ namespace gazebo
       // Create the layout that sits inside the frame
       QVBoxLayout *frameLayout = new QVBoxLayout();
 
-      this->label = new QLabel("Salut tous le monde!");
+      this->label = new QLabel("Robot status\ntext prompt");
+      this->label->setAlignment(Qt::AlignCenter);
+      // this->label->setFont(QFont("Arial", 22));
+      this->label->setFont(QFont("Arial", 12));
       frameLayout->addWidget(label, Qt::AlignCenter);
 
       // Add frameLayout to the frame
@@ -64,11 +67,20 @@ namespace gazebo
       frameLayout->setContentsMargins(0, 0, 0, 0);
       mainLayout->setContentsMargins(0, 0, 0, 0);
 
+      // OUTER
+      // QHBoxLayout *outerLayout = new QHBoxLayout;
+      // outerLayout->setContentsMargins(0, 0, 0, 0);
+      // QFrame *outerFrame = new QFrame();
+      // outerFrame->setLayout(outerLayout);
+      // outer
+
+
+
       this->setLayout(mainLayout);
 
       // Position and resize this widget
-      this->move(10, 10);
-      this->resize(300, 100);
+      this->move(1150, 300);
+      this->resize(300, 70);
 
       ROS_INFO("Plugin: GUI Text loaded !");
     }

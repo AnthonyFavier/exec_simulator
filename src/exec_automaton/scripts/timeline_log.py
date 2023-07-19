@@ -88,88 +88,24 @@ def takeSecond(elem):
 def getStamp(event):
     return event.stamp
 
-def old_r_extract_activities():
-    global g_events, g_r_activities
 
-    # Start Step (When sending VHA)
-    i = 0
-    e = g_events[i]
-    while True:
-
-        e=e
-
-        # Waiting for Human Choice
-        if e.name == "R_S_WAIT_HC":
-            t_swhc = e.stamp
-            while e.name!="R_E_WAIT_HC" and e.name!="R_TIMEOUT":
-                i+=1
-                e = g_events[i]
-            t_ewhc = e.stamp
-            # g_r_activities.append( ("WAIT_HC", t_swhc, t_ewhc) )
-            g_r_activities.append( Activity("WAIT_HC", t_swhc, t_ewhc) )
-
-        # ID Phase
-        if e.name == "R_S_ID":
-            t_sid = e.stamp
-            while e.name!="R_E_ID":
-                i+=1
-                e = g_events[i]
-            t_eid = e.stamp
-            g_r_activities.append( Activity("ID", t_sid, t_eid) )
-
-        # Robot PASS
-        if e.name == "R_PASS":
-            t_spass = e.stamp
-            while e.name != "R_S_ASSESS":
-                i+=1
-                e = g_events[i]
-            t_epass = e.stamp
-            g_r_activities.append( Activity("PASS", t_spass, t_epass) )
-
-        # Assessing Phase
-        if e.name=="R_S_ASSESS":
-            t_sass = e.stamp
-            while e.name!="R_E_ASSESS":
-                i+=1
-                e = g_events[i]
-            t_eass = e.stamp
-            g_r_activities.append( Activity("ASSESS", t_sass, t_eass) )
-
-        # IDLE
-        if e.name == "NS_IDLE":
-            t_sidle = e.stamp
-            while e.name[:4] != "E_HA":
-                i+=1
-                e = g_events[i]
-            t_eidle = e.stamp
-            g_r_activities.append( Activity("IDLE", t_sidle, t_eidle) )
-
-        # Robot action
-        if e.name[:4] == "S_RA":
-            t_sra = e.stamp
-            while e.name[:4]!="E_RA":
-                i+=1
-                e = g_events[i]
-            t_era = e.stamp
-            g_r_activities.append( Activity(e.name[5:], t_sra, t_era) )
-
-        # Robot action
-        if e.name == "R_E_WAIT_END_HA":
-            t_e = e.stamp
-            j = i-1
-            while g_events[j].name[:4]!="E_RA" and g_events[j].name!="R_PASS" and g_events[j].name!="S_GO_IDLE":
-                j-=1
-            if not g_events[j].name in ["R_PASS", "S_GO_IDLE"]:
-                t_s = g_events[j].stamp
-                if t_e - t_s > 0.2:
-                    g_r_activities.append( Activity("WAIT_END_HA", t_s, t_e) )
-
-        
-        if e.name == "OVER":
-            break
-        i+=1
-        e = g_events[i]
-
+g_r_activities_names = {
+    "wait_hc":          ["Wait\nH Decision",    "yellow",       "black"],
+    "idle_wait_s_ha":   ["Wait\nH Action",      "yellow",       "black"],
+    "wait_e_ha":        ["Wait End\nH Action",  "forestgreen",  "white"],
+    "id":               ["ID Phase",                "lightgreen",   "black"],
+    "sa":               ["SA",                      "lightgreen",   "black"],
+    "plan_mvt":         ["Plan Mvt",                "silver",       "black"],
+    "grns":             ["GRNS",                    "silver",       "black"],
+}
+g_h_activities_names = {
+    "idle_wait_ns":         ["Wait NS",         "forestgreen",   "white"],
+    "idle_pass_wait_ns":    ["Wait NS",         "forestgreen",   "white"],
+    "idle_wait_wait_ns":    ["Wait NS",         "forestgreen",   "white"],
+    "idle_wait_compliant":  ["Compliant\nIDLE", "lightgrey",     "black"],
+    "idle_pass_compliant":  ["Compliant\nIDLE", "lightgrey",     "black"],
+    "start_delay":          ["Start Delay",     "yellow",        "black"],
+}
 def r_extract_activities():
     global g_events, g_r_activities
 
@@ -185,14 +121,14 @@ def r_extract_activities():
                 i+=1
                 e = g_events[i]
             tsplan = e.stamp
-            g_r_activities.append( Activity("WAIT_HC", t1, tsplan) )
+            g_r_activities.append( Activity("wait_hc", t1, tsplan) )
 
             while e.name[:4]!="S_RA" and e.name!="R_PASS" and e.name!="R_E_ID":
                 i+=1
                 e = g_events[i]
 
             if e.name=="R_E_ID":
-                g_r_activities.append( Activity("ID", tsplan, e.stamp) )
+                g_r_activities.append( Activity("id", tsplan, e.stamp) )
                 tsplan = e.stamp
                 while e.name[:4]!="S_RA" and e.name!="R_PASS":
                     i+=1
@@ -200,7 +136,7 @@ def r_extract_activities():
 
             if e.name[:4]=="S_RA":
                 tsra = e.stamp
-                g_r_activities.append( Activity("Plan mvt", tsplan, tsra) )
+                g_r_activities.append( Activity("plan_mvt", tsplan, tsra) )
 
                 while e.name[:4]!="E_RA":
                     i+=1
@@ -217,26 +153,26 @@ def r_extract_activities():
                 i+=1
                 e = g_events[i]
             tsweha = e.stamp
-            g_r_activities.append( Activity("IDLE\nWAIT_HA", t1, tsweha) )
+            g_r_activities.append( Activity("idle_wait_s_ha", t1, tsweha) )
 
             
         while e.name!="R_S_ASSESS":
             i+=1
             e = g_events[i]
         teweha = e.stamp
-        g_r_activities.append( Activity("WAIT_E_HA", tsweha, teweha) )
+        g_r_activities.append( Activity("wait_e_ha", tsweha, teweha) )
 
         while e.name!="R_E_ASSESS":
             i+=1
             e = g_events[i]
         teass = e.stamp
-        g_r_activities.append( Activity("SA", teweha, teass) )
+        g_r_activities.append( Activity("sa", teweha, teass) )
 
         while e.name[:2]!="NS" and e.name!="OVER":
             i+=1
             e = g_events[i]
         tf = e.stamp
-        g_r_activities.append( Activity("GRNS", teass, tf) )
+        g_r_activities.append( Activity("grns", teass, tf) )
         if e.name[:2]=="NS":
             i-=1
             e = g_events[i]
@@ -246,7 +182,6 @@ def r_extract_activities():
             break
         i+=1
         e = g_events[i]
-
 def h_extract_activities():
     global g_events, g_h_activities
     
@@ -274,12 +209,12 @@ def h_extract_activities():
 
                 # 1 #
                 if e.name[:2]=="NS" or e.name=="OVER":
-                    g_h_activities.append( Activity("IDLE (wait)\n Wait NS", t1, t3) )
+                    g_h_activities.append( Activity("idle_wait_wait_ns", t1, t3) )
                     i-=1
                     e = g_events[i]
                 # 2 #
                 elif e.name[:4]=="S_HA":
-                    g_h_activities.append( Activity("IDLE (wait)\n Compliant", t1, t3) )
+                    g_h_activities.append( Activity("idle_wait_compliant", t1, t3) )
 
                     while e.name[:4]!="E_HA":
                         i+=1
@@ -291,14 +226,14 @@ def h_extract_activities():
                         i+=1
                         e = g_events[i]
                     t5 = e.stamp
-                    g_h_activities.append( Activity("IDLE Wait NS", t4, t5) )
+                    g_h_activities.append( Activity("idle_wait_ns", t4, t5) )
                     i-=1
                     e = g_events[i]
 
 
             # 3 #
             elif e.name[:4]=="S_HA":
-                g_h_activities.append( Activity("StartDelay", t1, t2) )
+                g_h_activities.append( Activity("start_delay", t1, t2) )
 
                 while e.name[:4]!="E_HA":
                     i+=1
@@ -310,13 +245,13 @@ def h_extract_activities():
                     i+=1
                     e = g_events[i]
                 t4 = e.stamp
-                g_h_activities.append( Activity("IDLE Wait NS", t3, t4) )
+                g_h_activities.append( Activity("idle_wait_ns", t3, t4) )
                 i-=1
                 e = g_events[i]
             
             # 4 # 5 #
             elif e.name=="H_PASS":
-                g_h_activities.append( Activity("StartDelay", t1, t2) )
+                g_h_activities.append( Activity("start_delay", t1, t2) )
 
                 while e.name[:2]!="NS" and e.name!="OVER" and e.name[:4]!="S_HA":
                     i+=1
@@ -325,13 +260,13 @@ def h_extract_activities():
 
                 # 5 #
                 if e.name[:2]=="NS" or e.name=="OVER":
-                    g_h_activities.append( Activity("IDLE (pass)\nWait NS", t2, t3) )
+                    g_h_activities.append( Activity("idle_pass_wait_ns", t2, t3) )
                     i-=1
                     e = g_events[i]
                 
                 # 4 #
                 elif e.name[:4]=="S_HA":
-                    g_h_activities.append( Activity("IDLE (pass)\nCompliant", t2, t3) )
+                    g_h_activities.append( Activity("idle_pass_compliant", t2, t3) )
 
                     while e.name[:4]!="E_HA":
                         i+=1
@@ -343,7 +278,7 @@ def h_extract_activities():
                         i+=1
                         e = g_events[i]
                     t5 = e.stamp
-                    g_h_activities.append( Activity("IDLE Wait NS", t4, t5) )
+                    g_h_activities.append( Activity("idle_wait_ns", t4, t5) )
                     i-=1
                     e = g_events[i]
 
@@ -354,7 +289,7 @@ def h_extract_activities():
                 i+=1
                 e = g_events[i]
             t2 = e.stamp
-            g_h_activities.append( Activity("StartDelay", t1, t2) )
+            g_h_activities.append( Activity("start_delay", t1, t2) )
 
             while e.name[:4]!="E_HA":
                 i+=1
@@ -366,7 +301,7 @@ def h_extract_activities():
                 i+=1
                 e = g_events[i]
             t4 = e.stamp
-            g_h_activities.append( Activity("IDLE Wait NS", t3, t4) )
+            g_h_activities.append( Activity("idle_wait_ns", t3, t4) )
             i-=1
             e = g_events[i]
 
@@ -502,6 +437,8 @@ if __name__ == "__main__":
     print("\nTO SIGNALS:")
     show_events(g_to_signals)
 
+    plt.rcParams.update({'font.size': 13})
+
     fig, ax = plt.subplots(figsize=(18, 5))
     ax.invert_yaxis()
     
@@ -531,35 +468,21 @@ if __name__ == "__main__":
     signal_arrow_zorder = 3
     signal_text_zorder = 10
 
-    # ROBOT #
+    # ROBOT ACTIVITES #
     for act in g_r_activities:
         if act.dur() < MIN_DURATION:
             continue
 
+        text = act.name
         color = 'lightskyblue'
         text_color = 'black'
-        if act.name=="WAIT_HC":
-            color = "yellow"
-        if act.name in ["ID", "SA"]:
-            color = "lightgreen"
-        if act.name in ["GO_IDLE", "END_IDLE"]:
-            color = "silver"
-        if act.name=="IDLE":
-            color = "lightgrey"
-        if act.name=="PASS":
-            color = "lightgrey"
-        if act.name=="WAIT_E_HA":
-            color = "forestgreen"
-            text_color = "white"
-        if act.name=="IDLE\nWAIT_HA":
-            color = "yellow"
-        if act.name=="Plan mvt":
-            color = "silver"
-        if act.name=="GRNS":
-            color = "silver"
+        if act.name in g_r_activities_names:
+            text = g_r_activities_names[act.name][0]
+            color = g_r_activities_names[act.name][1]
+            text_color = g_r_activities_names[act.name][2]
         
         rec = ax.barh( ['R'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
-        ax.bar_label(rec, labels=[act.name], label_type='center', rotation=90, color=text_color)
+        ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
         
 
     # SIGNALS #
@@ -594,23 +517,21 @@ if __name__ == "__main__":
         ax.add_patch(arrow)
         
 
-    # HUMAN #
+    # HUMAN ACTIVITES #
     for act in g_h_activities:
         if act.dur() < MIN_DURATION:
             continue
 
+        text = act.name
         color = 'wheat'
         text_color = 'black'
-        if act.name in ["StartDelay"]:
-            color = "yellow"
-        if act.name in ["IDLE (pass)\nCompliant", "IDLE (wait)\n Compliant"]:
-            color = "lightgrey"
-        if act.name in ["IDLE Wait NS", "IDLE (pass)\nWait NS", "IDLE (wait)\n Wait NS"]:
-            color = "forestgreen"
-            text_color = "white"
+        if act.name in g_h_activities_names:
+            text = g_h_activities_names[act.name][0]
+            color = g_h_activities_names[act.name][1]
+            text_color = g_h_activities_names[act.name][2]
 
         rec = ax.barh( ['H'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
-        ax.bar_label(rec, labels=[act.name], label_type='center', rotation=90, color=text_color)
+        ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
 
     ax.format_coord = lambda x, y: 't={:g} s'.format(x)
 
