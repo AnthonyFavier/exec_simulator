@@ -54,7 +54,7 @@ namespace gazebo
       this->label = new QLabel("Robot status\ntext prompt");
       this->label->setAlignment(Qt::AlignCenter);
       // this->label->setFont(QFont("Arial", 22));
-      this->label->setFont(QFont("Arial", 12));
+      this->label->setFont(QFont("Arial", 16));
       frameLayout->addWidget(label, Qt::AlignCenter);
 
       // Add frameLayout to the frame
@@ -79,8 +79,9 @@ namespace gazebo
       this->setLayout(mainLayout);
 
       // Position and resize this widget
-      this->move(1150, 300);
-      this->resize(300, 70);
+      // this->move(1150, 300);
+      this->move(20, 20);
+      this->resize(400, 100);
 
       ROS_INFO("Plugin: GUI Text loaded !");
     }

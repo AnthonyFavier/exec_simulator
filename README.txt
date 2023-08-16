@@ -1,16 +1,20 @@
+--------------------------------------------------------------------
 Building:
-#1 Building the ros workspace
+#1 Building the ros workspace (Repeat in case of error)
 $ catkin_make
 
 #2 Building the gazebo_plugin
-$ cd src/gazebo_plugin/build
+$ cd src/gazebo_plugin
+$ mkdir build
+$ cd build
 $ cmake ..
 $ make
 
-#3 Install Progress package
+#3 Install custom Progress package
 $ cd src/progress
 $ python setup.py install --user 
 
+--------------------------------------------------------------------
 Launching the simulation is a 4 step process.
 This implies that the planning and characterization processes has been already ran.
 

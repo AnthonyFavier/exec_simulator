@@ -47,13 +47,14 @@ spec.loader.exec_module(module)
 sys.modules["domain"] = module
 from domain import *
 
-step_over = True
+step_over = False
 
 class WrongException(Exception):
     pass
 
 ## LOGGER ##
 logging.config.fileConfig(path + 'log.conf')
+
 
 #############
 ## LOADING ##
@@ -87,6 +88,7 @@ def set_choices(init_step,r_criteria,h_criteria):
 
     return r_ranked_leaves, h_ranked_leaves
 
+
 ###############
 ## EXECUTION ##
 ###############
@@ -96,24 +98,21 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
     """
     curr_step = get_first_step(begin_step)
     nb_of_degradation = 0
-    r_is_idle = False
     while not exec_over(curr_step) and not rospy.is_shutdown():
 
-        MOCK_update_human_actions(curr_step)
 
         if curr_step.isRInactive():
-            send_next_step_idle()
-            go_idle_pose(r_is_idle)
-            r_is_idle = True
-            RA = pick_valid_passive(curr_step)
+            g_text_plugin_pub.publish(String(f"Step started\nGoing IDLE\nWaiting for human to act..."))
+            send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+            go_idle_pose_once()
+            RA = select_valid_passive(curr_step)
             wait_human_start_acting(curr_step)
 
         else:
-            go_home_pose(r_is_idle)
-            r_is_idle = False
-            send_next_step()
-            wait_human_choice(curr_step)
-            MOCK_save_best_reachable_solution_for_human(curr_step)
+            go_home_pose_once()
+            send_NS_update_HAs(curr_step, VHA.NS)
+            wait_human_decision(curr_step)
+            # MOCK_save_best_reachable_solution_for_human(curr_step)
 
             ## 1 & 2 & 3 ##
             if human_active(): 
@@ -122,72 +121,118 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
                     result_id = MOCK_run_id_phase(curr_step)
                     ## 1 ##
                     if ID_successful(result_id): 
-                        RA = pick_best_valid_RA(curr_step, result_id)
+                        RA = select_best_compliant_RA(curr_step, result_id)
                     ## 2 ##
                     else: 
-                        RA = pick_valid_passive(curr_step)
+                        RA = select_valid_passive(curr_step)
                 ## 3 ##
                 else: 
                     lg.debug("ID not needed.")
-                    RA = pick_best_RA(curr_step)
+                    RA = select_best_RA(curr_step)
             ## 4 & 5 ##
             else: 
-                RA = pick_best_RA_H_passive(curr_step)
+                RA = select_best_RA_H_passive(curr_step)
 
-            if RA.is_passive():
-                g_text_plugin_pub.publish(String("Robot is passive..."))
-            else:
-                g_text_plugin_pub.publish(String("Robot is acting"))
             start_execute_RA(RA)
-            MOCK_update_hmi_human_choices(curr_step, RA)
+            passive_update_HAs(curr_step, RA)
                   
         wait_step_end()
         
-        HA = MOCK_assess_human_action(RA)
+        HA = MOCK_assess_human_action()
 
         # Check Passive Step
         if RA.is_passive() and HA.is_passive():
             # Repeat current step
-            reset_human()
+            reset()
             rospy.sleep(0.1)
         else:
             curr_step = get_next_step(curr_step, HA, RA)
-            MOCK_save_best_reachable_solution_for_human_after_robot_choice(curr_step)
-            if MOCK_robot_has_degraded_human_best_solution():
-                nb_of_degradation +=1
-                if nb_of_degradation >= 1:
-                    r_ranked_leaves, h_ranked_leaves = adjust_robot_preferences(begin_step,h_pref,h_pref)
 
-            reset_human()
+            # Look for degradation 
+            # MOCK_save_best_reachable_solution_for_human_after_robot_choice(curr_step)
+            # if MOCK_robot_has_degraded_human_best_solution():
+            #     nb_of_degradation +=1
+            #     if nb_of_degradation >= 1:
+            #         r_ranked_leaves, h_ranked_leaves = adjust_robot_preferences(begin_step,h_pref,h_pref)
+
+            reset()
             rospy.sleep(0.1)
 
     log_event("OVER")
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
+    g_text_plugin_pub.publish(String(f"Task Done"))
     g_hmi_finish_pub.publish(EmptyM())
     # return int(curr_step.id)
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
-
-#############
-## SIGNALS ##
-#############
-
-def send_next_step_idle():
-    log_event("NS_IDLE")
-    g_robot_next_step_idle_pub.publish(EmptyM())
-    
-def send_next_step():
-    log_event("NS")
-    g_robot_next_step_pub.publish(EmptyM())
 
 
 #########################
 ## MOCK Human behavior ##
 #########################
-HC = None
-g_p_lrde = None
-g_p_lrdo = None
+g_possible_human_actions = []
+def send_NS_update_HAs(step: ConM.Step, type):
+    global g_possible_human_actions
 
+    if type==VHA.NS:
+        log_event("NS")
+    elif type==VHA.NS_IDLE:
+        log_event("NS_IDLE")
+
+    g_possible_human_actions = [ho.human_action for ho in step.human_options]
+
+    send_vha(g_possible_human_actions, type)
+
+    # Find best human action id, sent to hmi mock
+    best_ha = Int32()
+    if step.best_human_pair.human_action.is_passive():
+        best_ha.data = -1
+    else:
+        for i,ho in enumerate(step.human_options):
+            if CM.Action.are_similar(ho.human_action, step.best_human_pair.human_action):
+                best_ha.data = i+1
+                break
+    g_best_human_action.publish(best_ha)
+
+def passive_update_HAs(step: ConM.step, RA: CM.Action):
+    global g_possible_human_actions
+
+    if not human_active():
+        # find compliant human actions and send VHA
+        compliant_pairs = find_compliant_pairs_with_RA(step, RA)
+        g_possible_human_actions = [p.human_action for p in compliant_pairs]
+        send_vha(g_possible_human_actions, VHA.CONCURRENT)
+
+        # find best human action in compliant actions
+        ## find best pair
+        best_rank_i = 0
+        best_rank_v = compliant_pairs[best_rank_i].best_rank_h
+        for i,p in enumerate(compliant_pairs[1:]):
+            if p.best_rank_h < best_rank_v:
+                best_rank_i = i
+                best_rank_v = p.best_rank_h
+        ## find id of corresponding best action
+        best_ha = Int32()
+        if compliant_pairs[best_rank_i].human_action.is_passive():
+            best_ha.data = -1
+        else:
+            for i,ho in enumerate(step.human_options):
+                if CM.Action.are_similar( ho.human_action, compliant_pairs[best_rank_i].human_action ):
+                    best_ha.data = i+1
+                    break
+        g_best_human_action.publish(best_ha)
+
+def find_compliant_pairs_with_RA(curr_step: ConM.Step, RA):
+    compliant_pairs = []
+    for pair in curr_step.get_pairs():
+        if CM.Action.are_similar(pair.robot_action, RA):
+            compliant_pairs.append(pair)
+    return compliant_pairs
+
+
+#########################################
+## Preference and Solution degradation ##
+#########################################
 g_best_reachable_human_solution = None
 def MOCK_save_best_reachable_solution_for_human(step: ConM.Step):
     if not HUMAN_UPDATING:
@@ -227,42 +272,9 @@ def adjust_robot_preferences(begin_step,r_pref,h_pref):
     lg.debug("ROBOT PREFERENCES ALIGNED !!!!")
     return (r_ranked_leaves, h_ranked_leaves)
 
-def MOCK_update_hmi_human_choices(curr_step, RA):
-    if not human_active():
-        compliant_pairs = find_compliant_pairs_with_RA(curr_step, RA)
-        compliant_human_actions = [p.human_action for p in compliant_pairs]
-        update_vha(compliant_human_actions, False)
-
-        # find best human action in compliant actions
-        # find best pair
-        best_rank_i = 0
-        best_rank_v = compliant_pairs[best_rank_i].best_rank_h
-        for i,p in enumerate(compliant_pairs[1:]):
-            if p.best_rank_h < best_rank_v:
-                best_rank_i = i
-                best_rank_v = p.best_rank_h
-        # find id of corresponding best action
-        best_ha = Int32()
-        if compliant_pairs[best_rank_i].human_action.is_passive():
-            best_ha.data = -1
-        else:
-            for i,ho in enumerate(curr_step.human_options):
-                if CM.Action.are_similar( ho.human_action, compliant_pairs[best_rank_i].human_action ):
-                    best_ha.data = i+1
-                    break
-        g_best_human_action.publish(best_ha)
-
-def find_compliant_pairs_with_RA(curr_step: ConM.Step, RA):
-    compliant_pairs = []
-    for pair in curr_step.get_pairs():
-        if CM.Action.are_similar(pair.robot_action, RA):
-            compliant_pairs.append(pair)
-    return compliant_pairs
-
 ##########################
 ## MOCK Robot execution ##
 ##########################
-
 def MOCK_run_id_phase(step: ConM.Step):
     """
     Simulate the identification phase.
@@ -275,7 +287,7 @@ def MOCK_run_id_phase(step: ConM.Step):
     rospy.sleep(ID_DELAY)
     if random.random()<P_SUCCESS_ID_PHASE:
         rospy.loginfo("ID Success")
-        id_result = HC
+        id_result = hidden_HC
     else:
         rospy.loginfo("ID failed...")
         id_result = None
@@ -284,145 +296,127 @@ def MOCK_run_id_phase(step: ConM.Step):
     
     return id_result
 
-def MOCK_assess_human_action(RA):
-    global HC
+def MOCK_assess_human_action() -> CM.Action:
+    global hidden_HC
     # If Human didn't choose, we try to find passive human action
     log_event("R_S_ASSESS")
 
-    if HC==None:
+    if hidden_HC==None:
         for ha in g_possible_human_actions:
             if ha.is_passive():
-                HC = ha
+                hidden_HC = ha
                 break
         # If didn't find passive HA
-        if HC==None: 
+        if hidden_HC==None: 
             rospy.loginfo("Inactive step...")
-            HC = default_human_passive_action
+            hidden_HC = default_human_passive_action
     else:
-        rospy.loginfo(f"Assessed Human action: {HC}")
+        rospy.loginfo(f"Assessed Human action: {hidden_HC}")
 
     rospy.sleep(ASSESS_DELAY)
     log_event("R_E_ASSESS")
     
-    return HC
+    return hidden_HC
 
-def get_first_step(begin_step: ConM.Step):
-    if len(begin_step.children)!=1:
-        raise Exception("begin_step should only have 1 child.")
-    first_step = begin_step.children[0]
-    return first_step
 
-def get_agents_before_step(step: ConM.Step):
-    return step.from_pair.end_agents
-
-def exec_over(step):
-    return step.is_final
-
-def go_idle_pose(r_is_idle):
-    if not r_is_idle:
+#######################################
+## SWITCH BETWEEN IDLE AND HOME POSE ##
+#######################################
+R_idle = False
+def go_idle_pose_once():
+    global R_idle
+    if not R_idle:
         g_hmi_r_idle_client.call(True)
         g_go_idle_pose_client.call()
-
-def go_home_pose(r_is_idle):
-    if r_is_idle:
+        R_idle = True
+def go_home_pose_once():
+    global R_idle
+    if R_idle:
+        g_text_plugin_pub.publish(String(f"Going out of IDLE mode..."))
         g_hmi_r_idle_client.call(False)
         g_go_home_pose_client.call()
+        R_idle = False
 
-def MOCK_update_human_actions(step: ConM.Step):
-    """
-    Updates g_possible_human_actions, send them to Human, send best_human_action id
-    """
-    global g_possible_human_actions
-    # i.e. wait for human to start acting or timeout reached
-    rospy.loginfo("Current step:\n"+CM.str_agents(get_agents_before_step(step)))
-    rospy.loginfo("\n" + step.str())
 
-    g_possible_human_actions = [ho.human_action for ho in step.human_options]
-
-    update_vha(g_possible_human_actions, True)
-
-    # Find best human action id, sent to hmi mock
-    best_ha = Int32()
-    if step.best_human_pair.human_action.is_passive():
-        best_ha.data = -1
-    else:
-        for i,ho in enumerate(step.human_options):
-            if CM.Action.are_similar(ho.human_action, step.best_human_pair.human_action):
-                best_ha.data = i+1
-                break
-    g_best_human_action.publish(best_ha)
-
+#######################
+## Waiting Functions ##
+#######################
 def wait_human_start_acting(step: ConM.Step):
-    global HC, step_over, g_previous_elapsed
-
     rospy.loginfo("Waiting for human to act...")
     while not rospy.is_shutdown():
-        if HC!=None and not HC.is_passive():
+        if hidden_HC!=None:
             break
         rospy.sleep(0.1)
 
-    rospy.sleep(WAIT_START_DELAY)
     rospy.loginfo("Step start detected!")
 
-    step_over = False
-
-def wait_human_choice(step: ConM.Step):
-    global HC, step_over, g_previous_elapsed
-
+def wait_human_decision(step: ConM.Step):
     log_event("R_S_WAIT_HC")
 
-
     rospy.loginfo("Waiting for human to act...")
+
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
     str_bar = StrBar(max=TIMEOUT_DELAY, width=15)
+
     start_waiting_time = rospy.get_rostime()
-    g_previous_elapsed = -1
     timeout_reached = True
+
     while not rospy.is_shutdown() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY:
         elapsed = (rospy.get_rostime()-start_waiting_time).to_sec()
+
+        # Update progress bars
         bar.goto(elapsed)
+        update_hmi_timeout_progress(elapsed)
         str_bar.goto(elapsed)
         g_text_plugin_pub.publish(String(f"Step started\nRobot waiting for human decision...\n{str_bar.get_str()}"))
-        update_hmi_timeout_progress(elapsed)
-        if HC!=None:
+
+        # Check termination condition
+        if g_human_decision!=None:
             timeout_reached = False
             break
+
+        # Loop rate
         rospy.sleep(0.1)
+
+    # Finish progress bars
     bar.goto(bar.max)
     str_bar.goto(str_bar.max)
-    g_text_plugin_pub.publish(String(f"Step started\nRobot waiting for human decision...\n{str_bar.get_str()}"))
+    update_hmi_timeout_progress(TIMEOUT_DELAY)
     bar.finish()
     str_bar.finish()
     
-
+    # If Timeout Reached
     if timeout_reached:
         g_hmi_timeout_reached_pub.publish(EmptyM()) # Rename with step started
-    if HC==None:
+    if g_human_decision==None:
         rospy.loginfo("Timeout reached, human not acting...")
+        g_text_plugin_pub.publish(String(f"Timeout reached\nHuman not acting"))
         log_event("R_TIMEOUT")
         log_event("R_E_WAIT_HC")
         human_acting = False
+    # Visual signal received, either PASS or Start Action
     else:
-        # rospy.sleep(WAIT_START_DELAY)
         rospy.loginfo("Step start detected!")
         log_event("R_E_WAIT_HC")
-        if HC.is_passive():
+        if g_human_decision.type == Signal.H_PASS:
             rospy.loginfo("Human not acting...")
             human_acting = False
         else:
             rospy.loginfo(f"Human is active")
             human_acting = True
 
-    step_over = False
     return human_acting
 
-g_previous_elapsed = -1
-def update_hmi_timeout_progress(elapsed):
-    global g_previous_elapsed
-    elapsed = int(elapsed)
-    if elapsed != g_previous_elapsed:
-        g_hmi_timeout_value_pub.publish(elapsed)
-        g_previous_elapsed = elapsed
+def wait_step_end():
+    rospy.loginfo("Waiting step end...")
+    text_updated = False
+    while not rospy.is_shutdown() and not step_over:
+        if not text_updated and g_robot_action_over:
+            g_text_plugin_pub.publish(String("Waiting end of human action..."))
+        rospy.sleep(0.1)
+    rospy.loginfo("Current step is over.")
+    log_event("R_E_WAIT_END_HA")
+
 
 ##################
 ## SubFonctions ##
@@ -434,7 +428,7 @@ def log_event(name):
     g_event_log_pub.publish(msg)
 
 def human_active():
-    return HC!=None and not HC.is_passive()
+    return hidden_HC!=None and not hidden_HC.is_passive()
 
 def ID_needed(step: ConM.Step):
     best_ra = step.human_options[0].best_robot_pair.robot_action
@@ -448,41 +442,13 @@ def ID_needed(step: ConM.Step):
 def ID_successful(result: CM.Action | None):
     return result!=None
 
-def pick_best_RA(curr_step: ConM.Step):
-    return curr_step.best_robot_pair.robot_action
-
-def pick_best_RA_H_passive(curr_step: ConM.Step):
-    for ho in curr_step.human_options:
-        if not ho.human_action.is_passive():
-            continue
-        else:
-            return ho.best_robot_pair.robot_action
-    return default_robot_passive_action
-
-def pick_best_valid_RA(step: ConM.Step, human_action: CM.Action):
-    for ho in step.human_options:
-        if ho.human_action==human_action:
-            return ho.best_robot_pair.robot_action
-    raise Exception("No best robot action defined...")
-
-def pick_valid_passive(step: ConM.Step):
-    # Find the first passive robot action
-    for ho in step.human_options:
-        for p in ho.action_pairs:
-            if p.robot_action.is_passive():
-                return p.robot_action
-
-    raise Exception("Didn't find passive action for failed ID...")
-
-def wait_step_end():
-    rospy.loginfo("Waiting step end...")
-    text_updated = False
-    while not rospy.is_shutdown() and not step_over:
-        if not text_updated and g_robot_action_over:
-            g_text_plugin_pub.publish(String("Waiting end of human action..."))
-        rospy.sleep(0.1)
-    rospy.loginfo("Current step is over.")
-    log_event("R_E_WAIT_END_HA")
+g_previous_elapsed = -1
+def update_hmi_timeout_progress(elapsed):
+    global g_previous_elapsed
+    elapsed = int(elapsed)
+    if elapsed != g_previous_elapsed:
+        g_hmi_timeout_value_pub.publish(elapsed)
+        g_previous_elapsed = elapsed
 
 def get_executed_pair(step: ConM.Step, HA: CM.Action, RA: CM.Action):
     for ho in step.human_options:
@@ -499,51 +465,72 @@ def get_executed_pair(step: ConM.Step, HA: CM.Action, RA: CM.Action):
     return pair
 
 def get_next_step(step: ConM.Step, HA: CM.Action, RA: CM.Action):
-    if HC==None:
-        return step
-    else:
-        executed_pair = get_executed_pair(step, HA, RA)
-        first_next_pair = executed_pair.next[0]
-        return first_next_pair.get_in_step()
-
-def get_lrd_probas(nb_human_actions):
-    if nb_human_actions<=1:
-        raise Exception("nb_human_actions MUST BE > 1. There must be at least one HA and LRD.")
-
-    not_eq_p = 0.0
-    n = nb_human_actions+1
-    if P_LET_ROBOT_DECIDE != -1:
-        not_eq_p += P_LET_ROBOT_DECIDE
-        n-=1
-    if P_LEAVE_ROBOT_DO != -1:
-        not_eq_p += P_LEAVE_ROBOT_DO
-        n-=1
-
-    p_eq = (1 - not_eq_p)/n
-    p_lrde = p_eq if P_LET_ROBOT_DECIDE==-1 else P_LET_ROBOT_DECIDE
-    p_lrdo = p_eq if P_LEAVE_ROBOT_DO==-1 else P_LEAVE_ROBOT_DO
-
-    return p_lrde, p_lrdo, p_eq
+    executed_pair = get_executed_pair(step, HA, RA)
+    first_next_pair = executed_pair.next[0]
+    return first_next_pair.get_in_step()
 
 def convert_rank_to_score(rank, nb):
     return -1/(nb-1) * rank + nb/(nb-1)
     return rank
 
-def reset_human():
-    global HC, g_possible_human_actions
-    global g_robot_action_over
-    HC = None
+def reset():
+    global hidden_HC, g_possible_human_actions, g_robot_action_over, g_human_decision, step_over, g_previous_elapsed
+    hidden_HC = None
     g_possible_human_actions = []
     g_robot_action_over = False
+    g_human_decision = None
+    step_over = False
+    g_previous_elapsed = -1
+
+def get_first_step(begin_step: ConM.Step):
+    if len(begin_step.children)!=1:
+        raise Exception("begin_step should only have 1 child.")
+    first_step = begin_step.children[0]
+    return first_step
+
+def get_agents_before_step(step: ConM.Step):
+    return step.from_pair.end_agents
+
+def exec_over(step):
+    return step.is_final
+
+
+#########################
+## Select Robot Action ##
+#########################
+def select_best_RA(curr_step: ConM.Step):
+    return curr_step.best_robot_pair.robot_action
+
+def select_best_RA_H_passive(curr_step: ConM.Step) -> CM.Action:
+    for ho in curr_step.human_options:
+        if not ho.human_action.is_passive():
+            continue
+        else:
+            return ho.best_robot_pair.robot_action
+    return default_robot_passive_action
+
+def select_best_compliant_RA(step: ConM.Step, human_action: CM.Action) -> CM.Action:
+    for ho in step.human_options:
+        if ho.human_action==human_action:
+            return ho.best_robot_pair.robot_action
+    raise Exception("No best robot action defined...")
+
+def select_valid_passive(step: ConM.Step) -> CM.Action:
+    # Find the first passive robot action
+    for ho in step.human_options:
+        for p in ho.action_pairs:
+            if p.robot_action.is_passive():
+                return p.robot_action
+
+    raise Exception("Didn't find passive action for failed ID...")
+
 
 #########
 ## ROS ##
 #########
-def update_vha(valid_human_actions: list[CM.Action], start):
+def send_vha(valid_human_actions: list[CM.Action], type):
     msg = VHA()
-
-    # Set Type
-    msg.type = msg.START if start else msg.CONCURRENT
+    msg.type = type
 
     # Remove passive actions
     for ha in valid_human_actions:
@@ -584,19 +571,21 @@ def compute_msg_action(a):
 
 def start_execute_RA(RA: CM.Action):
     rospy.loginfo(f"Execute Robot Action {RA}")
+
+    if RA.is_passive():
+        g_text_plugin_pub.publish(String("Robot is passive..."))
+    else:
+        g_text_plugin_pub.publish(String("Robot is acting"))
+
     msg = compute_msg_action(RA)
     g_robot_action_pub.publish(msg)
 
-HC = None
-g_possible_human_actions = []
-default_human_passive_action = None
-default_robot_passive_action = None
-
 def step_over_cb(msg):
-    global step_over, HC, g_possible_human_actions
+    global step_over
     step_over = True
     
-def start_human_action_server(req):
+def start_human_action_server(req: IntRequest):
+    # Convert Int id 2 Action
     if req.data==-1:
         # Human is passive
         # find passive action
@@ -608,21 +597,26 @@ def start_human_action_server(req):
         if pass_ha==None: # Pass ha not found
             pass_ha = default_human_passive_action
         HA = pass_ha
-
     # Regular action
     else:
         HA = g_possible_human_actions[req.data-1]
 
+    # Send Human action to simu controller
     msg_ha = compute_msg_action(HA)
     msg_ha.id = req.data
     g_human_action_pub.publish(msg_ha)
 
     return IntResponse()
 
+g_human_decision = None
+hidden_HC = None
 def human_visual_signal_cb(msg: Signal):
-    global HC, g_possible_human_actions, step_over
+    global hidden_HC, g_human_decision
 
     print(f"\nCB human visual signal: {msg}")
+
+    REACTION_TIME_HVS = 0.0
+    rospy.sleep(REACTION_TIME_HVS)
 
     # Human is passive
     if msg.type == Signal.H_PASS:
@@ -635,13 +629,15 @@ def human_visual_signal_cb(msg: Signal):
         if pass_ha==None: # Pass ha not found
             # double skip, should repeat 
             pass_ha = default_human_passive_action
-        HC = pass_ha
-        rospy.loginfo(f"\nHuman visual : {HC}")
+        hidden_HC = pass_ha
+        g_human_decision = msg
+        rospy.loginfo(f"\nHuman visual : PASS")
 
     # Regular action
     elif msg.type == Signal.S_HA:
-        HC = g_possible_human_actions[msg.id-1]
-        rospy.loginfo(f"\nHuman visual : {HC}")
+        hidden_HC = g_possible_human_actions[msg.id-1]
+        g_human_decision = msg
+        rospy.loginfo(f"\nHuman visual S_HA")
 
 g_robot_action_over = False
 def robot_visual_signal_cb(msg: Signal):
@@ -665,7 +661,7 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
     input()
 
     # Mock Delays
-    TIMEOUT_DELAY       = 20.0
+    TIMEOUT_DELAY       = 10.0
     WAIT_START_DELAY    = 0.5
     ID_DELAY            = 1.0
     ASSESS_DELAY        = 0.5
@@ -717,7 +713,6 @@ def find_r_rank_of_id(steps, id):
         if s.id == id:
             return s.get_f_leaf().branch_rank_r
 
-
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
@@ -730,14 +725,9 @@ if __name__ == "__main__":
     g_human_action_pub = rospy.Publisher('/human_action', Action, queue_size=1)
     g_hmi_timeout_value_pub = rospy.Publisher('/hmi_timeout_value', Int32, queue_size=1)
     g_hmi_timeout_reached_pub = rospy.Publisher('/hmi_timeout_reached', EmptyM, queue_size=1)
-    g_hmi_enable_buttons_pub = rospy.Publisher('/hmi_enable_buttons', Bool, queue_size=1)
     g_hmi_finish_pub = rospy.Publisher('/hmi_finish', EmptyM, queue_size=1)
     g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
     g_event_log_pub = rospy.Publisher('/event_log', EventLog, queue_size=10)
-    g_robot_next_step_idle_pub = rospy.Publisher("/ns_idle", EmptyM, queue_size=1)
-    g_robot_next_step_pub = rospy.Publisher("/ns", EmptyM, queue_size=1)
-    g_robot_start_action_pub = rospy.Publisher("/s_ra", EmptyM, queue_size=1)
-    g_robot_pass_pub = rospy.Publisher("/r_pass", EmptyM, queue_size=1)
     g_text_plugin_pub = rospy.Publisher("/text_gazebo_label", String, queue_size=1)
 
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)

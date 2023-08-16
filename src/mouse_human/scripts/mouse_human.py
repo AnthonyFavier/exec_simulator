@@ -49,6 +49,8 @@ class Zone:
 
         self.current_action_id = -10
 
+        self.is_pass = False
+
     def setPixelCoords(self, x1,y1,x2,y2):
         self.x1 = x1
         self.y1 = y1
@@ -86,6 +88,7 @@ g_zones = {
     4:Zone(4, -1, -1, -1, -1, g_init_pose_zones[4], ["pick('p', 'H')"]),
     5:Zone(5, -1, -1, -1, -1, g_init_pose_zones[5], ["PASS"]),
 }
+g_zones[5].is_pass = True
 # Get and set zones pixels 
 f = open('/home/afavier/exec_simulator_ws/src/gazebo_plugin/zones_coords.txt', 'r')
 for l in f:
@@ -119,7 +122,7 @@ def show_all_zones():
 #########
 ## ROS ##
 #########
-def incoming_vha_cb(msg):
+def incoming_vha_cb(msg: VHA):
     global g_vha, g_vha_received
     print("vha received")
     print(msg)
@@ -128,7 +131,7 @@ def incoming_vha_cb(msg):
 
     # update zones
     for z in g_zones.values():
-        if z.id == 5: # PASS
+        if z.is_pass and g_vha.type==VHA.NS: # PASS
             show = True
             z.current_action_id = -1
         else:
@@ -149,7 +152,6 @@ def incoming_vha_cb(msg):
             z.current_action_id = -10
         g_set_model_state_client(srv)
         
-
 def mouse_pressed_cb(msg: Point):
     zone_clicked = None
     for z in g_zones.values():
@@ -180,8 +182,10 @@ def main():
     timeout_max_service = rospy.Service("hmi_timeout_max", Int, lambda req: IntResponse())
     r_idle_service = rospy.Service("hmi_r_idle", SetBool, lambda req: SetBoolResponse())
 
+    rospy.wait_for_service("/gazebo/set_model_state")
     g_set_model_state_client = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
 
+    rospy.wait_for_service("start_human_action")
     g_start_human_action_prox = rospy.ServiceProxy("start_human_action", Int)
 
     # Spawn zones

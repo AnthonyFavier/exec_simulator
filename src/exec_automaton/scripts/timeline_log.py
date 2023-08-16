@@ -18,6 +18,7 @@ from sim_msgs.srv import Int, IntResponse
 import importlib
 from std_srvs.srv import Empty as EmptyS
 from std_srvs.srv import SetBool
+from sim_msgs.msg import Signal
 
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -89,14 +90,14 @@ def getStamp(event):
     return event.stamp
 
 
-g_r_activities_names = {
-    "wait_hc":          ["Wait\nH Decision",    "yellow",       "black"],
-    "idle_wait_s_ha":   ["Wait\nH Action",      "yellow",       "black"],
-    "wait_e_ha":        ["Wait End\nH Action",  "forestgreen",  "white"],
-    "id":               ["ID Phase",                "lightgreen",   "black"],
-    "sa":               ["SA",                      "lightgreen",   "black"],
-    "plan_mvt":         ["Plan Mvt",                "silver",       "black"],
-    "grns":             ["GRNS",                    "silver",       "black"],
+g_r_activities_names     = {
+    "wait_hc":          ["Wait H",              "yellow",       "black"],
+    "idle_wait_s_ha":   ["Wait H",              "yellow",       "black"],
+    "wait_e_ha":        ["Wait E_HA",  "forestgreen",  "white"],
+    "id":               ["ID Phase",            "lightgreen",   "black"],
+    "sa":               ["SA",                  "lightgreen",   "black"],
+    "plan_mvt":         ["Plan Mvt",            "silver",       "black"],
+    "grns":             ["GRNS",                "silver",       "black"],
 }
 g_h_activities_names = {
     "idle_wait_ns":         ["Wait NS",         "forestgreen",   "white"],
@@ -149,7 +150,7 @@ def r_extract_activities():
 
         elif e.name=="NS_IDLE":
             t1 = e.stamp
-            while e.name[:4]!="S_HA":
+            while e.name!="SGL_S_HA":
                 i+=1
                 e = g_events[i]
             tsweha = e.stamp
@@ -330,7 +331,7 @@ def compute_signals():
         if e.name == "S_END_IDLE":
             g_r_signals.append( Event("E_R_IDLE", e.stamp,) )
 
-        if e.name[:4] == "S_RA":
+        if e.name == "SGL_S_RA":
             g_r_signals.append( Event("S_RA", e.stamp) )
         
         if e.name == "R_PASS":
@@ -346,7 +347,7 @@ def compute_signals():
     i = 0
     e = g_events[i]
     while True:
-        if e.name[:4] == "S_HA":
+        if e.name == "SGL_S_HA":
             g_h_signals.append( Event("S_HA", e.stamp) )
 
         if e.name[:4] == "E_HA":
@@ -401,10 +402,15 @@ if __name__ == "__main__":
 
     # Subscribers
     log_sub = rospy.Subscriber('/event_log', EventLog, log_cb)
+    # log_r_sgl_sub = rospy.Subscriber('/robot_visual_signals', Signal, r_sgl_cb)
+    # log_h_sgl_sub = rospy.Subscriber('/human_visual_signals', Signal, h_sgl_cb)
 
     if dumping:
-        print("Listening events...")
-        input()
+        print("Listening events... (type 'q' and return to abort)")
+        t = input()
+        if t=="q":
+            print("Record aborted")
+            exit(1)
 
         # Dumping
         dill.dump(g_events, open("/home/afavier/exec_simulator_ws/events.p", "wb"))
@@ -447,7 +453,7 @@ if __name__ == "__main__":
     tick_spacing = 2
     # ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
     max_x = math.ceil(g_events[-1].stamp)
-    ax.set_xlim((0,max_x))
+    ax.set_xlim((-0.5,max_x))
     x_ticks = np.arange(0, max_x, tick_spacing )
     ax.set_xticks(x_ticks)
     x_tickslabels = []
