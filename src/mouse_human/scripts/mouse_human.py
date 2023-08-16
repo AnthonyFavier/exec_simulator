@@ -185,8 +185,7 @@ def main():
     rospy.wait_for_service("/gazebo/set_model_state")
     g_set_model_state_client = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
 
-    rospy.wait_for_service("start_human_action")
-    g_start_human_action_prox = rospy.ServiceProxy("start_human_action", Int)
+    
 
     # Spawn zones
     rospy.wait_for_service('gazebo/spawn_sdf_model')
@@ -210,6 +209,9 @@ def main():
             spawn_model_prox(f"z{i}", sdff, "", g_far_zone_pose, "world")
             print(f"z{i} spawned")
         # show_all_zones()
+
+    rospy.wait_for_service("start_human_action")
+    g_start_human_action_prox = rospy.ServiceProxy("start_human_action", Int)
 
     rospy.spin()
 
