@@ -45,6 +45,14 @@ class Event:
         self.name = name
         self.stamp = stamp
 
+class LogSignal:
+    def __init__(self, name: str, stamp: float, type, color_arrow, color_text) -> None:
+        self.name = name
+        self.stamp = stamp
+        self.type = type
+        self.color_arrow = color_arrow
+        self.color_text = color_text
+
 # Activity(name: str, t_s: float, t_e: float)
 class Activity:
     def __init__(self, name, t_s, t_e) -> None:
@@ -60,17 +68,13 @@ g_events = [] #type: List[Event]
 g_r_activities = [] #type: List[Activity]
 g_h_activities = [] #type: List[Activity]
 
-g_r_signals = [] #type: List[Event]
-g_h_signals = [] #type: List[Event]
-g_to_signals = [] #type: List[Event]
+g_r_signals = [] #type: List[LogSignal]
+g_h_signals = [] #type: List[LogSignal]
+g_to_signals = [] #type: List[LogSignal]
 
-def log_cb(msg):
-    global g_events
-    print(msg)
-    g_events.append( Event(msg.name, msg.timestamp) )
 
 def reset_times():
-    global g_events
+    global g_events, g_h_signals, g_r_signals, g_to_signals
 
     g_events.sort(key=getStamp)
 
@@ -79,27 +83,72 @@ def reset_times():
     else:
         raise Exception("Events empty...")
 
-
-    for e in g_events:
-        e.stamp -= min_time
-
-def takeSecond(elem):
-    return elem[1]
+    for x in g_events + g_r_signals + g_h_signals + g_to_signals:
+        x.stamp -= min_time
 
 def getStamp(event):
     return event.stamp
 
+# Events Callback
+def log_cb(msg):
+    global g_events
+    print(msg)
+    g_events.append( Event(msg.name, msg.timestamp) )
 
-g_r_activities_names     = {
+# Signals Callbacks (Robot, Human, Timeouts)
+## signals create a corresponding global event  
+r_sgl_color_arrow = "lightskyblue"
+r_sgl_color_text = "black"
+g_r_signals_names = { # sgl_types : [display_name, shape_color, text_color]
+    Signal.NS :         ["NS",      r_sgl_color_arrow, r_sgl_color_text],
+    Signal.NS_IDLE :    ["NS_IDLE", r_sgl_color_arrow, r_sgl_color_text],
+    Signal.S_RA :       ["S_RA",    r_sgl_color_arrow, r_sgl_color_text],
+    Signal.E_RA :       ["E_RA",    r_sgl_color_arrow, r_sgl_color_text],
+    Signal.R_PASS :     ["R_PASS",  r_sgl_color_arrow, r_sgl_color_text],
+}
+h_sgl_color_arrow = "wheat"
+h_sgl_color_text = "black"
+g_h_signals_names = { # sgl_types : [display_name, shape_color, text_color]
+    Signal.S_HA :   ["S_HA",    h_sgl_color_arrow, h_sgl_color_text],
+    Signal.E_HA :   ["E_HA",    h_sgl_color_arrow, h_sgl_color_text],
+    Signal.H_PASS : ["H_PASS",  h_sgl_color_arrow, h_sgl_color_text],
+}
+def r_sgl_cb(sgl: Signal):
+    global g_r_signals, g_to_signals
+
+    print(sgl)
+
+    if sgl.type == Signal.TO:
+        t = rospy.get_time()
+        TO_name = "TIMEOUT" 
+        g_to_signals.append( LogSignal(TO_name, t, sgl.type, None, None) )
+        g_events.append( Event("SGL_"+TO_name, t) )
+
+    elif sgl.type in g_r_signals_names:
+        t = rospy.get_time()
+        g_r_signals.append( LogSignal(g_r_signals_names[sgl.type][0], t, sgl.type, g_r_signals_names[sgl.type][1], g_r_signals_names[sgl.type][2]) )
+        g_events.append( Event("SGL_"+g_r_signals_names[sgl.type][0], t) )
+def h_sgl_cb(sgl: Signal):
+    global g_h_signals
+
+    print(sgl)
+    
+    if sgl.type in g_h_signals_names:
+        t = rospy.get_time()
+        g_h_signals.append( LogSignal(g_h_signals_names[sgl.type][0], t, sgl.type, g_h_signals_names[sgl.type][1], g_h_signals_names[sgl.type][2]) )
+        g_events.append( Event("SGL_"+g_h_signals_names[sgl.type][0], t) )
+
+# Activities Extraction
+g_r_activities_names = { # act_name : [display_name, shape_color, text_color]
     "wait_hc":          ["Wait H",              "yellow",       "black"],
-    "idle_wait_s_ha":   ["Wait H",              "yellow",       "black"],
-    "wait_e_ha":        ["Wait E_HA",  "forestgreen",  "white"],
+    "idle_wait_h":      ["Wait H",              "yellow",       "black"],
+    "wait_end_ha":      ["Wait E_HA",           "forestgreen",  "white"],
     "id":               ["ID Phase",            "lightgreen",   "black"],
     "sa":               ["SA",                  "lightgreen",   "black"],
     "plan_mvt":         ["Plan Mvt",            "silver",       "black"],
     "grns":             ["GRNS",                "silver",       "black"],
 }
-g_h_activities_names = {
+g_h_activities_names = { # act_name : [display_name, shape_color, text_color]
     "idle_wait_ns":         ["Wait NS",         "forestgreen",   "white"],
     "idle_pass_wait_ns":    ["Wait NS",         "forestgreen",   "white"],
     "idle_wait_wait_ns":    ["Wait NS",         "forestgreen",   "white"],
@@ -110,58 +159,69 @@ g_h_activities_names = {
 def r_extract_activities():
     global g_events, g_r_activities
 
-    # Start Step (When sending VHA)
     i = 0
     e = g_events[i]
+    while e.name[:6]!="SGL_NS":
+        i+=1
+        e = g_events[i]
     while True:
 
-        if e.name == "NS":
+        print("new step")
+
+        if e.name == "SGL_NS":
+            
             t1 = e.stamp
-            # while e.name!="H_PASS" and e.name!="R_TIMEOUT" and e.name[:4]!="S_HA":
             while e.name!="R_E_WAIT_HC":
                 i+=1
                 e = g_events[i]
             tsplan = e.stamp
             g_r_activities.append( Activity("wait_hc", t1, tsplan) )
 
-            while e.name[:4]!="S_RA" and e.name!="R_PASS" and e.name!="R_E_ID":
+            while e.name[:4]!="S_RA" and e.name!="SGL_R_PASS" and e.name!="R_E_ID":
                 i+=1
                 e = g_events[i]
-
+                
             if e.name=="R_E_ID":
                 g_r_activities.append( Activity("id", tsplan, e.stamp) )
                 tsplan = e.stamp
-                while e.name[:4]!="S_RA" and e.name!="R_PASS":
+                while e.name[:4]!="S_RA" and e.name!="SGL_R_PASS":
                     i+=1
                     e = g_events[i]
+
+            if e.name=="SGL_R_PASS":
+                tsweha = e.stamp
+                g_r_activities.append( Activity("plan_mvt", tsplan, tsweha) )
 
             if e.name[:4]=="S_RA":
                 tsra = e.stamp
-                g_r_activities.append( Activity("plan_mvt", tsplan, tsra) )
+                act_name = e.name[5:]
+                while e.name!="SGL_S_RA":
+                    i+=1
+                    e = g_events[i]
+                tssra = e.stamp
+                g_r_activities.append( Activity("plan_mvt", tsra, tssra) )
 
-                while e.name[:4]!="E_RA":
+                while e.name!="SGL_E_RA":
                     i+=1
                     e = g_events[i]
                 tsweha = e.stamp
-                g_r_activities.append( Activity(e.name[5:], tsra, tsweha) )
+                g_r_activities.append( Activity(act_name, tssra, tsweha) )
 
-            elif e.name=="R_PASS":
-                tsweha = e.stamp
+            
 
-        elif e.name=="NS_IDLE":
+        elif e.name=="SGL_NS_IDLE":
             t1 = e.stamp
-            while e.name!="SGL_S_HA":
+            while e.name!="R_E_WAIT_HSA":
                 i+=1
                 e = g_events[i]
             tsweha = e.stamp
-            g_r_activities.append( Activity("idle_wait_s_ha", t1, tsweha) )
+            g_r_activities.append( Activity("idle_wait_h", t1, tsweha) )
 
-            
         while e.name!="R_S_ASSESS":
             i+=1
             e = g_events[i]
         teweha = e.stamp
-        g_r_activities.append( Activity("wait_e_ha", tsweha, teweha) )
+        g_r_activities.append( Activity("wait_end_ha", tsweha, teweha) )
 
         while e.name!="R_E_ASSESS":
             i+=1
@@ -169,214 +229,93 @@ def r_extract_activities():
         teass = e.stamp
         g_r_activities.append( Activity("sa", teweha, teass) )
 
-        while e.name[:2]!="NS" and e.name!="OVER":
+        while e.name[:6]!="SGL_NS" and e.name!="OVER":
             i+=1
             e = g_events[i]
         tf = e.stamp
         g_r_activities.append( Activity("grns", teass, tf) )
-        if e.name[:2]=="NS":
-            i-=1
-            e = g_events[i]
-
-        
         if e.name == "OVER":
             break
-        i+=1
-        e = g_events[i]
 def h_extract_activities():
     global g_events, g_h_activities
     
-    
-    # Start Step (When sending VHA)
     i = 0
     e = g_events[i]
+    while e.name[:6]!="SGL_NS":
+        i+=1
+        e = g_events[i]
     while True:
 
-        # 1 # 2 # 3 # 4 # 5 #
-        if e.name == "NS":
+        print("new h step")
+
+        t1 = t2 = t3 = t4 = t5 = t6 = t7 = None
+
+        if e.name=="SGL_NS":
             t1 = e.stamp
-            while e.name[:4]!="S_HA" and e.name!="H_PASS" and e.name!="R_TIMEOUT":
+
+            while e.name!="SGL_TIMEOUT" and e.name[:4]!="S_HA" and e.name!="SGL_H_PASS":
                 i+=1
-                e = g_events[i]
-            t2 = e.stamp
-
-
-            # 1 # 2 #
-            if e.name=="R_TIMEOUT":
-                while e.name[:4]!="S_HA" and e.name[:2]!="NS" and e.name!="OVER":
-                    i+=1
-                    e = g_events[i]
-                t3 = e.stamp
-
-                # 1 #
-                if e.name[:2]=="NS" or e.name=="OVER":
-                    g_h_activities.append( Activity("idle_wait_wait_ns", t1, t3) )
-                    i-=1
-                    e = g_events[i]
-                # 2 #
-                elif e.name[:4]=="S_HA":
-                    g_h_activities.append( Activity("idle_wait_compliant", t1, t3) )
-
-                    while e.name[:4]!="E_HA":
-                        i+=1
-                        e = g_events[i]
-                    t4 = e.stamp
-                    g_h_activities.append( Activity(e.name[5:], t3, t4) )
-
-                    while e.name[:2]!="NS" and e.name!="OVER":
-                        i+=1
-                        e = g_events[i]
-                    t5 = e.stamp
-                    g_h_activities.append( Activity("idle_wait_ns", t4, t5) )
-                    i-=1
-                    e = g_events[i]
-
-
-            # 3 #
-            elif e.name[:4]=="S_HA":
-                g_h_activities.append( Activity("start_delay", t1, t2) )
-
-                while e.name[:4]!="E_HA":
-                    i+=1
-                    e = g_events[i]
-                t3 = e.stamp
-                g_h_activities.append( Activity(e.name[5:], t2, t3) )
-
-                while e.name[:2]!="NS" and e.name!="OVER":
-                    i+=1
-                    e = g_events[i]
-                t4 = e.stamp
-                g_h_activities.append( Activity("idle_wait_ns", t3, t4) )
-                i-=1
                 e = g_events[i]
             
-            # 4 # 5 #
-            elif e.name=="H_PASS":
-                g_h_activities.append( Activity("start_delay", t1, t2) )
-
-                while e.name[:2]!="NS" and e.name!="OVER" and e.name[:4]!="S_HA":
+            if e.name=="SGL_TIMEOUT":
+                t2 = e.stamp
+                while e.name!="OVER" and e.name!="SGL_NS" and e.name!="SGL_NS_IDLE" and e.name[:4]!="S_HA":
                     i+=1
                     e = g_events[i]
-                t3 = e.stamp
 
-                # 5 #
-                if e.name[:2]=="NS" or e.name=="OVER":
-                    g_h_activities.append( Activity("idle_pass_wait_ns", t2, t3) )
-                    i-=1
-                    e = g_events[i]
-                
-                # 4 #
-                elif e.name[:4]=="S_HA":
-                    g_h_activities.append( Activity("idle_pass_compliant", t2, t3) )
-
-                    while e.name[:4]!="E_HA":
-                        i+=1
-                        e = g_events[i]
-                    t4 = e.stamp
-                    g_h_activities.append( Activity(e.name[5:], t3, t4) )
-
-                    while e.name[:2]!="NS" and e.name!="OVER":
-                        i+=1
-                        e = g_events[i]
-                    t5 = e.stamp
-                    g_h_activities.append( Activity("idle_wait_ns", t4, t5) )
-                    i-=1
+            elif e.name=="SGL_H_PASS":
+                t5 = e.stamp
+                g_h_activities.append( Activity("start_delay", t1, t5) )
+                while e.name!="OVER" and e.name!="SGL_NS" and e.name!="SGL_NS_IDLE" and e.name[:4]!="S_HA":
+                    i+=1
                     e = g_events[i]
 
-        # 6 #
-        elif e.name == "NS_IDLE":
-            t1 = e.stamp
+        elif e.name=="SGL_NS_IDLE":
+            t6 = e.stamp
             while e.name[:4]!="S_HA":
-                i+=1
-                e = g_events[i]
-            t2 = e.stamp
-            g_h_activities.append( Activity("start_delay", t1, t2) )
+                    i+=1
+                    e = g_events[i]
 
-            while e.name[:4]!="E_HA":
-                i+=1
-                e = g_events[i]
+        if e.name[:4]=="S_HA":
             t3 = e.stamp
-            g_h_activities.append( Activity(e.name[5:], t2, t3) )
-
-            while e.name[:2]!="NS" and e.name!="OVER":
+            if t6!=None:
+                g_h_activities.append( Activity("start_delay", t6, t3))
+            elif t2==None and t5==None:
+                g_h_activities.append( Activity("start_delay", t1, t3))
+            elif t2!=None:
+                g_h_activities.append( Activity("idle_wait_compliant", t1, t3))
+            elif t5!=None:
+                g_h_activities.append( Activity("idle_pass_compliant", t5, t3))
+            act_name = e.name[5:]
+            while e.name!="SGL_E_HA":
                 i+=1
                 e = g_events[i]
             t4 = e.stamp
-            g_h_activities.append( Activity("idle_wait_ns", t3, t4) )
-            i-=1
-            e = g_events[i]
+            g_h_activities.append( Activity(act_name, t3, t4) )
 
-        # OVER
-        elif e.name == "OVER":
+            while e.name!="OVER" and e.name!="SGL_NS" and e.name!="SGL_NS_IDLE":
+                i+=1
+                e = g_events[i]
+
+        if e.name=="OVER" or e.name=="SGL_NS" or e.name=="SGL_NS_IDLE":
+            t7 = e.stamp
+            if t4!=None:
+                g_h_activities.append( Activity("idle_wait_ns", t4, t7) )
+            elif t2!=None:
+                g_h_activities.append( Activity("idle_wait_wait_ns", t1, t7) )
+            elif t5!=None:
+                g_h_activities.append( Activity("idle_pass_wait_ns", t5, t7) )
+
+        if e.name=="OVER":
             break
-        i+=1
-        e = g_events[i]
 
-def compute_signals():
-    global g_r_signals, g_h_signals
-
-    # In Robot
-    i = 0
-    e = g_events[i]
-    while True:
-        if e.name == "NS":
-            g_r_signals.append( Event("NS", e.stamp) )
-
-        if e.name == "NS_IDLE":
-            g_r_signals.append( Event("NS_IDLE", e.stamp) )
-
-        if e.name == "S_GO_IDLE":
-            g_r_signals.append( Event("S_R_IDLE", e.stamp) )
-
-        if e.name == "S_END_IDLE":
-            g_r_signals.append( Event("E_R_IDLE", e.stamp,) )
-
-        if e.name == "SGL_S_RA":
-            g_r_signals.append( Event("S_RA", e.stamp) )
-        
-        if e.name == "R_PASS":
-            g_r_signals.append( Event("R_PASS", e.stamp) )
-
-
-        if e.name == "OVER":
-            break
-        i+=1
-        e = g_events[i]
-
-    # In Human
-    i = 0
-    e = g_events[i]
-    while True:
-        if e.name == "SGL_S_HA":
-            g_h_signals.append( Event("S_HA", e.stamp) )
-
-        if e.name[:4] == "E_HA":
-            g_h_signals.append( Event("E_HA", e.stamp) )
-
-        if e.name == "H_PASS":
-            g_h_signals.append( Event("H_PASS", e.stamp) )
-        
-        if e.name == "OVER":
-            break
-        i+=1
-        e = g_events[i]
-
-    # Timeout
-    i = 0
-    e = g_events[i]
-    while True:
-        if e.name == "R_TIMEOUT":
-            g_to_signals.append( Event("TIMEOUT", e.stamp) )
-
-        if e.name == "OVER":
-            break
-        i+=1
-        e = g_events[i]
-
+# Display
 def show_events(events):
     for e in events:
         print(f"{e.name} - {e.stamp:.2f}")
-
+def show_signals(signals):
+    for s in signals:
+        print(f"{s.name}_{s.type} - {s.stamp:.2f}")
 def show_activities(activities):
     for a in activities:
         print(f"{a.name} - {a.t_s:.2f} > {a.t_e:.2f}")
@@ -391,21 +330,18 @@ if __name__ == "__main__":
     sys.argv.append("load")
 
     if len(sys.argv)<2:
-        raise Exception("Missing argument... ['load', 'dump']")
-    if sys.argv[1] == "load":
-        dumping = False
-    if sys.argv[1] == "dump":
-        dumping = True
+        raise Exception("Missing argument... ['load', 'record']")
+    record = sys.argv[1] == "record"
 
     # ROS Startup
     rospy.init_node('timeline_log')
 
     # Subscribers
     log_sub = rospy.Subscriber('/event_log', EventLog, log_cb)
-    # log_r_sgl_sub = rospy.Subscriber('/robot_visual_signals', Signal, r_sgl_cb)
-    # log_h_sgl_sub = rospy.Subscriber('/human_visual_signals', Signal, h_sgl_cb)
+    log_r_sgl_sub = rospy.Subscriber('/robot_visual_signals', Signal, r_sgl_cb)
+    log_h_sgl_sub = rospy.Subscriber('/human_visual_signals', Signal, h_sgl_cb)
 
-    if dumping:
+    if record:
         print("Listening events... (type 'q' and return to abort)")
         t = input()
         if t=="q":
@@ -413,12 +349,20 @@ if __name__ == "__main__":
             exit(1)
 
         # Dumping
-        dill.dump(g_events, open("/home/afavier/exec_simulator_ws/events.p", "wb"))
+        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/exec_simulator_ws/events.p", "wb"))
         print("events dumped")
     else:
         # Loading
-        g_events = dill.load(open("/home/afavier/exec_simulator_ws/events.p", "rb"))
+        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open("/home/afavier/exec_simulator_ws/events.p", "rb"))
         print("events loaded")
+
+        ####### TEMP FIX ######
+        # print("oihizf")
+        # g_events[35].name = "SGL_NS_IDLE"
+        # g_events[44].name = "SGL_NS_IDLE"
+        # g_r_signals[8].name = "NS_IDLE"
+        # g_r_signals[9].name = "NS_IDLE"
+
 
 
     # TREAT EVENTS
@@ -435,13 +379,12 @@ if __name__ == "__main__":
     show_activities(g_h_activities)
 
     # TREAT SIGNALS
-    compute_signals()
     print("\nR SIGNALS:")
-    show_events(g_r_signals)
+    show_signals(g_r_signals)
     print("\nH SIGNALS:")
-    show_events(g_h_signals)
+    show_signals(g_h_signals)
     print("\nTO SIGNALS:")
-    show_events(g_to_signals)
+    show_signals(g_to_signals)
 
     plt.rcParams.update({'font.size': 13})
 
@@ -493,18 +436,12 @@ if __name__ == "__main__":
 
     # SIGNALS #
     width_text = 1.5
-    color_text_r = "black"
-    # color_arrow_r = (0.07, 0.32, 1.0)
-    color_arrow_r = "lightskyblue"
-    color_text_h = "black"
-    # color_arrow_h = (0.85, 0.67, 0)
-    color_arrow_h = "wheat"
     style="Simple, head_width=8, head_length=4, tail_width=4"
     # R Signals #
     for sig in g_r_signals:
         rec = ax.barh( ['Signals'], [width_text], left=[sig.stamp-width_text/2], height=1.0, color=(0,0,0,0))
-        ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=color_text_r, zorder=signal_text_zorder)
-        arrow = mpatches.FancyArrowPatch((sig.stamp, 0.5), (sig.stamp , 1.5), color=color_arrow_r, arrowstyle=style, zorder=signal_arrow_zorder)
+        ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
+        arrow = mpatches.FancyArrowPatch((sig.stamp, 0.5), (sig.stamp , 1.5), color=sig.color_arrow, arrowstyle=style, zorder=signal_arrow_zorder)
         ax.add_patch(arrow)
         if sig.name[:2]=="NS":
             line = mpatches.FancyArrowPatch((sig.stamp, -0.6), (sig.stamp , 2.6), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
@@ -512,8 +449,8 @@ if __name__ == "__main__":
     # H Signals #
     for sig in g_h_signals:
         rec = ax.barh( ['Signals'], [width_text], left=[sig.stamp-width_text/2], height=1.0, color=(0,0,0,0))
-        ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=color_text_h, zorder=signal_text_zorder)
-        arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 0.5), color=color_arrow_h, arrowstyle=style, zorder=signal_arrow_zorder)
+        ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
+        arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 0.5), color=sig.color_arrow, arrowstyle=style, zorder=signal_arrow_zorder)
         ax.add_patch(arrow)
     # TIMEOUTS #
     for sig in g_to_signals:

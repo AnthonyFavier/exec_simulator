@@ -227,24 +227,12 @@ void BePassive(AGENT agent)
 {
     if (isRobot(agent))
     {
-        // Log Event
-        sim_msgs::EventLog event;
-        event.timestamp = ros::Time::now().toSec();
-        event.name = "R_PASS";
-        event_log_pub[agent].publish(event);
-
         sim_msgs::Signal sgl;
         sgl.type = sim_msgs::Signal::R_PASS;
         visual_signals_pub[agent].publish(sgl);
     }
     else
     {
-        // Log Event
-        sim_msgs::EventLog event;
-        event.timestamp = ros::Time::now().toSec();
-        event.name = "H_PASS";
-        event_log_pub[agent].publish(event);
-
         // Hand gesture
         std_srvs::Empty srv;
         move_hand_pass_signal_client.call(srv);
@@ -503,7 +491,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             ROS_INFO("Start EVENT SENT");
 
             action_received[agent] = true;
-            std::thread t1(pub_action_start, agent, action);
+            std::thread t1(send_visual_signal_action_start, agent, action);
             switch (action.type)
             {
             case sim_msgs::Action::PICK_OBJ:
@@ -534,7 +522,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
                 break;
             }
             t1.join();
-            pub_action_over(agent, action);
+            send_visual_signal_action_over(agent, action);
             action_done[agent] = true;
         }
     }
@@ -594,7 +582,7 @@ std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start)
     return name;
 }
 
-void pub_action_start(AGENT agent, sim_msgs::Action action)
+void send_visual_signal_action_start(AGENT agent, sim_msgs::Action action)
 {
     ROS_INFO("Waiting for first mvt .........");
 
@@ -619,17 +607,6 @@ void pub_action_start(AGENT agent, sim_msgs::Action action)
     }
     ROS_INFO("Agent started to move !!!!");
 
-
-    // log event
-    sim_msgs::EventLog event;
-    event.timestamp = ros::Time::now().toSec();
-    if(isRobot(agent))
-        event.name = "SGL_S_RA";
-    else
-        event.name = "SGL_S_HA";
-    event_log_pub[agent].publish(event);
-    ROS_INFO("Start EVENT SENT");
-
     // send visual signal
     sim_msgs::Signal sgl;
     sgl.id = action.id;
@@ -641,14 +618,8 @@ void pub_action_start(AGENT agent, sim_msgs::Action action)
     ROS_INFO("Start signal SENT");
 }
 
-void pub_action_over(AGENT agent, sim_msgs::Action action)
+void send_visual_signal_action_over(AGENT agent, sim_msgs::Action action)
 {
-    // log event
-    sim_msgs::EventLog event;
-    event.timestamp = ros::Time::now().toSec();
-    event.name = compute_event_name(agent, action, false);
-    event_log_pub[agent].publish(event);
-
     // send visual signal
     sim_msgs::Signal sgl;
     sgl.id = action.id;

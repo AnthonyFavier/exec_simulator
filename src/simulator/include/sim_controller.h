@@ -67,8 +67,8 @@ void manage_action(AGENT agent, const sim_msgs::Action &action);
 void r_home_cb(std_msgs::Empty msg);
 
 std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start);
-void pub_action_start(AGENT agent, sim_msgs::Action action);
-void pub_action_over(AGENT agent, sim_msgs::Action action);
+void send_visual_signal_action_start(AGENT agent, sim_msgs::Action action);
+void send_visual_signal_action_over(AGENT agent, sim_msgs::Action action);
 
 
 void home_agents();

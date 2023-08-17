@@ -174,10 +174,14 @@ g_possible_human_actions = []
 def send_NS_update_HAs(step: ConM.Step, type):
     global g_possible_human_actions
 
+    sgl = Signal()
     if type==VHA.NS:
-        log_event("NS")
+        sgl.type = Signal.NS
     elif type==VHA.NS_IDLE:
-        log_event("NS_IDLE")
+        sgl.type = Signal.NS_IDLE
+    else:
+        raise Exception("Invalid type to send NS signal")
+    robot_visual_signal_pub.publish(sgl)
 
     g_possible_human_actions = [ho.human_action for ho in step.human_options]
 
@@ -343,11 +347,13 @@ def go_home_pose_once():
 #######################
 def wait_human_start_acting(step: ConM.Step):
     rospy.loginfo("Waiting for human to act...")
+    log_event("R_S_WAIT_HSA")
     while not rospy.is_shutdown():
         if hidden_HC!=None:
             break
         rospy.sleep(0.1)
 
+    log_event("R_E_WAIT_HSA")
     rospy.loginfo("Step start detected!")
 
 def wait_human_decision(step: ConM.Step):
@@ -391,13 +397,13 @@ def wait_human_decision(step: ConM.Step):
     if g_human_decision==None:
         rospy.loginfo("Timeout reached, human not acting...")
         g_text_plugin_pub.publish(String(f"Timeout reached\nHuman not acting"))
-        log_event("R_TIMEOUT")
-        log_event("R_E_WAIT_HC")
+        sgl = Signal()
+        sgl.type = Signal.TO
+        robot_visual_signal_pub.publish(sgl)
         human_acting = False
     # Visual signal received, either PASS or Start Action
     else:
         rospy.loginfo("Step start detected!")
-        log_event("R_E_WAIT_HC")
         if g_human_decision.type == Signal.H_PASS:
             rospy.loginfo("Human not acting...")
             human_acting = False
@@ -405,6 +411,7 @@ def wait_human_decision(step: ConM.Step):
             rospy.loginfo(f"Human is active")
             human_acting = True
 
+    log_event("R_E_WAIT_HC")
     return human_acting
 
 def wait_step_end():
@@ -414,8 +421,12 @@ def wait_step_end():
         if not text_updated and g_robot_action_over:
             g_text_plugin_pub.publish(String("Waiting end of human action..."))
         rospy.sleep(0.1)
+
+    if human_active():
+        rospy.sleep(ESTIMATED_R_REACTION_TIME)
+
     rospy.loginfo("Current step is over.")
-    log_event("R_E_WAIT_END_HA")
+    log_event("R_E_WAIT_STEP_END")
 
 
 ##################
@@ -724,6 +735,7 @@ if __name__ == "__main__":
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
     robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
+    robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
 
 
     rospy.loginfo("Wait pub/sub to be initialized...")
