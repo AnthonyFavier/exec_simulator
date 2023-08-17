@@ -129,7 +129,7 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
                 else: 
                     lg.debug("ID not needed.")
                     RA = select_best_RA(curr_step)
-            ## 4 & 5 ##
+            ## 4 ##
             else: 
                 RA = select_best_RA_H_passive(curr_step)
 
@@ -361,7 +361,7 @@ def wait_human_decision(step: ConM.Step):
     start_waiting_time = rospy.get_rostime()
     timeout_reached = True
 
-    while not rospy.is_shutdown() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY:
+    while not rospy.is_shutdown() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
         elapsed = (rospy.get_rostime()-start_waiting_time).to_sec()
 
         # Update progress bars
@@ -615,8 +615,7 @@ def human_visual_signal_cb(msg: Signal):
 
     print(f"\nCB human visual signal: {msg}")
 
-    REACTION_TIME_HVS = 0.0
-    rospy.sleep(REACTION_TIME_HVS)
+    rospy.sleep(ESTIMATED_R_REACTION_TIME)
 
     # Human is passive
     if msg.type == Signal.H_PASS:
@@ -654,29 +653,21 @@ def show_solution_exec():
     ConM.render_tree(begin_step)
 
 def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves):
-    global P_SUCCESS_ID_PHASE, HUMAN_TYPE, HUMAN_UPDATING, P_LET_ROBOT_DECIDE, P_LEAVE_ROBOT_DO, WAIT_START_DELAY, TIMEOUT_DELAY, ID_DELAY, ASSESS_DELAY
+    global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY
     global default_human_passive_action, default_robot_passive_action
 
     rospy.loginfo("READY TO START, PRESS RETURN")
     input()
 
-    # Mock Delays
-    TIMEOUT_DELAY       = 10.0
-    WAIT_START_DELAY    = 0.5
-    ID_DELAY            = 1.0
-    ASSESS_DELAY        = 0.5
-    # Mock ID phase Probabilities
-    P_SUCCESS_ID_PHASE  = 1.0
+    # CONSTANTS #
+    TIMEOUT_DELAY               = 10.0
+    ESTIMATED_R_REACTION_TIME   = 1.0
+    P_SUCCESS_ID_PHASE          = 1.0
+    ID_DELAY                    = 2.0
+    ASSESS_DELAY                = 0.5
 
-    # Mock human behavior 
-    #   "POLICY"  => 
-    #   "RANDOM"  => Act randomly
-    HUMAN_TYPE = "POLICY"
+
     HUMAN_UPDATING = False
-
-    # Proba for random human(set to -1 to make it equiprobable) (must have P_LRDe + P_LRDo <= 1)
-    P_LEAVE_ROBOT_DO    = -1
-    P_LET_ROBOT_DECIDE  = -1
 
     # Init timeout delay HMI
     g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
