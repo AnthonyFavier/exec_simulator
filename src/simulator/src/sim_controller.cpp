@@ -376,6 +376,8 @@ void grab_obj(AGENT agent, const std::string &object)
 {
     ROS_INFO("\t\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
 
+    ros::Duration(0.5).sleep();
+
     gazebo_ros_link_attacher::Attach srv;
     if (agent == AGENT::ROBOT)
     {
@@ -398,6 +400,8 @@ void grab_obj(AGENT agent, const std::string &object)
 void drop(AGENT agent, const std::string &object)
 {
     ROS_INFO("\t\t%s DROP START", get_agent_str(agent).c_str());
+
+    ros::Duration(0.5).sleep();
 
     gazebo_ros_link_attacher::Attach srv;
     if (agent == AGENT::ROBOT)
