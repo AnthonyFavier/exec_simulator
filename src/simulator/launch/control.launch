@@ -6,13 +6,10 @@
 
     <group ns="$(arg robot_name1)">
         <node name="move_arm" type="move_arm" pkg="simulator" args="$(arg robot_name1)" respawn="false" output="screen"/>
-        <!-- <node name="attach_obj" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name1)" respawn="false" output="screen"/> -->
     </group>
     
     <group ns="human_hand">
-        <node name="move_hand" type="move_hand" pkg="simulator" respawn="false" output="screen"/>
-        <!-- <node name="move_arm" type="move_arm" pkg="simulator" args="human_hand" respawn="false" output="screen"/> -->
-        <!-- <node name="attach_obj" type="attach_obj_tf" pkg="simulator" args="$(arg robot_name2)" respawn="false" output="screen"/> -->
+        <node name="own_move_hand" type="own_move_hand" pkg="simulator" respawn="false" output="screen"/>
     </group>
 
     <node name="sim_controller" pkg="simulator" type="sim_controller" respawn="false" output="screen"/>

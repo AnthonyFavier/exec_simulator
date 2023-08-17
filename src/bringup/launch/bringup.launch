@@ -20,8 +20,8 @@
         <arg name="rviz" value="$(arg rviz)"/>
     </include>
 
-    <include file="$(find bringup)/launch/_launch_hand.launch">
+    <!-- <include file="$(find bringup)/launch/_launch_hand.launch">
         <arg name="rviz" value="$(arg rviz)"/>
-    </include>
+    </include> -->
 
 </launch>

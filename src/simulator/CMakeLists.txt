@@ -43,11 +43,9 @@ init_static_scene
 new_move_multiple
 move_arm
 move_hand
-# sim_controller
+own_move_hand
+sim_controller
 )
-
-add_executable(sim_controller src/sim_controller.cpp)
-target_link_libraries(sim_controller ${catkin_LIBRARIES})
 
 foreach(NODE ${EXEC_LIST})
     add_executable(${NODE} src/${NODE}.cpp)
