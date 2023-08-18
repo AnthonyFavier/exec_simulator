@@ -100,6 +100,7 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
     nb_of_degradation = 0
     while not exec_over(curr_step) and not rospy.is_shutdown():
 
+        rospy.loginfo(f"Step {curr_step.id} begins.")
 
         if curr_step.isRInactive():
             g_text_plugin_pub.publish(String(f"Step started\nGoing IDLE\nWaiting for human to act..."))

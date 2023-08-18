@@ -82,10 +82,10 @@ g_init_pose_zones = {
 # Create zones
 g_zones = {
     0:Zone(0, -1, -1, -1, -1, g_init_pose_zones[0], ["place"]),
-    1:Zone(1, -1, -1, -1, -1, g_init_pose_zones[1], ["pick('y', 'C')"]),
-    2:Zone(2, -1, -1, -1, -1, g_init_pose_zones[2], ["pick('r', 'H')"]),
-    3:Zone(3, -1, -1, -1, -1, g_init_pose_zones[3], ["pick('b', 'H')"]),
-    4:Zone(4, -1, -1, -1, -1, g_init_pose_zones[4], ["pick('p', 'H')"]),
+    1:Zone(1, -1, -1, -1, -1, g_init_pose_zones[1], ["pick('y', 'C')", "drop('y',)"]),
+    2:Zone(2, -1, -1, -1, -1, g_init_pose_zones[2], ["pick('r', 'H')", "drop('r',)"]),
+    3:Zone(3, -1, -1, -1, -1, g_init_pose_zones[3], ["pick('b', 'H')", "drop('b',)"]),
+    4:Zone(4, -1, -1, -1, -1, g_init_pose_zones[4], ["pick('p', 'H')", "drop('p',)"]),
     5:Zone(5, -1, -1, -1, -1, g_init_pose_zones[5], ["PASS"]),
 }
 g_zones[5].is_pass = True
