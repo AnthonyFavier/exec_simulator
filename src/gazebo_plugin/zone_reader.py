@@ -26,6 +26,7 @@ class Segment:
 
 class Zone:
     def __init__(self) -> None:
+        self.id = -1
         # Right-Upper corner (x1,y1)
         self.x1 = -1   
         self.y1 = -1   
@@ -101,12 +102,9 @@ from PIL import ImageFont
 img = Image.open(PATH+FILENAME)
  
 # Call draw Method to add 2D graphics in an image
-I1 = ImageDraw.Draw(img)
+tmp_img = img.copy()
+I1 = ImageDraw.Draw(tmp_img)
  
-# Add Text to an image
-
-f = open(PATH+FILENAME[:-4]+"_coords.txt", 'w')
-
 # Custom font style and font size
 font_size = 65
 myFont = ImageFont.truetype('FreeMono.ttf', font_size)
@@ -117,15 +115,49 @@ for i,z in enumerate(zones):
     # s = f"{i}-({z.x1},{z.y1})-({z.x2},{z.y2})"
     s = f"{i},{z.x1},{z.y1},{z.x2},{z.y2}"
     print(f"\t{s}")
-    f.write(f"{s}\n")
     I1.text( ( (z.x2+z.x1)/2, (z.y2+z.y1)/2 ), f"{i}", fill=(0,0,0), font=myFont, anchor='mm')
     I1.text( ( (z.x2+z.x1)/2, (z.y2+z.y1)/2+2*small_font_size ), f"({z.x1},{z.y1})-({z.x2},{z.y2})", fill=(0,0,0), font=mySmallFont, anchor='mm')
+
+# Display edited image
+tmp_img.show()
+
+##################################################
+
+# Demande renuméroté
+new_zones = [] # List[Zone]
+print("What shall be the final numbering?")
+for i,z in enumerate(zones):
+    print(f"{i} -> ", end="")
+    new_id = input()
+    z.id = int(new_id) if new_id!="" else i
+
+def get_id_zone(z):
+    return z.id
+zones.sort(key=get_id_zone)
+
+# Call draw Method to add 2D graphics in an image
+I2 = ImageDraw.Draw(img)
+ 
+# Add Text to an image
+f = open(PATH+FILENAME[:-4]+"_coords.txt", 'w')
+
+# Custom font style and font size
+font_size = 65
+myFont = ImageFont.truetype('FreeMono.ttf', font_size)
+small_font_size = int(font_size/3)
+mySmallFont = ImageFont.truetype('FreeMono.ttf', small_font_size)
+print("Zones:")
+for z in zones:
+    # s = f"{i}-({z.x1},{z.y1})-({z.x2},{z.y2})"
+    s = f"{z.id},{z.x1},{z.y1},{z.x2},{z.y2}"
+    print(f"\t{s}")
+    f.write(f"{s}\n")
+    I2.text( ( (z.x2+z.x1)/2, (z.y2+z.y1)/2 ), f"{z.id}", fill=(0,0,0), font=myFont, anchor='mm')
+    I2.text( ( (z.x2+z.x1)/2, (z.y2+z.y1)/2+2*small_font_size ), f"({z.x1},{z.y1})-({z.x2},{z.y2})", fill=(0,0,0), font=mySmallFont, anchor='mm')
 f.close()
 
 # Display edited image
 img.show()
-
-# Demande renuméroté
 
 # Save the edited image
 img.save(PATH+FILENAME[:-4]+"_numbered.png")

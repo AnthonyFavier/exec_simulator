@@ -81,14 +81,17 @@ g_init_pose_zones = {
 }
 # Create zones
 g_zones = {
-    0:Zone(0, -1, -1, -1, -1, g_init_pose_zones[0], ["place"]),
-    1:Zone(1, -1, -1, -1, -1, g_init_pose_zones[1], ["pick('y', 'C')", "drop('y',)"]),
-    2:Zone(2, -1, -1, -1, -1, g_init_pose_zones[2], ["pick('r', 'H')", "drop('r',)"]),
-    3:Zone(3, -1, -1, -1, -1, g_init_pose_zones[3], ["pick('b', 'H')", "drop('b',)"]),
-    4:Zone(4, -1, -1, -1, -1, g_init_pose_zones[4], ["pick('p', 'H')", "drop('p',)"]),
-    5:Zone(5, -1, -1, -1, -1, g_init_pose_zones[5], ["PASS"]),
+    0:Zone(5, -1, -1, -1, -1, g_init_pose_zones[5], ["PASS"]),
+    1:Zone(0, -1, -1, -1, -1, g_init_pose_zones[0], ["place"]),
+    2:Zone(1, -1, -1, -1, -1, g_init_pose_zones[1], ["pick('y', 'C')", "drop('y',)"]),
+    3:Zone(2, -1, -1, -1, -1, g_init_pose_zones[2], ["pick('r', 'H')", "drop('r',)"]),
+    4:Zone(3, -1, -1, -1, -1, g_init_pose_zones[3], ["pick('b', 'H')", "drop('b',)"]),
+    5:Zone(4, -1, -1, -1, -1, g_init_pose_zones[4], ["pick('p', 'H')", "drop('p',)"]),
 }
-g_zones[5].is_pass = True
+for z in g_zones.values():
+    if z.valid_actions==["PASS"]:
+        z.is_pass = True
+        break
 # Get and set zones pixels 
 f = open('/home/afavier/exec_simulator_ws/src/gazebo_plugin/zones_coords.txt', 'r')
 for l in f:
