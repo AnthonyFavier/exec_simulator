@@ -368,7 +368,7 @@ def wait_human_decision(step: ConM.Step):
     start_waiting_time = rospy.get_rostime()
     timeout_reached = True
 
-    while not rospy.is_shutdown() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
+    while not rospy.is_shutdown() and not step.isHInactive() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
         elapsed = (rospy.get_rostime()-start_waiting_time).to_sec()
 
         # Update progress bars
