@@ -10,7 +10,6 @@
 #include <std_srvs/Empty.h>
 #include "sim_msgs/Action.h"
 #include "sim_msgs/MoveArm.h"
-#include "sim_msgs/AttachObj.h"
 #include "sim_msgs/EventLog.h"
 #include "sim_msgs/Signal.h"
 #include <moveit/move_group_interface/move_group_interface.h>
@@ -22,6 +21,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include "gazebo_ros_link_attacher/Attach.h"
 #include "gazebo_msgs/SetLinkState.h"
+#include "sim_msgs/HeadCmd.h"
 
 #define ROBOT_ATTACH_MODEL_NAME "panda1"
 #define ROBOT_ATTACH_LINK_NAME "panda1_link7"

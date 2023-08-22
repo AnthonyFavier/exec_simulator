@@ -117,6 +117,132 @@
       <pose>0.0 0.0 0.0 0 -0 0</pose>
     </model>
 
+    <model name='robot_head'>
+      <link name='robot_head_link'>
+        <inertial>
+          <mass>0.209047</mass>
+          <inertia>
+            <ixx>0.0194914</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.0084732</iyy>
+            <iyz>0</iyz>
+            <izz>0.0238229</izz>
+          </inertia>
+          <pose>0 0 0 0 -0 0</pose>
+        </inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <gravity>0</gravity>
+        <self_collide>0</self_collide>
+        <kinematic>0</kinematic>
+        <enable_wind>0</enable_wind>
+        <visual name='visual'>
+          <geometry>
+            <mesh>
+              <uri>/home/afavier/robot_head.dae</uri>
+              <!-- <uri>/home/afavier/robot_head.obj</uri> -->
+              <scale>1.0 1.0 1.0</scale>
+            </mesh>
+          </geometry>
+          <pose>0 0 0 0 -0 0</pose>
+          <transparency>0</transparency>
+          <cast_shadows>1</cast_shadows>
+        </visual>
+      </link>
+      <link name='eye_r'>
+        <inertial>
+          <mass>0.00001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00001</iyy>
+            <iyz>0</iyz>
+            <izz>0.00001</izz>
+          </inertia>
+          <pose>0 0 0 0 -0 0</pose>
+        </inertial>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <pose>0.1 -0.06 0 0 1.571 0</pose>
+        <gravity>0</gravity>
+        <visual name='visual'>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.03</radius>
+              <length>0.005</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <lighting>1</lighting>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grey</name>
+            </script>
+            <shader type='pixel'>
+              <normal_map>__default__</normal_map>
+            </shader>
+            <ambient>0.5 0.5 0 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
+          <transparency>0</transparency>
+          <cast_shadows>1</cast_shadows>
+        </visual>
+      </link>
+      <link name='eye_l'>
+        <inertial>
+          <mass>0.00001</mass>
+          <inertia>
+            <ixx>0.00001</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.00001</iyy>
+            <iyz>0</iyz>
+            <izz>0.00001</izz>
+          </inertia>
+          <pose>0 0 0 0 -0 0</pose>
+        </inertial>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <pose>0.1 0.06 0 0 1.571 0</pose>
+        <gravity>0</gravity>
+        <visual name='visual'>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <cylinder>
+              <radius>0.03</radius>
+              <length>0.005</length>
+            </cylinder>
+          </geometry>
+          <material>
+            <lighting>1</lighting>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grey</name>
+            </script>
+            <shader type='pixel'>
+              <normal_map>__default__</normal_map>
+            </shader>
+            <ambient>0.5 0.5 0 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.01 0.01 0.01 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
+          <transparency>0</transparency>
+          <cast_shadows>1</cast_shadows>
+        </visual>
+      </link>
+      <static>0</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose>0.254 -0.465 1.07 0 0 0</pose>
+      <!-- <pose>0 0 0 0 0 0</pose> -->
+    </model>
+
     <model name='cube_r'>
       <link name='link'>
         <inertial>
@@ -628,7 +754,7 @@
       <pose>0.5 -0.57 0.7 0 -0 0</pose>
     </model>
 
-    <model name='human_body'>
+    <!-- <model name='human_body'>
       <link name='human_body_link'>
         <pose>0 0 0 0 -0 0</pose>
         <self_collide>0</self_collide>
@@ -651,7 +777,6 @@
           <geometry>
             <mesh>
               <uri>/home/afavier/human.dae</uri>
-              <!-- <uri>/home/afavier/exec_simulator_ws/src/bringup/meshes/human/human.stl</uri> -->
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
@@ -663,7 +788,7 @@
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>3.0 0.0 0.0 0 -0 3.14159265</pose>
-    </model>
+    </model> -->
 
     <model name='human_hand'>
       <link name='human_hand_link'>

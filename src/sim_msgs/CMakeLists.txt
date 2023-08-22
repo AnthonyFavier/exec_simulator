@@ -13,6 +13,7 @@ add_message_files(
   VHA.msg
   EventLog.msg
   Signal.msg
+  HeadCmd.msg
 )
 add_service_files(
   FILES

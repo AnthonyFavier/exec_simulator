@@ -57,6 +57,7 @@ ros::Publisher r_home_pub;
 ros::Publisher visual_signals_pub[2];
 ros::Publisher event_log_pub[2];
 ros::Publisher text_pluging_pub;
+ros::Publisher head_cmd_pub;
 
 // Stack domain
 std::map<std::string, geometry_msgs::Pose> locations =
@@ -82,6 +83,7 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"cube_y",          make_pose(make_point(0.86, -0.38, 0.75),        make_quaternion())},
         {"table_slot",      make_pose(make_point(0.86, 0.24, 0.7),          make_quaternion())},
         {"table_slot_0",    make_pose(make_point(0.86, 0.44, 0.7),          make_quaternion())},
+        {"robot_head",      make_pose(make_point(0.254, -0.465, 1.07),      make_quaternion())},
 };
 
 geometry_msgs::Pose init_human_hand_pose = make_pose(make_point(1.38, 0.5, 0.87), make_quaternion_RPY(0, 0, 3.14159));
@@ -192,6 +194,14 @@ void Pick(AGENT agent, const std::string &color, const std::string &side)
     geometry_msgs::Pose obj_pose = srv.response.pose;
     show_pose(obj_pose);
 
+    if(isRobot(agent))
+    {
+        sim_msgs::HeadCmd msg;
+        msg.type = sim_msgs::HeadCmd::LOOK_AT_OBJ;
+        msg.obj_name = obj_name; 
+        head_cmd_pub.publish(msg);
+    }
+
     /* MOVE ARM TO OBJ */
     move_pose_target(agent, obj_pose);
 
@@ -206,6 +216,13 @@ void Pick(AGENT agent, const std::string &color, const std::string &side)
 void PlacePose(AGENT agent, geometry_msgs::Pose pose)
 {
     ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
+
+    if(isRobot(agent))
+    {
+        sim_msgs::HeadCmd msg;
+        msg.type = sim_msgs::HeadCmd::LOOK_AT_STACK;
+        head_cmd_pub.publish(msg);
+    }
 
     /* MOVE ARM TO POSE */
     move_pose_target(agent, pose);
@@ -266,6 +283,14 @@ void Pushing(AGENT agent)
 
 void OpenBox(AGENT agent)
 {
+    if(isRobot(agent))
+    {
+        sim_msgs::HeadCmd msg;
+        msg.type = sim_msgs::HeadCmd::LOOK_AT_OBJ;
+        msg.obj_name = "box_lid"; 
+        head_cmd_pub.publish(msg);
+    }
+
     // Move to box
     move_pose_target(agent, locations["box"]);
 
@@ -286,6 +311,15 @@ void OpenBox(AGENT agent)
 void DropCube(AGENT agent)
 {
     std::string obj_name = g_holding[agent];
+
+    if(isRobot(agent))
+    {
+        sim_msgs::HeadCmd msg;
+        msg.type = sim_msgs::HeadCmd::LOOK_AT_POSE;
+        msg.pose = init_poses[obj_name].position; 
+        head_cmd_pub.publish(msg);
+    }
+
     move_pose_target(agent, init_poses[obj_name]);
 
     drop(agent, obj_name);
@@ -752,6 +786,8 @@ int main(int argc, char **argv)
     get_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
     set_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
     set_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
+
+    head_cmd_pub = node_handle.advertise<sim_msgs::HeadCmd>("/head_cmd", 10);
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
 

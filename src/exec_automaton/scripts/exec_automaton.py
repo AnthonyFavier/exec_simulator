@@ -23,6 +23,7 @@ from sim_msgs.msg import Action, VHA
 from sim_msgs.msg import EventLog
 from sim_msgs.srv import Int, IntResponse, IntRequest
 from sim_msgs.msg import Signal
+from sim_msgs.msg import HeadCmd
 
 class IdResult(Enum):
     NOT_NEEDED=0
@@ -101,6 +102,9 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
     while not exec_over(curr_step) and not rospy.is_shutdown():
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
+        msg = HeadCmd()
+        msg.type = HeadCmd.WAIT_H
+        g_head_cmd_pub.publish(msg)
 
         if curr_step.isRInactive():
             g_text_plugin_pub.publish(String(f"Step started\nGoing IDLE\nWaiting for human to act..."))
@@ -159,6 +163,9 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             reset()
             rospy.sleep(0.1)
 
+    msg = HeadCmd()
+    msg.type = HeadCmd.RESET
+    g_head_cmd_pub.publish(msg)
     log_event("OVER")
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
@@ -672,8 +679,8 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
     input()
 
     # CONSTANTS #
-    TIMEOUT_DELAY               = 10.0
-    ESTIMATED_R_REACTION_TIME   = 1.0
+    TIMEOUT_DELAY               = 3.0
+    ESTIMATED_R_REACTION_TIME   = 1.5
     P_SUCCESS_ID_PHASE          = 1.0
     ID_DELAY                    = 2.0
     ASSESS_DELAY                = 0.5
@@ -737,6 +744,8 @@ if __name__ == "__main__":
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
     robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
     robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
+
+    g_head_cmd_pub = rospy.Publisher("/head_cmd", HeadCmd, queue_size=10)
 
 
     rospy.loginfo("Wait pub/sub to be initialized...")
