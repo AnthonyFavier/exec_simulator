@@ -164,7 +164,8 @@
                        soft_upper_limit="${0.045 - gripper_eps}" />
   </joint>
 
-  <xacro:pal_robotiq_grasping_frames prefix="${name}_" xyz="0 0 0.12"/>
+  <!-- <xacro:pal_robotiq_grasping_frames prefix="${name}_" xyz="0 0 0.12"/> -->
+  <xacro:pal_robotiq_grasping_frames prefix="${name}_" xyz="0 0 0.18"/>
 
   <xacro:gripper_simple_transmission name="${name}_left_finger" reduction="1.0"/>
   <xacro:gripper_simple_transmission name="${name}_right_finger" reduction="1.0"/>

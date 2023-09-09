@@ -54,6 +54,7 @@ ros::ServiceClient attach_reset_client[2];
 ros::ServiceClient get_world_properties;
 ros::ServiceClient move_hand_pass_signal_client;
 ros::Publisher r_home_pub;
+ros::Publisher h_home_pub;
 ros::Publisher visual_signals_pub[2];
 ros::Publisher event_log_pub[2];
 ros::Publisher text_pluging_pub;
@@ -86,7 +87,7 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"robot_head",      make_pose(make_point(0.254, -0.465, 1.07),      make_quaternion())},
 };
 
-geometry_msgs::Pose init_human_hand_pose = make_pose(make_point(1.38, 0.5, 0.87), make_quaternion_RPY(0, 0, 3.14159));
+geometry_msgs::Pose init_human_hand_pose = make_pose(make_point(1.48, 0.5, 0.87), make_quaternion_RPY(0, 0.0, 3.14159));
 
 void init_cubes()
 {
@@ -194,19 +195,17 @@ void Pick(AGENT agent, const std::string &color, const std::string &side)
     geometry_msgs::Pose obj_pose = srv.response.pose;
     show_pose(obj_pose);
 
-    if(isRobot(agent))
-    {
-        sim_msgs::HeadCmd msg;
-        msg.type = sim_msgs::HeadCmd::LOOK_AT_OBJ;
-        msg.obj_name = obj_name; 
-        head_cmd_pub.publish(msg);
-    }
+    /* MOVE ROBOT HEAD */
+    robot_head_follow_obj(agent, obj_name);
 
     /* MOVE ARM TO OBJ */
     move_pose_target(agent, obj_pose);
 
     /* GRAB OBJ */
     grab_obj(agent, obj_name);
+
+    /* MOVE ROBOT HEAD */
+    robot_head_follow_human(agent);
 
     /* HOME POSITION */
     move_home(agent);
@@ -217,18 +216,18 @@ void PlacePose(AGENT agent, geometry_msgs::Pose pose)
 {
     ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
 
-    if(isRobot(agent))
-    {
-        sim_msgs::HeadCmd msg;
-        msg.type = sim_msgs::HeadCmd::LOOK_AT_STACK;
-        head_cmd_pub.publish(msg);
-    }
+    /* MOVE ROBOT HEAD */
+    robot_head_follow_stack(agent);
 
     /* MOVE ARM TO POSE */
     move_pose_target(agent, pose);
 
     /* DROP OBJ */
     drop(agent, g_holding[agent]);
+    adjust_obj_pose(agent, g_holding[agent], pose);
+
+    /* MOVE ROBOT HEAD */
+    robot_head_follow_human(agent);
 
     /* HOME POSITION */
     move_home(agent);
@@ -283,13 +282,7 @@ void Pushing(AGENT agent)
 
 void OpenBox(AGENT agent)
 {
-    if(isRobot(agent))
-    {
-        sim_msgs::HeadCmd msg;
-        msg.type = sim_msgs::HeadCmd::LOOK_AT_OBJ;
-        msg.obj_name = "box_lid"; 
-        head_cmd_pub.publish(msg);
-    }
+    robot_head_follow_obj(agent, "box_lid");
 
     // Move to box
     move_pose_target(agent, locations["box"]);
@@ -304,6 +297,8 @@ void OpenBox(AGENT agent)
     srv_set.request.model_state.pose.orientation = tf2::toMsg(myQuaternion);
     set_model_state_client[agent].call(srv_set);
 
+    robot_head_follow_human(agent);
+
     // Move home
     move_home(agent);
 }
@@ -312,17 +307,12 @@ void DropCube(AGENT agent)
 {
     std::string obj_name = g_holding[agent];
 
-    if(isRobot(agent))
-    {
-        sim_msgs::HeadCmd msg;
-        msg.type = sim_msgs::HeadCmd::LOOK_AT_POSE;
-        msg.pose = init_poses[obj_name].position; 
-        head_cmd_pub.publish(msg);
-    }
+    robot_head_follow_pose(agent, init_poses[obj_name].position);
 
     move_pose_target(agent, init_poses[obj_name]);
 
     drop(agent, obj_name);
+    adjust_obj_pose(agent, obj_name, init_poses[obj_name]);
 
     /* UPDATE CUBES */
     for (unsigned int i = 0; i < g_cubes.size(); i++)
@@ -333,6 +323,8 @@ void DropCube(AGENT agent)
             break;
         }
     }
+
+    robot_head_follow_human(agent);
 
     move_home(agent);
 }
@@ -442,7 +434,7 @@ void drop(AGENT agent, const std::string &object)
     if (!detach_plg_client[agent].call(srv) || !srv.response.ok)
         throw ros::Exception("Calling service detach_plg_client failed...");
 
-    set_obj_rpy(agent, object, 0, 0, 0);
+    // set_obj_rpy(agent, object, 0, 0, 0);
 
     ROS_INFO("\t\t%s DROP END", get_agent_str(agent).c_str());
 }
@@ -473,6 +465,12 @@ void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose)
     set_model_state_client[agent].call(srv);
 }
 
+void adjust_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose)
+{
+    set_obj_rpy(agent, obj_name, 0, 0, 0);
+    set_obj_pose(agent, obj_name, pose);
+}
+
 void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta_move)
 {
     gazebo_msgs::GetModelState srv;
@@ -483,6 +481,48 @@ void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta
     new_obj_pose.position.y = srv.response.pose.position.y + delta_move.position.y;
     new_obj_pose.position.z = srv.response.pose.position.z + delta_move.position.z;
     set_obj_pose(agent, obj_name, new_obj_pose);
+}
+
+void robot_head_follow_pose(AGENT agent, geometry_msgs::Point pose)
+{
+    if(isRobot(agent))
+    {
+        sim_msgs::HeadCmd msg;
+        msg.type = sim_msgs::HeadCmd::FOLLOW_POSE;
+        msg.pose = pose; 
+        head_cmd_pub.publish(msg);
+    }
+}
+
+void robot_head_follow_obj(AGENT agent, std::string obj_name)
+{
+    if(isRobot(agent))
+    {
+        sim_msgs::HeadCmd msg;
+        msg.type = sim_msgs::HeadCmd::FOLLOW_OBJ;
+        msg.obj_name = obj_name; 
+        head_cmd_pub.publish(msg);
+    }
+}
+
+void robot_head_follow_human(AGENT agent)
+{
+    if(isRobot(agent))
+    {
+        sim_msgs::HeadCmd msg;
+        msg.type = sim_msgs::HeadCmd::FOLLOW_HUMAN;
+        head_cmd_pub.publish(msg);
+    }
+}
+
+void robot_head_follow_stack(AGENT agent)
+{
+    if(isRobot(agent))
+    {
+        sim_msgs::HeadCmd msg;
+        msg.type = sim_msgs::HeadCmd::FOLLOW_STACK;
+        head_cmd_pub.publish(msg);
+    }
 }
 
 // ****************************** CALLBACKS ******************************* //
@@ -565,6 +605,11 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 void r_home_cb(std_msgs::Empty msg)
 {
     move_home(AGENT::ROBOT);
+}
+
+void h_home_cb(std_msgs::Empty msg)
+{
+    move_home(AGENT::HUMAN);
 }
 
 bool g_h_start_moving = false;
@@ -687,7 +732,7 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     gazebo_msgs::SetModelState srv_set;
     for (std::vector<std::string>::iterator it = srv.response.model_names.begin(); it != srv.response.model_names.end(); it++)
     {
-        if ("scene" != (*it) && "human_body" != (*it) && "human_hand" != (*it) && "panda1" != (*it))
+        if ("scene" != (*it) && "human_body" != (*it) && "human_hand" != (*it) && "panda1" != (*it) && "tiago" != (*it))
         {
             // std::cout << (*it) << std::endl;
             srv_attach.request.model_name_2 = (*it);
@@ -737,9 +782,13 @@ void go_home_pose_cb(const std_msgs::Empty &msg)
 
 void home_agents()
 {
+    // std_msgs::Empty msg;
+    // r_home_pub.publish(msg);
+    // move_home(AGENT::HUMAN);
+
     std_msgs::Empty msg;
-    r_home_pub.publish(msg);
-    move_home(AGENT::HUMAN);
+    h_home_pub.publish(msg);
+    move_home(AGENT::ROBOT);
 }
 
 int main(int argc, char **argv)
@@ -755,11 +804,20 @@ int main(int argc, char **argv)
     ros::Subscriber r_home = node_handle.subscribe("/r_home", 1, r_home_cb);
     r_home_pub = node_handle.advertise<std_msgs::Empty>("/r_home", 1);
 
-    move_arm_pose_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_pose_target");
-    move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/human_hand/move_hand_pose_target");
-    move_arm_named_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>("/panda1/move_named_target");
-    move_arm_named_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>("/human_hand/move_hand_named_target");
-    move_hand_pass_signal_client = node_handle.serviceClient<std_srvs::Empty>("/human_hand/move_hand_pass_signal");
+    ros::Subscriber h_home = node_handle.subscribe("/h_home", 1, h_home_cb);
+    h_home_pub = node_handle.advertise<std_msgs::Empty>("/h_home", 1);
+
+    const std::string r_move_pose_srv_name("/move_pose_target");
+    const std::string r_move_named_topic_name("/move_named_target");
+    const std::string r_head_cmd_topic_name("/test_tiago_head");
+    const std::string r_head_cmd_ready_name("/tiago_head_ready");
+    const std::string h_move_pose_srv_name("/human_hand/move_hand_pose_target");
+    const std::string h_pass_topic_name("/human_hand/move_hand_pass_signal");
+
+    move_arm_pose_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>(r_move_pose_srv_name);
+    move_arm_pose_client[AGENT::HUMAN] = node_handle.serviceClient<sim_msgs::MoveArm>(h_move_pose_srv_name);
+    move_arm_named_client[AGENT::ROBOT] = node_handle.serviceClient<sim_msgs::MoveArm>(r_move_named_topic_name);
+    move_hand_pass_signal_client = node_handle.serviceClient<std_srvs::Empty>(h_pass_topic_name);
 
     attach_plg_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/attach");
     attach_plg_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_ros_link_attacher::Attach>("/link_attacher_node/attach");
@@ -787,7 +845,7 @@ int main(int argc, char **argv)
     set_model_state_client[AGENT::ROBOT] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
     set_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
 
-    head_cmd_pub = node_handle.advertise<sim_msgs::HeadCmd>("/head_cmd", 10);
+    head_cmd_pub = node_handle.advertise<sim_msgs::HeadCmd>(r_head_cmd_topic_name, 10);
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
 
@@ -803,9 +861,9 @@ int main(int argc, char **argv)
     ros::service::waitForService("/gazebo/unpause_physics");
     gazebo_start_client.call(empty_srv);
 
-    ros::service::waitForService("/panda1/move_pose_target");
-    ros::service::waitForService("/human_hand/move_hand_pose_target");
-    ros::service::waitForService("/panda1/move_named_target");
+    ros::service::waitForService(r_move_pose_srv_name);
+    ros::service::waitForService(h_move_pose_srv_name);
+    ros::service::waitForService(r_head_cmd_ready_name);
 
     home_agents();
 

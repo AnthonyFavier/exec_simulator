@@ -18,6 +18,8 @@
         <arg name="arm" value="$(arg arm)"/>
         <arg name="base_type_suffix"  value="$(arg base_type_suffix)"/>
     </include>
+
+    
     <include file="$(find tiago_controller_configuration)/launch/imu_controller.launch"/>
     <group if="$(eval ft_sensor == 'schunk-ft')">
         <include file="$(find tiago_controller_configuration)/launch/force_torque_controller.launch"/>

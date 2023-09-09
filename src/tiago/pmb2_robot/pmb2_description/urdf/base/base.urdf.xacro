@@ -47,10 +47,14 @@
     <link name="${name}_link">
       <inertial>
         <origin xyz="-0.00000106 0.00000109 0.0000387" rpy="0 0 0"/>
-        <mass value="28.26649"/>
+        <!-- <mass value="28.26649"/>
         <inertia ixx="0.465408937" ixy="0.002160024" ixz="-0.001760255"
                  iyy="0.483193291" iyz="-0.000655952"
-                 izz="0.550939703"/>
+                 izz="0.550939703"/> -->
+        <mass value="2826.649"/>
+        <inertia ixx="46.5408937" ixy="0.2160024" ixz="-0.1760255"
+                 iyy="48.3193291" iyz="-0.0655952"
+                 izz="55.0939703"/>
       </inertial>
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
@@ -78,6 +82,14 @@
       <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0" />
       <child link="${name}_link" />
       <parent link="${name}_footprint"/>
+    </joint>
+
+
+    <link name="world" />
+    <joint name="joint_world" type="fixed">
+      <origin xyz="0.0 0 0.0" rpy="0 0 0" />
+      <parent link="world" />
+      <child link="${name}_footprint" />
     </joint>
 
   <!-- gazebo parameters are given here for base_link thru base_footprint -->

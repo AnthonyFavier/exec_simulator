@@ -8,7 +8,8 @@
     A URDF file must exist for this robot as well, where the joints and the links that are referenced are defined
 -->
 <robot name="tiago">
-    <virtual_joint child_link="base_footprint" name="odom_to_base" parent_frame="odom" type="planar" />
+    <!-- <virtual_joint child_link="base_footprint" name="odom_to_base" parent_frame="odom" type="planar" /> -->
+    <virtual_joint child_link="base_footprint" name="odom_to_base" parent_frame="odom" type="fixed" />
     <group name="arm">
         <joint name="arm_1_joint" />
         <joint name="arm_2_joint" />
@@ -20,15 +21,7 @@
         <joint name="arm_tool_joint" />
     </group>
     <group name="arm_torso">
-        <joint name="torso_lift_joint" />
-        <joint name="arm_1_joint" />
-        <joint name="arm_2_joint" />
-        <joint name="arm_3_joint" />
-        <joint name="arm_4_joint" />
-        <joint name="arm_5_joint" />
-        <joint name="arm_6_joint" />
-        <joint name="arm_7_joint" />
-        <joint name="arm_tool_joint" />
+        <chain base_link="torso_fixed_link" tip_link="gripper_grasping_frame"/>
     </group>
     <group name="gripper">
         <link name="gripper_left_finger_link" />
@@ -37,6 +30,37 @@
         <joint name="gripper_left_finger_joint" />
         <joint name="gripper_right_finger_joint" />
     </group>
+    <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
+    <group_state name="init" group="arm_torso">
+        <joint name="torso_lift_joint"  value="0"/>
+        <joint name="arm_1_joint"       value="0.07"/>
+        <joint name="arm_2_joint"       value="-0.8492"/>
+        <joint name="arm_3_joint"       value="0"/>
+        <joint name="arm_4_joint"       value="2.2860"/>
+        <joint name="arm_5_joint"       value="1.5708"/>
+        <joint name="arm_6_joint"       value="0"/>
+        <joint name="arm_7_joint"       value="1.5708"/>
+    </group_state>
+    <group_state name="home" group="arm_torso">
+        <joint name="torso_lift_joint"  value="0.3000"/>
+        <joint name="arm_1_joint"       value="0.1096"/>
+        <joint name="arm_2_joint"       value="0.2697"/>
+        <joint name="arm_3_joint"       value="-1.5477"/>
+        <joint name="arm_4_joint"       value="2.1117"/>
+        <joint name="arm_5_joint"       value="1.6834"/>
+        <joint name="arm_6_joint"       value="-0.5719"/>
+        <joint name="arm_7_joint"       value="-0.8007"/>
+    </group_state>
+    <group_state name="idle" group="arm_torso">
+        <joint name="torso_lift_joint"  value="0.28"/>
+        <joint name="arm_1_joint"       value="0.07"/>
+        <joint name="arm_2_joint"       value="0.3923"/>
+        <joint name="arm_3_joint"       value="0"/>
+        <joint name="arm_4_joint"       value="2.1196"/>
+        <joint name="arm_5_joint"       value="1.5708"/>
+        <joint name="arm_6_joint"       value="-1.3937"/>
+        <joint name="arm_7_joint"       value="0"/>
+    </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector group="gripper" name="gripper" parent_group="arm_torso" parent_link="arm_tool_link" />
     <disable_collisions link1="arm_1_link" link2="arm_2_link" reason="Adjacent" />
@@ -1271,4 +1295,3 @@
     <disable_collisions link1="xtion_orbbec_aux_joint_frame" link2="xtion_rgb_optical_frame" reason="Never" />
     <disable_collisions link1="xtion_rgb_frame" link2="xtion_rgb_optical_frame" reason="Adjacent" />
 </robot>
-

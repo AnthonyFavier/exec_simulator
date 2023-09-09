@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   control_msgs
   geometry_msgs
+  sim_msgs
 )
 
 find_package(OpenCV REQUIRED 
@@ -27,9 +28,14 @@ target_link_libraries(look_to_point
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES})
 
+add_executable(own_look_to_point src/own_look_to_point.cpp)
+target_link_libraries(own_look_to_point
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES})
+
 ### INSTALL ###
 
-install(TARGETS look_to_point
+install(TARGETS look_to_point own_look_to_point
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

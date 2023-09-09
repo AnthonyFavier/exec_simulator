@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple
 from progress.bar import IncrementalBar
 
 
-PATH = "/home/afavier/exec_simulator_ws/src/gazebo_plugin/"
+PATH = "/home/afavier/new_exec_sim_ws/src/gazebo_plugin/"
 FILENAME = "zones.png"
 
 #load the original image
@@ -126,10 +126,15 @@ tmp_img.show()
 # Demande renuméroté
 new_zones = [] # List[Zone]
 print("What shall be the final numbering?")
-for i,z in enumerate(zones):
-    print(f"{i} -> ", end="")
-    new_id = input()
-    z.id = int(new_id) if new_id!="" else i
+# for i,z in enumerate(zones):
+#     print(f"{i} -> ", end="")
+#     new_id = input()
+#     z.id = int(new_id) if new_id!="" else i
+print("new_id <- current_id")
+for i in range(len(zones)):
+    print(f"{i} <- ", end="")
+    old_id = int(input())
+    zones[old_id].id = i
 
 def get_id_zone(z):
     return z.id

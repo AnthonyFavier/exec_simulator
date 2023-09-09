@@ -23,8 +23,9 @@
 #include "gazebo_msgs/SetLinkState.h"
 #include "sim_msgs/HeadCmd.h"
 
-#define ROBOT_ATTACH_MODEL_NAME "panda1"
-#define ROBOT_ATTACH_LINK_NAME "panda1_link7"
+#define ROBOT_ATTACH_MODEL_NAME "tiago"
+// #define ROBOT_ATTACH_LINK_NAME "gripper_grasping_frame"
+#define ROBOT_ATTACH_LINK_NAME "arm_7_link"
 #define HUMAN_ATTACH_MODEL_NAME "human_hand"
 #define HUMAN_ATTACH_LINK_NAME "human_hand_link"
 
@@ -58,7 +59,13 @@ void grab_obj(AGENT agent, const std::string &object);
 void drop(AGENT agent, const std::string &object);
 void set_obj_rpy(AGENT agent, std::string obj_name, float r, float p, float y);
 void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose);
+void adjust_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose);
 void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta_move);
+void robot_head_follow_pose(AGENT agent, geometry_msgs::Point pose);
+void robot_head_follow_obj(AGENT agent, std::string obj_name);
+void robot_head_follow_human(AGENT agent);
+void robot_head_follow_stack(AGENT agent);
+
 
 /* CALLBACKS */
 void robot_action_cb(const sim_msgs::Action &msg);

@@ -1,19 +1,15 @@
 <launch>
 
-    <!-- robots' name -->
-    <arg name="robot_name1" value="panda1"/>
-    <arg name="robot_name2" value="panda2"/>
-
-    <group ns="$(arg robot_name1)">
-        <node name="move_arm" type="move_arm" pkg="simulator" args="$(arg robot_name1)" respawn="false" output="screen"/>
-    </group>
+    <!-- ROBOT -->
+    <node name="move_arm" type="own_plan_arm_torso_ik" pkg="tiago_moveit_tutorial" respawn="false" output="screen"/>
+    <node name="move_head" type="own_look_to_point" pkg="look_to_point" respawn="false" output="screen"/>
     
+    <!-- HUMAN -->
     <group ns="human_hand">
         <node name="own_move_hand" type="own_move_hand" pkg="simulator" respawn="false" output="screen"/>
     </group>
 
+    <!-- SIM CONTROLLER -->
     <node name="sim_controller" pkg="simulator" type="sim_controller" respawn="false" output="screen"/>
-    
-    <node name="head_controller" pkg="simulator" type="head_controller.py" respawn="false" output="screen"/>
 
 </launch>

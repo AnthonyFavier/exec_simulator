@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning_interface
   roscpp
   geometry_msgs
+  sim_msgs
 )
 
 catkin_package(
@@ -33,7 +34,13 @@ target_link_libraries(plan_arm_torso_ik
    ${catkin_LIBRARIES}
  )
 
-install(TARGETS plan_arm_torso_fk plan_arm_torso_ik
+add_executable(own_plan_arm_torso_ik src/own_plan_arm_torso_ik.cpp)
+add_dependencies(own_plan_arm_torso_ik ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(own_plan_arm_torso_ik
+   ${catkin_LIBRARIES}
+ )
+
+install(TARGETS plan_arm_torso_fk plan_arm_torso_ik own_plan_arm_torso_ik
    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
