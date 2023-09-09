@@ -18,18 +18,18 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
+add_library(GUITextPlugin SHARED ${headers_MOC}
+  GUITextPlugin.cc)
+target_link_libraries(GUITextPlugin ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES}
+    ${Qt5Core_LIBRARIES}
+    ${Qt5Widgets_LIBRARIES}
+    ${PROTOBUF_LIBRARIES})
+
 add_library(CameraLockPlugin SHARED ${headers_MOC}
   CameraLockPlugin.cc)
-target_link_libraries(CameraLockPlugin ${GAZEBO_LIBRARIES})
+target_link_libraries(CameraLockPlugin ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
 
 add_library(MousePosePublisherPlugin SHARED ${headers_MOC}
   MousePosePublisherPlugin.cc)
-target_link_libraries(MousePosePublisherPlugin ${GAZEBO_LIBRARIES}
+target_link_libraries(MousePosePublisherPlugin ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES}
     ${roscpp_LIBRARIES})
-
-add_library(GUITextPlugin SHARED ${headers_MOC}
-  GUITextPlugin.cc)
-target_link_libraries(GUITextPlugin ${GAZEBO_LIBRARIES}
-    ${Qt5Core_LIBRARIES}
-    ${Qt5Widgets_LIBRARIES}
-    ${PROTOBUF_LIBRARIES})  

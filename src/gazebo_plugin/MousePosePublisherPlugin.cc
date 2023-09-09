@@ -25,7 +25,7 @@ namespace gazebo
       gui::MouseEventHandler::Instance()->AddPressFilter("glwidget",
                                                          boost::bind(&MousePosePublisherPlugin::OnMousePress, this, _1));
 
-      // chech if ros is initized or not
+      // check if ros is initized or not
       if (!ros::isInitialized())
       {
         int argc = 0;

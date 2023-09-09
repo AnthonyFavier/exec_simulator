@@ -2,6 +2,8 @@
 Building:
 #1 Building the ros workspace (Repeat in case of error)
 $ catkin_make
+or
+$ catkin build
 
 #2 Building the gazebo_plugin
 $ cd src/gazebo_plugin

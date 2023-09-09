@@ -8,6 +8,7 @@
 #include <std_msgs/Empty.h>
 #include <gazebo/common/Event.hh>
 #include <ros/ros.h> // for acceessing ros
+#include <gazebo/gui/GuiIface.hh>
 
 namespace gazebo
 {
@@ -32,10 +33,11 @@ namespace gazebo
         {
             // publish pose
             ignition::math::Pose3d custom_pose = ignition::math::Pose3d(
-                2.24, 0.0, 2.49, 0, 0.86, 3.14);
+                2.8, 0.0, 2.2, 0, 0.56, 3.141592);
 
             // set pose
-            m_camera->SetWorldPose(custom_pose);
+            if(m_camera != NULL)
+                m_camera->SetWorldPose(custom_pose);
         }
 
     private:

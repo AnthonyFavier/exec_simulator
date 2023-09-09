@@ -27,6 +27,7 @@ from matplotlib.collections import PolyCollection
 import numpy as np
 import matplotlib.ticker as ticker
 import math
+import time
 
 import matplotlib.patches as mpatches
 
@@ -93,7 +94,8 @@ def getStamp(event):
 def log_cb(msg):
     global g_events
     print(msg)
-    g_events.append( Event(msg.name, msg.timestamp) )
+    # g_events.append( Event(msg.name, msg.timestamp) )
+    g_events.append( Event(msg.name, time.time()) )
 
 # Signals Callbacks (Robot, Human, Timeouts)
 ## signals create a corresponding global event  
@@ -119,13 +121,15 @@ def r_sgl_cb(sgl: Signal):
     print(sgl)
 
     if sgl.type == Signal.TO:
-        t = rospy.get_time()
+        # t = rospy.get_time()
+        t = time.time()
         TO_name = "TIMEOUT" 
         g_to_signals.append( LogSignal(TO_name, t, sgl.type, None, None) )
         g_events.append( Event("SGL_"+TO_name, t) )
 
     elif sgl.type in g_r_signals_names:
-        t = rospy.get_time()
+        # t = rospy.get_time()
+        t = time.time()
         g_r_signals.append( LogSignal(g_r_signals_names[sgl.type][0], t, sgl.type, g_r_signals_names[sgl.type][1], g_r_signals_names[sgl.type][2]) )
         g_events.append( Event("SGL_"+g_r_signals_names[sgl.type][0], t) )
 def h_sgl_cb(sgl: Signal):
@@ -134,14 +138,15 @@ def h_sgl_cb(sgl: Signal):
     print(sgl)
     
     if sgl.type in g_h_signals_names:
-        t = rospy.get_time()
+        # t = rospy.get_time()
+        t = time.time()
         g_h_signals.append( LogSignal(g_h_signals_names[sgl.type][0], t, sgl.type, g_h_signals_names[sgl.type][1], g_h_signals_names[sgl.type][2]) )
         g_events.append( Event("SGL_"+g_h_signals_names[sgl.type][0], t) )
 
 # Activities Extraction
 g_r_activities_names = { # act_name : [display_name, shape_color, text_color]
     "wait_hc":          ["Wait H",              "yellow",       "black"],
-    "idle_wait_h":      ["Wait H",              "yellow",       "black"],
+    "idle_wait_h":      ["IDLE\nWait HA",       "silver",       "black"],
     "wait_end_ha":      ["Wait E_HA",           "forestgreen",  "white"],
     "id":               ["ID Phase",            "lightgreen",   "black"],
     "sa":               ["SA",                  "lightgreen",   "black"],
@@ -152,8 +157,8 @@ g_h_activities_names = { # act_name : [display_name, shape_color, text_color]
     "idle_wait_ns":         ["Wait NS",         "forestgreen",   "white"],
     "idle_pass_wait_ns":    ["Wait NS",         "forestgreen",   "white"],
     "idle_wait_wait_ns":    ["Wait NS",         "forestgreen",   "white"],
-    "idle_wait_compliant":  ["Compliant\nIDLE", "lightgrey",     "black"],
-    "idle_pass_compliant":  ["Compliant\nIDLE", "lightgrey",     "black"],
+    "idle_wait_compliant":  ["Inactive\nNo Signal", "lightgrey",     "black"],
+    "idle_pass_compliant":  ["Inactive\nPASS", "lightgrey",     "black"],
     "start_delay":          ["Start Delay",     "yellow",        "black"],
 }
 def r_extract_activities():
@@ -327,8 +332,6 @@ def show_activities(activities):
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
-    sys.argv.append("load")
-
     if len(sys.argv)<2:
         raise Exception("Missing argument... ['load', 'record']")
     record = sys.argv[1] == "record"
@@ -341,6 +344,8 @@ if __name__ == "__main__":
     log_r_sgl_sub = rospy.Subscriber('/robot_visual_signals', Signal, r_sgl_cb)
     log_h_sgl_sub = rospy.Subscriber('/human_visual_signals', Signal, h_sgl_cb)
 
+    s_t = time.time()
+
     if record:
         print("Listening events... (type 'q' and return to abort)")
         t = input()
@@ -349,21 +354,18 @@ if __name__ == "__main__":
             exit(1)
 
         # Dumping
-        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/exec_simulator_ws/events.p", "wb"))
+        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events.p", "wb"))
         print("events dumped")
     else:
         # Loading
-        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open("/home/afavier/exec_simulator_ws/events.p", "rb"))
+        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open("/home/afavier/new_exec_sim_ws/events.p", "rb"))
         print("events loaded")
 
-        ####### TEMP FIX ######
-        # print("oihizf")
-        # g_events[35].name = "SGL_NS_IDLE"
-        # g_events[44].name = "SGL_NS_IDLE"
-        # g_r_signals[8].name = "NS_IDLE"
-        # g_r_signals[9].name = "NS_IDLE"
+    e_t = time.time()
 
-
+    print(s_t)
+    print(e_t)
+    print(f"Elapsed t : {e_t-s_t}")
 
     # TREAT EVENTS
     reset_times()
@@ -408,6 +410,10 @@ if __name__ == "__main__":
 
     ax.set_xticklabels(x_tickslabels)
 
+    ax.set_ylim(3.5, 0.0)
+    ax.set_yticks([0.25, 1.0, 2.0, 3.0])
+    ax.set_yticklabels(['TO', 'R', 'Signals', 'H'])
+
 
     MIN_DURATION = 0.15
 
@@ -416,6 +422,17 @@ if __name__ == "__main__":
     ns_lines_zorder = 2
     signal_arrow_zorder = 3
     signal_text_zorder = 10
+
+    signal_width_text = 1.5
+    signal_style="Simple, head_width=8, head_length=4, tail_width=4"
+    
+    # TIMEOUTS #
+    rec = ax.barh( ['TO'], [signal_width_text], left=[0.0], height=1.0, color=(0,0,0,0))
+    for sig in g_to_signals:
+        rec = ax.barh( ['TO'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=0.5, color=(0,0,0,0))
+        ax.bar_label(rec, labels=["TO     "], label_type='center', rotation=90, zorder=signal_text_zorder)
+        arrow = mpatches.FancyArrowPatch((sig.stamp, 0.25), (sig.stamp , 0.5), color="black", arrowstyle=signal_style, zorder=signal_arrow_zorder)
+        ax.add_patch(arrow)
 
     # ROBOT ACTIVITES #
     for act in g_r_activities:
@@ -435,29 +452,23 @@ if __name__ == "__main__":
         
 
     # SIGNALS #
-    width_text = 1.5
-    style="Simple, head_width=8, head_length=4, tail_width=4"
     # R Signals #
     for sig in g_r_signals:
-        rec = ax.barh( ['Signals'], [width_text], left=[sig.stamp-width_text/2], height=1.0, color=(0,0,0,0))
+        rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
         ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
-        arrow = mpatches.FancyArrowPatch((sig.stamp, 0.5), (sig.stamp , 1.5), color=sig.color_arrow, arrowstyle=style, zorder=signal_arrow_zorder)
+        arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 2.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
         ax.add_patch(arrow)
+        # bar step separations
         if sig.name[:2]=="NS":
-            line = mpatches.FancyArrowPatch((sig.stamp, -0.6), (sig.stamp , 2.6), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
+            line = mpatches.FancyArrowPatch((sig.stamp, 0.0), (sig.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
             ax.add_patch(line)
     # H Signals #
     for sig in g_h_signals:
-        rec = ax.barh( ['Signals'], [width_text], left=[sig.stamp-width_text/2], height=1.0, color=(0,0,0,0))
+        rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
         ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
-        arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 0.5), color=sig.color_arrow, arrowstyle=style, zorder=signal_arrow_zorder)
+        arrow = mpatches.FancyArrowPatch((sig.stamp, 2.5), (sig.stamp , 1.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
         ax.add_patch(arrow)
-    # TIMEOUTS #
-    for sig in g_to_signals:
-        rec = ax.barh( ['Signals'], [width_text], left=[sig.stamp-width_text/2], height=1.0, color=(0,0,0,0))
-        ax.bar_label(rec, labels=["TO"], label_type='center', rotation=90, zorder=signal_text_zorder)
-        arrow = mpatches.FancyArrowPatch((sig.stamp, 0.9), (sig.stamp , 0.5), color="black", arrowstyle=style, zorder=signal_arrow_zorder)
-        ax.add_patch(arrow)
+    
         
 
     # HUMAN ACTIVITES #

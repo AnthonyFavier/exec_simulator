@@ -1,5 +1,7 @@
 <launch>
 
+
+    
     <!-- this opens gazebo -->
     <include file="$(find bringup)/launch/_new_empty_world.launch">
         <arg name="world_name" value="$(find simulator)/worlds/stack.world" />

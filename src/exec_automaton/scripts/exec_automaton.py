@@ -12,7 +12,7 @@ import logging as lg
 import logging.config
 from enum import Enum
 import matplotlib.pyplot as plt
-sys.path.insert(0, "/home/afavier/exec_simulator_ws/src/progress/")
+sys.path.insert(0, "/home/afavier/new_exec_sim_ws/src/progress/")
 from progress.bar import IncrementalBar, StrBar
 from std_msgs.msg import Int32, Bool
 from std_msgs.msg import Empty as EmptyM
@@ -102,8 +102,9 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
     while not exec_over(curr_step) and not rospy.is_shutdown():
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
+        
         msg = HeadCmd()
-        msg.type = HeadCmd.WAIT_H
+        msg.type = HeadCmd.LOOK_AT_HUMAN
         g_head_cmd_pub.publish(msg)
 
         if curr_step.isRInactive():
@@ -112,11 +113,17 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             go_idle_pose_once()
             RA = select_valid_passive(curr_step)
             wait_human_start_acting(curr_step)
+            msg = HeadCmd()
+            msg.type = HeadCmd.FOLLOW_H_HAND
+            g_head_cmd_pub.publish(msg)
 
         else:
             go_home_pose_once()
             send_NS_update_HAs(curr_step, VHA.NS)
             wait_human_decision(curr_step)
+            msg = HeadCmd()
+            msg.type = HeadCmd.FOLLOW_H_HAND
+            g_head_cmd_pub.publish(msg)
             # MOCK_save_best_reachable_solution_for_human(curr_step)
 
             ## 1 & 2 & 3 ##
@@ -163,15 +170,15 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             reset()
             rospy.sleep(0.1)
 
+    log_event("OVER")
+    go_idle_pose_once()
     msg = HeadCmd()
     msg.type = HeadCmd.RESET
     g_head_cmd_pub.publish(msg)
-    log_event("OVER")
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
     g_text_plugin_pub.publish(String(f"Task Done"))
     g_hmi_finish_pub.publish(EmptyM())
-    # return int(curr_step.id)
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
 
 
@@ -334,7 +341,7 @@ def MOCK_assess_human_action() -> CM.Action:
 #######################################
 ## SWITCH BETWEEN IDLE AND HOME POSE ##
 #######################################
-R_idle = False
+R_idle = True
 def go_idle_pose_once():
     global R_idle
     if not R_idle:
@@ -671,100 +678,12 @@ def robot_visual_signal_cb(msg: Signal):
 def show_solution_exec():
     ConM.render_tree(begin_step)
 
-def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves):
-    global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY
-    global default_human_passive_action, default_robot_passive_action
-
-    rospy.loginfo("READY TO START, PRESS RETURN")
-    input()
-
-    # CONSTANTS #
-    TIMEOUT_DELAY               = 3.0
-    ESTIMATED_R_REACTION_TIME   = 1.5
-    P_SUCCESS_ID_PHASE          = 1.0
-    ID_DELAY                    = 2.0
-    ASSESS_DELAY                = 0.5
-
-
-    HUMAN_UPDATING = False
-
-    # Init timeout delay HMI
-    g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
-
-    rospy.sleep(0.5)
-
-    # Init Seed
-    seed = random.randrange(sys.maxsize)
-    random.seed(seed)
-    lg.debug(f"\nSeed was: {seed}")
-
-    initDomain()
-
-    default_human_passive_action = CM.Action.create_passive(CM.g_human_name, "PASS")
-    default_robot_passive_action = CM.Action.create_passive(CM.g_robot_name, "PASS")
-
-    if INPUT:
-        rospy.loginfo("Press Enter to start...")
-        input()
-
-    try:
-        id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_simulation(begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves)
-        nb_sol = len(begin_step.get_final_leaves())
-        # print(r_rank,h_rank,nb_sol)
-        r_score = convert_rank_to_score(r_rank,nb_sol)
-        h_score = convert_rank_to_score(h_rank,nb_sol)
-        return (id,r_score,h_score, seed, r_ranked_leaves, h_ranked_leaves)
-    except WrongException as inst:
-        lg.debug(f"Exception catched: {inst.args[0]}")
-        return (-1, seed)
-
 def find_r_rank_of_id(steps, id):
     for s in steps:
         if s.id == id:
             return s.get_f_leaf().branch_rank_r
 
-if __name__ == "__main__":
-    sys.setrecursionlimit(100000)
-
-    # ROS Startup
-    rospy.init_node('exec_automaton')
-
-
-    g_update_VHA_pub = rospy.Publisher('/hmi_vha', VHA, queue_size=1)
-    g_robot_action_pub = rospy.Publisher('/robot_action', Action, queue_size=1)
-    g_human_action_pub = rospy.Publisher('/human_action', Action, queue_size=1)
-    g_hmi_timeout_value_pub = rospy.Publisher('/hmi_timeout_value', Int32, queue_size=1)
-    g_hmi_timeout_reached_pub = rospy.Publisher('/hmi_timeout_reached', EmptyM, queue_size=1)
-    g_hmi_finish_pub = rospy.Publisher('/hmi_finish', EmptyM, queue_size=1)
-    g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
-    g_event_log_pub = rospy.Publisher('/event_log', EventLog, queue_size=10)
-    g_text_plugin_pub = rospy.Publisher("/text_gazebo_label", String, queue_size=1)
-
-    step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
-    human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
-    robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
-    robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
-
-    g_head_cmd_pub = rospy.Publisher("/head_cmd", HeadCmd, queue_size=10)
-
-
-    rospy.loginfo("Wait pub/sub to be initialized...")
-    rospy.sleep(0.5)
-    rospy.loginfo("Wait for hmi to be started...")
-    rospy.wait_for_service("hmi_started")
-    rospy.sleep(0.5)
-
-    g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
-    g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
-    g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
-    g_go_home_pose_client = rospy.ServiceProxy("go_home_pose", EmptyS)
-
-    start_human_action_service = rospy.Service("start_human_action", Int, start_human_action_server)
-    
-
-
-    # Solution loading + characterization 
-    domain_name, solution_tree, begin_step = load_solution()
+def get_estimations():
     estimations = {
         "optimal": [[
             ("TimeTaskCompletion",  False),
@@ -850,8 +769,99 @@ if __name__ == "__main__":
             # ("RiskConflict",      False),
         ]],
     }
-    r_criteria = estimations["optimal"][0]
-    h_criteria = estimations["optimal"][1]
+    return estimations
+
+def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves):
+    global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY
+    global default_human_passive_action, default_robot_passive_action
+
+    rospy.loginfo("READY TO START, PRESS RETURN")
+    input()
+
+    # CONSTANTS #
+    TIMEOUT_DELAY               = 6.0
+    ESTIMATED_R_REACTION_TIME   = 1.0
+    P_SUCCESS_ID_PHASE          = 1.0
+    ID_DELAY                    = 1.0
+    ASSESS_DELAY                = 0.5
+
+
+    HUMAN_UPDATING = False
+
+    # Init timeout delay HMI
+    g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
+
+    rospy.sleep(0.5)
+
+    # Init Seed
+    seed = random.randrange(sys.maxsize)
+    random.seed(seed)
+    lg.debug(f"\nSeed was: {seed}")
+
+    initDomain()
+
+    default_human_passive_action = CM.Action.create_passive(CM.g_human_name, "PASS")
+    default_robot_passive_action = CM.Action.create_passive(CM.g_robot_name, "PASS")
+
+    if INPUT:
+        rospy.loginfo("Press Enter to start...")
+        input()
+
+    try:
+        id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_simulation(begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves)
+        nb_sol = len(begin_step.get_final_leaves())
+        # print(r_rank,h_rank,nb_sol)
+        r_score = convert_rank_to_score(r_rank,nb_sol)
+        h_score = convert_rank_to_score(h_rank,nb_sol)
+        return (id,r_score,h_score, seed, r_ranked_leaves, h_ranked_leaves)
+    except WrongException as inst:
+        lg.debug(f"Exception catched: {inst.args[0]}")
+        return (-1, seed)
+
+if __name__ == "__main__":
+    sys.setrecursionlimit(100000)
+
+    # ROS Startup
+    rospy.init_node('exec_automaton')
+
+    g_update_VHA_pub = rospy.Publisher('/hmi_vha', VHA, queue_size=1)
+    g_robot_action_pub = rospy.Publisher('/robot_action', Action, queue_size=1)
+    g_human_action_pub = rospy.Publisher('/human_action', Action, queue_size=1)
+    g_hmi_timeout_value_pub = rospy.Publisher('/hmi_timeout_value', Int32, queue_size=1)
+    g_hmi_timeout_reached_pub = rospy.Publisher('/hmi_timeout_reached', EmptyM, queue_size=1)
+    g_hmi_finish_pub = rospy.Publisher('/hmi_finish', EmptyM, queue_size=1)
+    g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
+    g_event_log_pub = rospy.Publisher('/event_log', EventLog, queue_size=10)
+    g_text_plugin_pub = rospy.Publisher("/text_gazebo_label", String, queue_size=1)
+
+    step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
+    human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
+    robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
+    robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
+
+    g_head_cmd_pub = rospy.Publisher("/test_tiago_head", HeadCmd, queue_size=10)
+
+
+    rospy.loginfo("Wait pub/sub to be initialized...")
+    # rospy.sleep(0.5)
+    rospy.loginfo("Wait for hmi to be started...")
+    rospy.wait_for_service("hmi_started")
+    # rospy.sleep(0.5)
+
+    g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
+    g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
+    g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
+    g_go_home_pose_client = rospy.ServiceProxy("go_home_pose", EmptyS)
+
+    start_human_action_service = rospy.Service("start_human_action", Int, start_human_action_server)
+    
+
+
+    # Solution loading + characterization 
+    domain_name, solution_tree, begin_step = load_solution()
+    
+    r_criteria = get_estimations()["optimal"][0]
+    h_criteria = get_estimations()["optimal"][1]
     r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
 
     # Execution simulation
