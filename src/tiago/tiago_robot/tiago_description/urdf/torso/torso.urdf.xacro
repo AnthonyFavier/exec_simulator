@@ -139,7 +139,8 @@
   <xacro:if value="$(arg fixed_torso)">
     <joint name="${name}_lift_joint" type="fixed">
       <!-- Torso fixed height is set to half it's range -->
-      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.772" />
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.80" />
+      <!-- <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.30" /> -->
       <parent link="${name}_fixed_link" />
       <child link="${name}_lift_link" />
     </joint>

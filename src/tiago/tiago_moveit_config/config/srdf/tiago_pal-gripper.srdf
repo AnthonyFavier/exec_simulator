@@ -10,29 +10,45 @@
 <robot name="tiago">
     <!-- <virtual_joint child_link="base_footprint" name="odom_to_base" parent_frame="odom" type="planar" /> -->
     <virtual_joint child_link="base_footprint" name="odom_to_base" parent_frame="odom" type="fixed" />
-    <group name="arm">
-        <joint name="arm_1_joint" />
-        <joint name="arm_2_joint" />
-        <joint name="arm_3_joint" />
-        <joint name="arm_4_joint" />
-        <joint name="arm_5_joint" />
-        <joint name="arm_6_joint" />
-        <joint name="arm_7_joint" />
-        <joint name="arm_tool_joint" />
+    
+    
+    
+    <!-- <group name="arm">
+        <chain base_link="torso_fixed_link" tip_link="gripper_grasping_frame"/>
     </group>
+    <group_state name="init" group="arm">
+        <joint name="arm_1_joint"       value="0.07"/>
+        <joint name="arm_2_joint"       value="-0.8492"/>
+        <joint name="arm_3_joint"       value="0"/>
+        <joint name="arm_4_joint"       value="2.2860"/>
+        <joint name="arm_5_joint"       value="1.5708"/>
+        <joint name="arm_6_joint"       value="0"/>
+        <joint name="arm_7_joint"       value="1.5708"/>
+    </group_state>
+    <group_state name="home" group="arm">
+        <joint name="arm_1_joint"       value="0.1096"/>
+        <joint name="arm_2_joint"       value="0.2697"/>
+        <joint name="arm_3_joint"       value="-1.5477"/>
+        <joint name="arm_4_joint"       value="2.1117"/>
+        <joint name="arm_5_joint"       value="1.6834"/>
+        <joint name="arm_6_joint"       value="-0.5719"/>
+        <joint name="arm_7_joint"       value="-0.8007"/>
+    </group_state>
+    <group_state name="idle" group="arm">
+        <joint name="arm_1_joint"       value="0.07"/>
+        <joint name="arm_2_joint"       value="0.3923"/>
+        <joint name="arm_3_joint"       value="0"/>
+        <joint name="arm_4_joint"       value="2.1196"/>
+        <joint name="arm_5_joint"       value="1.5708"/>
+        <joint name="arm_6_joint"       value="-1.3937"/>
+        <joint name="arm_7_joint"       value="0"/>
+    </group_state> -->
+    
     <group name="arm_torso">
         <chain base_link="torso_fixed_link" tip_link="gripper_grasping_frame"/>
     </group>
-    <group name="gripper">
-        <link name="gripper_left_finger_link" />
-        <link name="gripper_right_finger_link" />
-        <link name="gripper_link" />
-        <joint name="gripper_left_finger_joint" />
-        <joint name="gripper_right_finger_joint" />
-    </group>
-    <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
     <group_state name="init" group="arm_torso">
-        <joint name="torso_lift_joint"  value="0"/>
+        <!-- <joint name="torso_lift_joint"  value="0"/> -->
         <joint name="arm_1_joint"       value="0.07"/>
         <joint name="arm_2_joint"       value="-0.8492"/>
         <joint name="arm_3_joint"       value="0"/>
@@ -42,7 +58,7 @@
         <joint name="arm_7_joint"       value="1.5708"/>
     </group_state>
     <group_state name="home" group="arm_torso">
-        <joint name="torso_lift_joint"  value="0.3000"/>
+        <!-- <joint name="torso_lift_joint"  value="0.3000"/> -->
         <joint name="arm_1_joint"       value="0.1096"/>
         <joint name="arm_2_joint"       value="0.2697"/>
         <joint name="arm_3_joint"       value="-1.5477"/>
@@ -52,7 +68,7 @@
         <joint name="arm_7_joint"       value="-0.8007"/>
     </group_state>
     <group_state name="idle" group="arm_torso">
-        <joint name="torso_lift_joint"  value="0.28"/>
+        <!-- <joint name="torso_lift_joint"  value="0.28"/> -->
         <joint name="arm_1_joint"       value="0.07"/>
         <joint name="arm_2_joint"       value="0.3923"/>
         <joint name="arm_3_joint"       value="0"/>
@@ -61,8 +77,19 @@
         <joint name="arm_6_joint"       value="-1.3937"/>
         <joint name="arm_7_joint"       value="0"/>
     </group_state>
+    
+    
+    
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <!-- <group name="gripper">
+        <link name="gripper_left_finger_link" />
+        <link name="gripper_right_finger_link" />
+        <link name="gripper_link" />
+        <joint name="gripper_left_finger_joint" />
+        <joint name="gripper_right_finger_joint" />
+    </group> -->
     <end_effector group="gripper" name="gripper" parent_group="arm_torso" parent_link="arm_tool_link" />
+
     <disable_collisions link1="arm_1_link" link2="arm_2_link" reason="Adjacent" />
     <disable_collisions link1="arm_1_link" link2="arm_3_link" reason="Never" />
     <disable_collisions link1="arm_1_link" link2="arm_4_link" reason="Never" />

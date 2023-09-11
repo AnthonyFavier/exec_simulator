@@ -15,10 +15,8 @@
   <!-- Set up controllers depending of arm existance -->
   <arg name="controller_list" if="$(arg arm)"
        value="joint_state_controller
-              torso_controller
               head_controller
-              arm_controller
-              mobile_base_controller"/>
+              arm_controller"/>
   <arg name="controller_list" unless="$(arg arm)"
        value="joint_state_controller
               torso_controller

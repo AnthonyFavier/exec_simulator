@@ -123,6 +123,11 @@
                        soft_lower_limit="${0.0 + gripper_eps}"
                        soft_upper_limit="${0.045 - gripper_eps}" />
   </joint>
+  <!-- <joint name="${name}_right_finger_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0. 0 0" />
+    <parent link="${name}_link" />
+    <child link="${name}_right_finger_link" />
+  </joint> -->
 
   <link name="${name}_left_finger_link">
     <inertial>
@@ -163,6 +168,11 @@
                        soft_lower_limit="${0.0 + gripper_eps}"
                        soft_upper_limit="${0.045 - gripper_eps}" />
   </joint>
+  <!-- <joint name="${name}_left_finger_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0. 0 0" />
+    <parent link="${name}_link" />
+    <child link="${name}_left_finger_link" />
+  </joint> -->
 
   <!-- <xacro:pal_robotiq_grasping_frames prefix="${name}_" xyz="0 0 0.12"/> -->
   <xacro:pal_robotiq_grasping_frames prefix="${name}_" xyz="0 0 0.18"/>

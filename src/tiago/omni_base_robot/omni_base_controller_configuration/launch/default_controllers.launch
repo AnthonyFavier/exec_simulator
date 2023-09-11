@@ -7,9 +7,7 @@
 
   <!-- Set up controllers -->
   <arg name="controller_list"
-       value="imu_sensor_controller
-              joint_state_controller
-              mobile_base_controller"/>
+       value="joint_state_controller"/>
 
   <!-- Controllers that come up started -->
   <node name="default_controllers_spawner"

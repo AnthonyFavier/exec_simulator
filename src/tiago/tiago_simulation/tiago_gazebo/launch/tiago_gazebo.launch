@@ -15,7 +15,7 @@
   <arg name="debug" default="false"/>
   <arg name="paused" default="false"/>
   <arg name="public_sim" default="true"/>
-  <arg name="tuck_arm" default="true"/>
+  <arg name="tuck_arm" default="false"/>
   <arg name="recording" default="false"/>
   <arg name="extra_gazebo_args" default=""/>
   <arg name="extra_gazebo_client_args" default="--verbose -g libMousePosePublisherPlugin.so"/>

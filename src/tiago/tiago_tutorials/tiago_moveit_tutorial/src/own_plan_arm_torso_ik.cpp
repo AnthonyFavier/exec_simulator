@@ -130,6 +130,7 @@ int main(int argc, char** argv)
 
   //select group of joints
   group_arm_torso = new moveit::planning_interface::MoveGroupInterface("arm_torso");
+  // group_arm_torso = new moveit::planning_interface::MoveGroupInterface("arm");
   //choose your preferred planner
   group_arm_torso->setPlannerId("SBLkConfigDefault");
   group_arm_torso->setPoseReferenceFrame("world"); 

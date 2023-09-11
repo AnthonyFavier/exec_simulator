@@ -13,12 +13,12 @@ controller_list:
       - arm_5_joint
       - arm_6_joint
       - arm_7_joint
-  - name: torso_controller
-    action_ns: follow_joint_trajectory
-    type: FollowJointTrajectory
-    default: true
-    joints:
-      - torso_lift_joint
+  # - name: torso_controller
+  #   action_ns: follow_joint_trajectory
+  #   type: FollowJointTrajectory
+  #   default: true
+  #   joints:
+  #     - torso_lift_joint
   - name: head_controller
     action_ns: follow_joint_trajectory
     type: FollowJointTrajectory
@@ -26,10 +26,10 @@ controller_list:
     joints:
       - head_1_joint
       - head_2_joint
-  - name: gripper_controller
-    action_ns: follow_joint_trajectory
-    type: FollowJointTrajectory
-    default: true
-    joints:
-      - gripper_left_finger_joint
-      - gripper_right_finger_joint
+  # - name: gripper_controller
+  #   action_ns: follow_joint_trajectory
+  #   type: FollowJointTrajectory
+  #   default: true
+  #   joints:
+  #     - gripper_left_finger_joint
+  #     - gripper_right_finger_joint
