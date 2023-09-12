@@ -133,8 +133,8 @@ print("What shall be the final numbering?")
 print("new_id <- current_id")
 for i in range(len(zones)):
     print(f"{i} <- ", end="")
-    old_id = int(input())
-    zones[old_id].id = i
+    new_id = int(input())
+    zones[i].id = new_id
 
 def get_id_zone(z):
     return z.id
