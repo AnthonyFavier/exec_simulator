@@ -136,9 +136,12 @@ def incoming_vha_cb(msg: VHA):
         else:
             show = False
             for i,ha in enumerate(g_vha.valid_human_actions):
-                if ha in z.valid_actions or ha[:len("place")] in z.valid_actions:
-                    show = True
-                    z.current_action_id = i+1
+                for z_a in z.valid_actions:
+                    if z_a in ha[:len(z_a)]:
+                        show = True
+                        z.current_action_id = i+1
+                        break
+                if show:
                     break
 
         srv = SetModelStateRequest()
