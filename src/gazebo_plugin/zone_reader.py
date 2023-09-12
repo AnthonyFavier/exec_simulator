@@ -5,11 +5,21 @@ from typing import Any, Dict, List, Tuple
 from progress.bar import IncrementalBar
 
 
+DOMAIN_NAME = "stack_empiler_1"
+
 PATH = "/home/afavier/new_exec_sim_ws/src/gazebo_plugin/"
-FILENAME = "zones.png"
+
+if DOMAIN_NAME=="stack_empiler":
+    INPUT_FILENAME = "zones_stack_empiler.png"
+if DOMAIN_NAME=="stack_empiler_1":
+    INPUT_FILENAME = "zones_stack_empiler_1.png"
+elif DOMAIN_NAME=="classic":
+    INPUT_FILENAME = "zones_classic.png"
+else:
+    raise Exception("Domain_name unknown...")
 
 #load the original image
-img_rgb = mpimg.imread(PATH+FILENAME)[...,:3]
+img_rgb = mpimg.imread(PATH+INPUT_FILENAME)[...,:3]
  
 def is_white(p):
     return p[0]==1.0 and p[1]==1.0 and p[2]==1.0
@@ -99,7 +109,7 @@ from PIL import ImageDraw
 from PIL import ImageFont
 
 # Open an Image
-img = Image.open(PATH+FILENAME)
+img = Image.open(PATH+INPUT_FILENAME)
  
 # Call draw Method to add 2D graphics in an image
 tmp_img = img.copy()
@@ -144,7 +154,7 @@ zones.sort(key=get_id_zone)
 I2 = ImageDraw.Draw(img)
  
 # Add Text to an image
-f = open(PATH+FILENAME[:-4]+"_coords.txt", 'w')
+f = open(PATH+INPUT_FILENAME[:-4]+"_coords.txt", 'w')
 
 # Custom font style and font size
 font_size = 65
@@ -165,5 +175,5 @@ f.close()
 img.show()
 
 # Save the edited image
-img.save(PATH+FILENAME[:-4]+"_numbered.png")
+img.save(PATH+INPUT_FILENAME[:-4]+"_numbered.png")
 

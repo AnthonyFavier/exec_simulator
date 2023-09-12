@@ -15,12 +15,15 @@ planner_configs:
     type: geometric::RRTConnect
   RRTstarkConfigDefault:
     type: geometric::RRTstar
+    termination_condition: CostConvergence[5,1.0]
+    # termination_condition: Iteration[10]
   TRRTkConfigDefault:
     type: geometric::TRRT
   PRMkConfigDefault:
     type: geometric::PRM
   PRMstarkConfigDefault:
     type: geometric::PRMstar
+    termination_condition: CostConvergence[5,1.0]
 arm_torso:
   planner_configs:
     - SBLkConfigDefault

@@ -120,6 +120,7 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
 	return true;
 }
 
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "plan_arm_torso_ik");
@@ -133,6 +134,7 @@ int main(int argc, char** argv)
   // group_arm_torso = new moveit::planning_interface::MoveGroupInterface("arm");
   //choose your preferred planner
   group_arm_torso->setPlannerId("SBLkConfigDefault");
+  // group_arm_torso->setPlannerId("RRTConnectkConfigDefault");
   group_arm_torso->setPoseReferenceFrame("world"); 
   group_arm_torso->setMaxVelocityScalingFactor(1.0);
 	group_arm_torso->setMaxAccelerationScalingFactor(0.1);

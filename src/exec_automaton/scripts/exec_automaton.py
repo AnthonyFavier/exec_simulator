@@ -29,6 +29,8 @@ class IdResult(Enum):
     NOT_NEEDED=0
     FAILED=1
 
+DOMAIN_NAME = "stack_empiler_1"
+
 DEBUG = False
 INPUT = False
 ########
@@ -66,6 +68,7 @@ def load_solution():
     Loads the previously produced solution.
     The domain name is retreived and returned and as well as the solution tree and the initial step.
     """
+    print("Loading solution...")
     dom_n_sol = dill.load(open(CM.path + "dom_n_sol.p", "rb"))
 
     domain_name = dom_n_sol[0]
@@ -74,10 +77,13 @@ def load_solution():
 
     if domain_name!=g_domain_name:
         raise Exception("Mismatching domain names!")
-
+    
+    print("Solution loaded")
     return domain_name, solution_tree, init_step
 
 def set_choices(init_step,r_criteria,h_criteria):
+
+    print('Start policy update...')
 
     final_leaves = init_step.get_final_leaves()
 
@@ -87,6 +93,7 @@ def set_choices(init_step,r_criteria,h_criteria):
     ConM.update_robot_choices(init_step)
     ConM.update_human_choices(init_step)
 
+    print('Policy update done')
     return r_ranked_leaves, h_ranked_leaves
 
 
@@ -113,17 +120,17 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             go_idle_pose_once()
             RA = select_valid_passive(curr_step)
             wait_human_start_acting(curr_step)
-            msg = HeadCmd()
-            msg.type = HeadCmd.FOLLOW_H_HAND
-            g_head_cmd_pub.publish(msg)
+            # msg = HeadCmd()
+            # msg.type = HeadCmd.FOLLOW_H_HAND
+            # g_head_cmd_pub.publish(msg)
 
         else:
             go_home_pose_once()
             send_NS_update_HAs(curr_step, VHA.NS)
             wait_human_decision(curr_step)
-            msg = HeadCmd()
-            msg.type = HeadCmd.FOLLOW_H_HAND
-            g_head_cmd_pub.publish(msg)
+            # msg = HeadCmd()
+            # msg.type = HeadCmd.FOLLOW_H_HAND
+            # g_head_cmd_pub.publish(msg)
             # MOCK_save_best_reachable_solution_for_human(curr_step)
 
             ## 1 & 2 & 3 ##
@@ -171,10 +178,10 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             rospy.sleep(0.1)
 
     log_event("OVER")
-    go_idle_pose_once()
     msg = HeadCmd()
     msg.type = HeadCmd.RESET
     g_head_cmd_pub.publish(msg)
+    go_idle_pose_once()
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
     g_text_plugin_pub.publish(String(f"Task Done"))
@@ -430,6 +437,7 @@ def wait_human_decision(step: ConM.Step):
     return human_acting
 
 def wait_step_end():
+    global g_robot_acting
     rospy.loginfo("Waiting step end...")
     text_updated = False
     while not rospy.is_shutdown() and not step_over:
@@ -438,8 +446,10 @@ def wait_step_end():
         rospy.sleep(0.1)
 
     if human_active():
+        # Because step_over isn't sent as a human visual signal....
         rospy.sleep(ESTIMATED_R_REACTION_TIME)
 
+    g_robot_acting = False
     rospy.loginfo("Current step is over.")
     log_event("R_E_WAIT_STEP_END")
 
@@ -551,24 +561,41 @@ def select_valid_passive(step: ConM.Step) -> CM.Action:
     raise Exception("Didn't find passive action for failed ID...")
 
 
-#########
-## ROS ##
-#########
-def send_vha(valid_human_actions: list[CM.Action], type):
-    msg = VHA()
-    msg.type = type
+############################
+## Compute Action Message ##
+############################
+def compute_msg_action_stack_empiler_1(a):
+    return compute_msg_action_stack_empiler(a)
 
-    # Remove passive actions
-    for ha in valid_human_actions:
-        if ha.is_passive():
-            continue
-        msg.valid_human_actions.append( ha.name + str(ha.parameters) )
-
-    g_update_VHA_pub.publish(msg)
-
-def compute_msg_action(a):
+def compute_msg_action_stack_empiler(a):
     msg = Action()
+    msg.type = -1
 
+    if "pick"==a.name:
+        msg.type=Action.PICK_OBJ_NAME
+        msg.obj_name=a.parameters[0]
+    elif "place"==a.name:
+        msg.type=Action.PLACE_OBJ_NAME
+        msg.obj_name=a.parameters[0]
+        msg.location=a.parameters[1]
+    elif "push"==a.name:
+        msg.type=Action.PUSH
+    elif "open_box"==a.name:
+        msg.type=Action.OPEN_BOX
+    elif "drop"==a.name:
+        msg.type=Action.DROP
+        msg.obj_name=a.parameters[0]
+
+    elif a.is_passive():
+        msg.type=Action.PASSIVE
+
+    if msg.type==-1:
+        raise Exception("Unknown action")
+    
+    return msg
+
+def compute_msg_action_classic(a):
+    msg = Action()
     msg.type = -1
 
     if "pick"==a.name:
@@ -592,10 +619,41 @@ def compute_msg_action(a):
 
     if msg.type==-1:
         raise Exception("Unknown action")
+    
+    return msg
+
+def compute_msg_action(a):
+    if DOMAIN_NAME=="stack_empiler":
+        msg = compute_msg_action_stack_empiler(a)
+    elif DOMAIN_NAME=="stack_empiler_1":
+        msg = compute_msg_action_stack_empiler_1(a)
+    elif DOMAIN_NAME=="classic":
+        msg = compute_msg_action_classic(a)
+    else:
+        raise Exception("Domain_name unknown...")
         
     return msg
 
+
+#########
+## ROS ##
+#########
+def send_vha(valid_human_actions: list[CM.Action], type):
+    msg = VHA()
+    msg.type = type
+
+    # Remove passive actions
+    for ha in valid_human_actions:
+        if ha.is_passive():
+            continue
+        msg.valid_human_actions.append( ha.name + str(ha.parameters) )
+
+    g_update_VHA_pub.publish(msg)
+
+g_robot_acting = False
 def start_execute_RA(RA: CM.Action):
+    global g_robot_acting
+    g_robot_acting = True
     rospy.loginfo(f"Execute Robot Action {RA}")
 
     if RA.is_passive():
@@ -611,6 +669,11 @@ def step_over_cb(msg):
     step_over = True
     
 def start_human_action_server(req: IntRequest):
+    if not g_robot_acting:
+        msg = HeadCmd()
+        msg.type = HeadCmd.FOLLOW_H_HAND
+        g_head_cmd_pub.publish(msg)
+    
     # Convert Int id 2 Action
     if req.data==-1:
         # Human is passive
@@ -779,11 +842,11 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
     input()
 
     # CONSTANTS #
-    TIMEOUT_DELAY               = 6.0
-    ESTIMATED_R_REACTION_TIME   = 1.0
-    P_SUCCESS_ID_PHASE          = 1.0
+    TIMEOUT_DELAY               = 10.0
+    ESTIMATED_R_REACTION_TIME   = 0.5
     ID_DELAY                    = 1.0
-    ASSESS_DELAY                = 0.5
+    ASSESS_DELAY                = 0.3
+    P_SUCCESS_ID_PHASE          = 1.0
 
 
     HUMAN_UPDATING = False

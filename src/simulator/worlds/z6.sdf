@@ -1,10 +1,8 @@
 <?xml version='1.0'?>
 <sdf version='1.7'>
-  <model name='z1'>
+  <model name='z6'>
 
-
-
-    <link name='z1'>
+    <link name='z6'>
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -25,7 +23,7 @@
       <visual name='visual'>
         <geometry>
           <box>
-            <size>0.05 0.05 0.002</size>
+            <size>0.05 0.10 0.002</size>
           </box>
         </geometry>
         <material>

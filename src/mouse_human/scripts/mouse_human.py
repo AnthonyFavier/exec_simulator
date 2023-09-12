@@ -25,6 +25,7 @@ from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Pose, Twist, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
+DOMAIN_NAME = "stack_empiler_1"
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
@@ -71,21 +72,47 @@ g_best_human_action = 0
 q_all = Quaternion(*quaternion_from_euler(0, 1.0, 0))
 q_0 = Quaternion(*quaternion_from_euler(0, 0, 0))
 g_far_zone_pose = Pose(Point(0,0,-2), q_0)
+
 # Create zones
-g_zones = {
-    0:Zone(0, Pose(Point(1.12, 0.30, 1.03),     q_all), ["place"]),
-    1:Zone(1, Pose(Point(1.11, -0.33, 0.93),    q_all), ["pick('y', 'C')", "drop('y',)"]),
-    2:Zone(2, Pose(Point(1.42, -0.59, 0.94),    q_all), ["pick('r', 'H')", "drop('r',)"]),
-    3:Zone(3, Pose(Point(1.41, -0.44, 0.93),    q_all), ["pick('b', 'H')", "drop('b',)"]),
-    4:Zone(4, Pose(Point(1.41, -0.17, 0.92),    q_all), ["pick('p', 'H')", "drop('p',)"]),
-    5:Zone(5, Pose(Point(1.55, 0.46, 0.95),     q_all), ["PASS"]),
-}
+g_zones = {}
+def create_zone(id, x, y, z, list_actions):
+    global g_zones
+    # list_actions: [act1, act2]
+    g_zones[id] = Zone(id, Pose(Point(x, y, z), q_all), list_actions)
+
+if DOMAIN_NAME=="stack_empiler":
+    create_zone(0, 1.12, 0.30,  1.03, ["place"])
+    create_zone(1, 1.11, -0.09, 0.93, ["pick('w1',)"])
+    create_zone(2, 1.10, -0.40, 0.94, ["drop"])
+    create_zone(3, 1.41, -0.44, 0.93, ["pick('b2',)"])
+    create_zone(5, 1.55, 0.46,  0.95, ["PASS"])
+
+elif DOMAIN_NAME=="stack_empiler_1":
+    create_zone(0, 2.5, 0.05, 1.99,     ["place"])
+    create_zone(1, 2.2, -0.03, 1.75,    ["pick('w1',)"])
+    create_zone(2, 2.2, -0.15, 1.75,    ["drop"])
+    create_zone(3, 2.25, -0.225, 1.7,   ["pick('g2',)"])
+    create_zone(4, 2.25, -0.172, 1.7,   ["pick('b2',)"])
+    create_zone(6, 2.25, -0.088, 1.7,   ["pick('p1',)"])
+    create_zone(5, 2.5, 0.11, 1.9,      ["PASS"])
+
+elif DOMAIN_NAME=="classic":
+    create_zone(0, 1.12, 0.30, 1.03,    ["place"])
+    create_zone(1, 1.11, -0.33, 0.93,   ["pick('y', 'C')", "drop('y',)"])
+    create_zone(2, 1.42, -0.59, 0.94,   ["pick('r', 'H')", "drop('r',)"])
+    create_zone(3, 1.41, -0.44, 0.93,   ["pick('b', 'H')", "drop('b',)"])
+    create_zone(4, 1.41, -0.17, 0.92,   ["pick('p', 'H')", "drop('p',)"])
+    create_zone(5, 1.55, 0.46, 0.95,    ["PASS"])
+
+else:
+    raise Exception("Domain_name unknown...")
+
 for z in g_zones.values():
     if z.valid_actions==["PASS"]:
         z.is_pass = True
         break
 # Get and set zones pixels 
-f = open('/home/afavier/new_exec_sim_ws/src/gazebo_plugin/zones_coords.txt', 'r')
+f = open('/home/afavier/new_exec_sim_ws/src/gazebo_plugin/zones_'+DOMAIN_NAME+'_coords.txt', 'r')
 for l in f:
     l = l[:-1]
     if l=="":
@@ -137,7 +164,8 @@ def incoming_vha_cb(msg: VHA):
             show = False
             for i,ha in enumerate(g_vha.valid_human_actions):
                 for z_a in z.valid_actions:
-                    if z_a in ha[:len(z_a)]:
+                    if z_a == ha[:len(z_a)]:
+                    # if z_a in ha:
                         show = True
                         z.current_action_id = i+1
                         break
@@ -204,7 +232,8 @@ def main():
         print(f"zones spawned")
 
     else:
-        for i in range(6):
+        nb_zones = 7
+        for i in range(nb_zones+1):
             f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/z{i}.sdf','r')
             sdff = f.read()
             f.close()
