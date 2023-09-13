@@ -160,7 +160,7 @@ int main(int argc, char** argv)
   group_arm_torso_opti->setPlannerId("RRTstarkConfigDefault");
   group_arm_torso_opti->setPoseReferenceFrame("world"); 
   group_arm_torso_opti->setMaxVelocityScalingFactor(1.0);
-	group_arm_torso_opti->setMaxAccelerationScalingFactor(0.2);
+	group_arm_torso_opti->setMaxAccelerationScalingFactor(0.5);
   group_arm_torso_opti->setPlanningTime(0.5);
 	group_arm_torso_opti->setGoalOrientationTolerance(10.0);
 	group_arm_torso_opti->setGoalPositionTolerance(0.01);
