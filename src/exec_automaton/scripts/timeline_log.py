@@ -171,8 +171,6 @@ def r_extract_activities():
         e = g_events[i]
     while True:
 
-        print("new step")
-
         if e.name == "SGL_NS":
             
             t1 = e.stamp
@@ -250,8 +248,6 @@ def h_extract_activities():
         i+=1
         e = g_events[i]
     while True:
-
-        print("new h step")
 
         t1 = t2 = t3 = t4 = t5 = t6 = t7 = None
 

@@ -120,18 +120,11 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             go_idle_pose_once()
             RA = select_valid_passive(curr_step)
             wait_human_start_acting(curr_step)
-            # msg = HeadCmd()
-            # msg.type = HeadCmd.FOLLOW_H_HAND
-            # g_head_cmd_pub.publish(msg)
 
         else:
             go_home_pose_once()
             send_NS_update_HAs(curr_step, VHA.NS)
             wait_human_decision(curr_step)
-            # msg = HeadCmd()
-            # msg.type = HeadCmd.FOLLOW_H_HAND
-            # g_head_cmd_pub.publish(msg)
-            # MOCK_save_best_reachable_solution_for_human(curr_step)
 
             ## 1 & 2 & 3 ##
             if human_active(): 
@@ -166,13 +159,6 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
             rospy.sleep(0.1)
         else:
             curr_step = get_next_step(curr_step, HA, RA)
-
-            # Look for degradation 
-            # MOCK_save_best_reachable_solution_for_human_after_robot_choice(curr_step)
-            # if MOCK_robot_has_degraded_human_best_solution():
-            #     nb_of_degradation +=1
-            #     if nb_of_degradation >= 1:
-            #         r_ranked_leaves, h_ranked_leaves = adjust_robot_preferences(begin_step,h_pref,h_pref)
 
             reset()
             rospy.sleep(0.1)
@@ -387,8 +373,11 @@ def wait_human_decision(step: ConM.Step):
     str_bar = StrBar(max=TIMEOUT_DELAY, width=15)
 
     start_waiting_time = rospy.get_rostime()
-    timeout_reached = True
 
+    timeout_reached = True
+    if step.isHInactive():
+        timeout_reached = False 
+    
     while not rospy.is_shutdown() and not step.isHInactive() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
         elapsed = (rospy.get_rostime()-start_waiting_time).to_sec()
 
