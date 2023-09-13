@@ -100,12 +100,11 @@ def set_choices(init_step,r_criteria,h_criteria):
 ###############
 ## EXECUTION ##
 ###############
-def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves, h_ranked_leaves):
+def execution_HF(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
     """
     Main algorithm 
     """
     curr_step = get_first_step(begin_step)
-    nb_of_degradation = 0
     while not exec_over(curr_step) and not rospy.is_shutdown():
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
@@ -146,6 +145,61 @@ def execution_simulation(begin_step: ConM.Step, r_pref, h_pref, r_ranked_leaves,
                 RA = select_best_RA_H_passive(curr_step)
 
             start_execute_RA(RA)
+            passive_update_HAs(curr_step, RA)
+                  
+        wait_step_end()
+        
+        HA = MOCK_assess_human_action()
+
+        # Check Passive Step
+        if RA.is_passive() and HA.is_passive():
+            # Repeat current step
+            reset()
+            rospy.sleep(0.1)
+        else:
+            curr_step = get_next_step(curr_step, HA, RA)
+
+            reset()
+            rospy.sleep(0.1)
+
+    log_event("OVER")
+    msg = HeadCmd()
+    msg.type = HeadCmd.RESET
+    g_head_cmd_pub.publish(msg)
+    go_idle_pose_once()
+    lg.info(f"END => {curr_step}")
+    print(f"END => {curr_step}")
+    g_text_plugin_pub.publish(String(f"Task Done"))
+    g_hmi_finish_pub.publish(EmptyM())
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
+
+def execution_RF(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
+    """
+    Main algorithm 
+    """
+    curr_step = get_first_step(begin_step)
+    while not exec_over(curr_step) and not rospy.is_shutdown():
+
+        rospy.loginfo(f"Step {curr_step.id} begins.")
+        
+        msg = HeadCmd()
+        msg.type = HeadCmd.LOOK_AT_HUMAN
+        g_head_cmd_pub.publish(msg)
+
+        if curr_step.isRInactive():
+            g_text_plugin_pub.publish(String(f"Step started\nGoing IDLE\nWaiting for human to act..."))
+            send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+            go_idle_pose_once()
+            RA = select_valid_passive(curr_step)
+            wait_human_start_acting(curr_step)
+
+        else:
+            go_home_pose_once()
+            send_NS_update_HAs(curr_step, VHA.NS)
+
+            RA = select_best_RA(curr_step)
+            start_execute_RA(RA)
+
             passive_update_HAs(curr_step, RA)
                   
         wait_step_end()
@@ -860,7 +914,8 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
         input()
 
     try:
-        id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_simulation(begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves)
+        id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_HF(begin_step, r_ranked_leaves, h_ranked_leaves)
+        # id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_RF(begin_step, r_ranked_leaves, h_ranked_leaves)
         nb_sol = len(begin_step.get_final_leaves())
         # print(r_rank,h_rank,nb_sol)
         r_score = convert_rank_to_score(r_rank,nb_sol)
