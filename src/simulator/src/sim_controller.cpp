@@ -773,10 +773,10 @@ std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start)
     switch (action.type)
     {
     case sim_msgs::Action::PICK_OBJ_NAME:
-        name += "Pick(" + action.color + "," + action.side + ")";
+        name += "Pick(" + action.obj_name + ")";
         break;
     case sim_msgs::Action::PLACE_OBJ_NAME:
-        name += "Place(" + action.color + "," + action.location + ")";
+        name += "Place(" + action.obj_name + "," + action.location + ")";
         break;
     case sim_msgs::Action::PUSH:
         name += "Push()";
@@ -785,7 +785,7 @@ std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start)
         name += "OpenBox()";
         break;
     case sim_msgs::Action::DROP:
-        name += "DropCube(" + action.color + ")";
+        name += "DropCube(" + action.obj_name + ")";
         break;
     }
 
