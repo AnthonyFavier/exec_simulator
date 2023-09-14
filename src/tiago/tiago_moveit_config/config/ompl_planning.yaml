@@ -15,7 +15,7 @@ planner_configs:
     type: geometric::RRTConnect
   RRTstarkConfigDefault:
     type: geometric::RRTstar
-    termination_condition: CostConvergence[3,0.8]
+    termination_condition: CostConvergence[4,0.6]
     # termination_condition: Iteration[10]
   TRRTkConfigDefault:
     type: geometric::TRRT
