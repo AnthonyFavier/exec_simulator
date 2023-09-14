@@ -32,7 +32,7 @@ class IdResult(Enum):
 DOMAIN_NAME = "stack_empiler_1"
 
 DEBUG = False
-INPUT = False
+INPUT = True
 ########
 # DEBUG = True
 # INPUT = True
@@ -63,23 +63,25 @@ logging.config.fileConfig(path + 'log.conf')
 ## LOADING ##
 #############
 begin_step = None
-def load_solution():
+def load_solution(exec_regime):
     """
     Loads the previously produced solution.
     The domain name is retreived and returned and as well as the solution tree and the initial step.
     """
     print("Loading solution...")
-    dom_n_sol = dill.load(open(CM.path + "dom_n_sol.p", "rb"))
+    path = CM.path + "dom_n_sol.p"
+    if exec_regime=="tt":
+        path = CM.path + "dom_n_sol_tt.p"
+    d = dill.load(open(path, "rb"))
 
-    domain_name = dom_n_sol[0]
-    solution_tree = dom_n_sol[1]
-    init_step = solution_tree[0]
+    domain_name = d[0]
+    init_step = d[1]
 
     if domain_name!=g_domain_name:
         raise Exception("Mismatching domain names!")
     
     print("Solution loaded")
-    return domain_name, solution_tree, init_step
+    return domain_name, init_step
 
 def set_choices(init_step,r_criteria,h_criteria):
 
@@ -228,6 +230,73 @@ def execution_RF(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
     g_hmi_finish_pub.publish(EmptyM())
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
 
+def execution_TT(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
+    global g_possible_human_actions
+    """
+    Main algorithm 
+    """
+    curr_step = get_first_step(begin_step)
+    while not exec_over(curr_step) and not rospy.is_shutdown():
+
+        rospy.loginfo(f"Step {curr_step.id} begins.")
+        
+        msg = HeadCmd()
+        msg.type = HeadCmd.LOOK_AT_HUMAN
+        g_head_cmd_pub.publish(msg)
+
+        send_NS(VHA.NS)
+
+        # identify acting agent
+        p = curr_step.get_pairs()[0]
+
+        # ROBOT TURN
+        if p.human_action.is_wait_turn():
+            HA = p.human_action
+            RA = select_best_RA(curr_step)
+            start_execute_RA(RA)
+
+            if not RA.is_passive():
+                wait_step_end()
+
+        # HUMAN TURN
+        elif p.robot_action.is_wait_turn():
+            RA = p.robot_action
+            g_possible_human_actions = [ho.human_action for ho in curr_step.human_options]
+            send_vha(g_possible_human_actions, VHA.NS)
+            wait_human_decision(curr_step)
+
+            HA = MOCK_assess_human_action()
+            if not HA.is_passive():
+                wait_step_end()
+
+        else:
+            raise Exception("Unable to identify acting agent")
+        
+        
+        
+        # Check Passive Step
+        if RA.is_passive() and HA.is_passive() and curr_step.from_pair.is_passive() and not curr_step.parent.id==0:
+            # Repeat previous step
+            curr_step = curr_step.parent
+            reset()
+            rospy.sleep(0.1)
+        else:
+            curr_step = get_next_step(curr_step, HA, RA)
+
+            reset()
+            rospy.sleep(0.1)
+
+    log_event("OVER")
+    msg = HeadCmd()
+    msg.type = HeadCmd.RESET
+    g_head_cmd_pub.publish(msg)
+    go_idle_pose_once()
+    lg.info(f"END => {curr_step}")
+    print(f"END => {curr_step}")
+    g_text_plugin_pub.publish(String(f"Task Done"))
+    g_hmi_finish_pub.publish(EmptyM())
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
+
 
 #########################
 ## MOCK Human behavior ##
@@ -236,17 +305,10 @@ g_possible_human_actions = []
 def send_NS_update_HAs(step: ConM.Step, type):
     global g_possible_human_actions
 
-    sgl = Signal()
-    if type==VHA.NS:
-        sgl.type = Signal.NS
-    elif type==VHA.NS_IDLE:
-        sgl.type = Signal.NS_IDLE
-    else:
-        raise Exception("Invalid type to send NS signal")
-    robot_visual_signal_pub.publish(sgl)
+    
+    send_NS(type)
 
     g_possible_human_actions = [ho.human_action for ho in step.human_options]
-
     send_vha(g_possible_human_actions, type)
 
     # Find best human action id, sent to hmi mock
@@ -259,6 +321,16 @@ def send_NS_update_HAs(step: ConM.Step, type):
                 best_ha.data = i+1
                 break
     g_best_human_action.publish(best_ha)
+
+def send_NS(type):
+    sgl = Signal()
+    if type==VHA.NS:
+        sgl.type = Signal.NS
+    elif type==VHA.NS_IDLE:
+        sgl.type = Signal.NS_IDLE
+    else:
+        raise Exception("Invalid type to send NS signal")
+    robot_visual_signal_pub.publish(sgl)
 
 def passive_update_HAs(step: ConM.step, RA: CM.Action):
     global g_possible_human_actions
@@ -571,7 +643,7 @@ def get_agents_before_step(step: ConM.Step):
     return step.from_pair.end_agents
 
 def exec_over(step):
-    return step.is_final
+    return step.is_final()
 
 
 #########################
@@ -716,6 +788,13 @@ def start_human_action_server(req: IntRequest):
         msg = HeadCmd()
         msg.type = HeadCmd.FOLLOW_H_HAND
         g_head_cmd_pub.publish(msg)
+
+    # print("g_possible_human_actions")
+    # print(g_possible_human_actions)
+
+    # print("req")
+    # print(req)
+    # input()
     
     # Convert Int id 2 Action
     if req.data==-1:
@@ -877,15 +956,12 @@ def get_estimations():
     }
     return estimations
 
-def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves):
+def main_exec(domain_name, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves, exec_regime):
     global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY
     global default_human_passive_action, default_robot_passive_action
 
-    rospy.loginfo("READY TO START, PRESS RETURN")
-    input()
-
     # CONSTANTS #
-    TIMEOUT_DELAY               = 10.0
+    TIMEOUT_DELAY               = 1000.0
     ESTIMATED_R_REACTION_TIME   = 0.5
     ID_DELAY                    = 1.0
     ASSESS_DELAY                = 0.3
@@ -910,12 +986,17 @@ def main_exec(domain_name, solution_tree, begin_step,r_p,h_p, r_ranked_leaves, h
     default_robot_passive_action = CM.Action.create_passive(CM.g_robot_name, "PASS")
 
     if INPUT:
-        rospy.loginfo("Press Enter to start...")
+        rospy.loginfo("READY TO START, Press Enter to start...")
         input()
 
     try:
-        id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_HF(begin_step, r_ranked_leaves, h_ranked_leaves)
-        # id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_RF(begin_step, r_ranked_leaves, h_ranked_leaves)
+        if exec_regime == "hf":
+            id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_HF(begin_step, r_ranked_leaves, h_ranked_leaves)
+        elif exec_regime == "rf":
+            id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_RF(begin_step, r_ranked_leaves, h_ranked_leaves)
+        elif exec_regime == "tt":
+            id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_TT(begin_step, r_ranked_leaves, h_ranked_leaves)
+
         nb_sol = len(begin_step.get_final_leaves())
         # print(r_rank,h_rank,nb_sol)
         r_score = convert_rank_to_score(r_rank,nb_sol)
@@ -948,31 +1029,28 @@ if __name__ == "__main__":
 
     g_head_cmd_pub = rospy.Publisher("/test_tiago_head", HeadCmd, queue_size=10)
 
+    g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
+    g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
+    g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
+    g_go_home_pose_client = rospy.ServiceProxy("go_home_pose", EmptyS)
+    start_human_action_service = rospy.Service("start_human_action", Int, start_human_action_server)
+
+    # Execution Regime Selection
+    exec_regime = rospy.get_param("/exec_automaton/exec_regime")
+
+    # Solution loading + characterization 
+    domain_name, begin_step = load_solution(exec_regime)
+    r_criteria = get_estimations()["optimal"][0]
+    h_criteria = get_estimations()["optimal"][1]
+    r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
 
     rospy.loginfo("Wait pub/sub to be initialized...")
     # rospy.sleep(0.5)
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
-    # rospy.sleep(0.5)
-
-    g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
-    g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
-    g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
-    g_go_home_pose_client = rospy.ServiceProxy("go_home_pose", EmptyS)
-
-    start_human_action_service = rospy.Service("start_human_action", Int, start_human_action_server)
     
-
-
-    # Solution loading + characterization 
-    domain_name, solution_tree, begin_step = load_solution()
-    
-    r_criteria = get_estimations()["optimal"][0]
-    h_criteria = get_estimations()["optimal"][1]
-    r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
-
     # Execution simulation
-    result = main_exec(domain_name, solution_tree, begin_step,r_criteria,h_criteria, r_ranked_leaves, h_ranked_leaves)
+    result = main_exec(domain_name, begin_step,r_criteria,h_criteria, r_ranked_leaves, h_ranked_leaves, exec_regime)
 
     # Result plot
     do_plot=False
@@ -992,7 +1070,7 @@ if __name__ == "__main__":
         score_r = convert_rank_to_score(solution_step.get_f_leaf().branch_rank_r, nb_sols)
         score_h = convert_rank_to_score(solution_step.get_f_leaf().branch_rank_h, nb_sols)
         solutions.append( (score_h,score_r) )
-        # print(f"solution: r#{score_r:.2f}-h#{score_h:.2f}-{nb_sols}")
+        print(f"solution: r#{score_r:.2f}-h#{score_h:.2f}-{nb_sols}")
 
         
         if do_plot:
