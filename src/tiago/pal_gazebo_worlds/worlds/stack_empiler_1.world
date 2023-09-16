@@ -590,7 +590,7 @@
     <pose>0.86 0.44 0.7 0 -0 0</pose>
 
  
-
+    <!-- Goal -->
     <model name='goal'>
       <link name='g_r1'>
         <inertial>
@@ -811,9 +811,55 @@
         </visual>
       </link>
 
+      <link name='g_background'>
+        <inertial>
+          <mass>1</mass>
+          <inertia>
+            <ixx>0.166667</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.166667</iyy>
+            <iyz>0</iyz>
+            <izz>0.166667</izz>
+          </inertia>
+          <pose>0 0 0 0 -0 0</pose>
+        </inertial>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <pose>-0.01 0.1 0.1 0 -0 0</pose>
+        <gravity>0</gravity>
+        <visual name='visual'>
+          <geometry>
+            <box>
+              <size>0.01 0.35 0.35</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <name>Gazebo/Grey</name>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+            </script>
+            <shader type='pixel'>
+              <normal_map>__default__</normal_map>
+            </shader>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <emissive>0 0 0 1</emissive>
+          </material>
+          <pose>0 0 0 0 -0 0</pose>
+          <transparency>0</transparency>
+          <cast_shadows>0</cast_shadows>
+        </visual>
+      </link>
+
+
+
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.2 0.8 1.0 0 -0 0</pose>
+      <!-- <pose>0.2 0.8 1.0 0 -0 0</pose> -->
+      <pose>0.19 1.25 1.15 0.064 -0.64 -0.18</pose>
     </model>
 
 
