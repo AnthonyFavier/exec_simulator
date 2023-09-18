@@ -887,12 +887,12 @@ def main_exec():
     global default_human_passive_action, default_robot_passive_action
 
     # CONSTANTS #
-    # Delays 
-    TIMEOUT_DELAY               = 5.0
+    #   Delays 
+    TIMEOUT_DELAY               = 4.0
     ESTIMATED_R_REACTION_TIME   = 0.3
     ID_DELAY                    = 1.0
     ASSESS_DELAY                = 0.2
-    # Proba
+    #   Proba
     P_SUCCESS_ID_PHASE          = 1.0
 
 
