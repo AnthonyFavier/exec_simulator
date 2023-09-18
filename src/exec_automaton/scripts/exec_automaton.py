@@ -197,12 +197,25 @@ def execution_RF(begin_step: ConM.Step):
 
         else:
             go_home_pose_once()
-            send_NS_update_HAs(curr_step, VHA.NS)
-
+            
             RA = select_best_RA(curr_step)
             start_execute_RA(RA)
 
+            send_NS(VHA.NS)
             passive_update_HAs(curr_step, RA)
+
+            if RA.is_passive():
+                start_waiting_time = time.time()
+                timeout_reached = True
+                while not rospy.is_shutdown() and time.time()-start_waiting_time<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
+                    if g_human_decision!=None:
+                        timeout_reached = False
+                        break
+                time.sleep(0.1)
+                if timeout_reached:
+                    RA = select_best_active_RA(curr_step)
+                    start_execute_RA(RA)
+                    passive_update_HAs(curr_step, RA)
                   
         wait_step_end()
         
@@ -644,7 +657,7 @@ def exec_over(step):
 #########################
 ## Select Robot Action ##
 #########################
-def select_best_RA(curr_step: ConM.Step):
+def select_best_RA(curr_step: ConM.Step) -> CM.Action:
     return curr_step.best_robot_pair.robot_action
 
 def select_best_RA_H_passive(curr_step: ConM.Step) -> CM.Action:
@@ -669,6 +682,15 @@ def select_valid_passive(step: ConM.Step) -> CM.Action:
                 return p.robot_action
 
     raise Exception("Didn't find passive action for failed ID...")
+
+def select_best_active_RA(step: ConM.Step) -> CM.Action:
+    best_rank_r = None
+    best_ra = None
+    for p in step.get_pairs():
+        if not p.robot_action.is_passive() and (best_rank_r==None or p.best_rank_r < best_rank_r):
+            best_rank_r = p.best_rank_r
+            best_ra = p.robot_action
+    return best_ra
 
 
 ############################
