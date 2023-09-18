@@ -140,7 +140,7 @@ void look_to_point(geometry_msgs::Point p)
   goal.target = pointStamped;
 
   pointHeadClient->sendGoal(goal);
-  ros::Duration(0.5).sleep();
+  ros::Duration(0.1).sleep();
 }
 
 void follow_point(geometry_msgs::Point p)
@@ -253,9 +253,34 @@ void reset()
 
   // Find the right frame near robot head, as to have an axe parallel to x world axe
   pointStamped.header.frame_id = "torso_lift_link";
-  pointStamped.point.x = 0.5;
+  pointStamped.point.x = 5.0;
   pointStamped.point.y = 0.0;
-  pointStamped.point.z = 0.18;
+  pointStamped.point.z = -1.0;
+
+  //build the action goal
+  control_msgs::PointHeadGoal goal;
+  //the goal consists in making the Z axis of the cameraFrame to point towards the pointStamped
+  goal.pointing_frame = cameraFrame;
+  goal.pointing_axis.x = 0.0;
+  goal.pointing_axis.y = 0.0;
+  goal.pointing_axis.z = 1.0;
+  goal.min_duration = ros::Duration(1.0);
+  goal.max_velocity = 0.75;
+  goal.target = pointStamped;
+
+  pointHeadClient->sendGoal(goal);
+  ros::Duration(0.5).sleep();
+}
+
+void test_reset_head(geometry_msgs::Point p)
+{
+  geometry_msgs::PointStamped pointStamped;
+
+  // Find the right frame near robot head, as to have an axe parallel to x world axe
+  pointStamped.header.frame_id = "torso_lift_link";
+  pointStamped.point.x = p.x;
+  pointStamped.point.y = p.y;
+  pointStamped.point.z = p.z;
 
   //build the action goal
   control_msgs::PointHeadGoal goal;
@@ -366,6 +391,7 @@ int main(int argc, char** argv)
   }
 
   ros::Subscriber cmd_sub = nh.subscribe("/tiago_head_cmd", 1, cmd_cb);
+  ros::Subscriber test_reset_sub = nh.subscribe("/test_reset_head", 1, test_reset_head);
   ros::ServiceServer head_started = nh.advertiseService("/tiago_head_ready", head_ready_srv);
 
   g_get_model_state = nh.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");
