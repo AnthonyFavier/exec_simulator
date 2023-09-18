@@ -33,8 +33,11 @@ $ roslaunch simulator control.launch
 #3 Start the execution automaton
 $ roslaunch exec_automaton exec_automaton.launch
 
-#4 Start the HMI
-$ rosrun simple_hmi hmi.py
+#4 Start the mouse human HMI
+$ rosrun mouse_human mouse_human.py
 
 #4_bis Start the Mock Human
 $ rosrun mock_human mock_human.py
+
+#5 Start timeline record
+$ rosrun exec_automaton timeline_log.py record|load
