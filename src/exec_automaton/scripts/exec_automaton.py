@@ -967,7 +967,7 @@ if __name__ == "__main__":
     robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
     robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
 
-    g_head_cmd_pub = rospy.Publisher("/test_tiago_head", HeadCmd, queue_size=10)
+    g_head_cmd_pub = rospy.Publisher("/tiago_head_cmd", HeadCmd, queue_size=10)
 
     g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
     g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)

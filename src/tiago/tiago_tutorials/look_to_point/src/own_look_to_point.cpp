@@ -365,7 +365,7 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
-  ros::Subscriber cmd_sub = nh.subscribe("/test_tiago_head", 1, cmd_cb);
+  ros::Subscriber cmd_sub = nh.subscribe("/tiago_head_cmd", 1, cmd_cb);
   ros::ServiceServer head_started = nh.advertiseService("/tiago_head_ready", head_ready_srv);
 
   g_get_model_state = nh.serviceClient<gazebo_msgs::GetModelState>("/gazebo/get_model_state");

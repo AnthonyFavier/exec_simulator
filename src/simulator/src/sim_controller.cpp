@@ -1304,7 +1304,7 @@ int main(int argc, char **argv)
 
     const std::string r_move_pose_srv_name("/move_pose_target");
     const std::string r_move_named_topic_name("/move_named_target");
-    const std::string r_head_cmd_topic_name("/test_tiago_head");
+    const std::string r_head_cmd_topic_name("/tiago_head_cmd");
     const std::string r_head_cmd_ready_name("/tiago_head_ready");
     const std::string h_move_pose_srv_name("/human_hand/move_hand_pose_target");
     const std::string h_pass_topic_name("/human_hand/move_hand_pass_signal");
