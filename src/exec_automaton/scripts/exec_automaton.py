@@ -62,7 +62,6 @@ logging.config.fileConfig(path + 'log.conf')
 #############
 ## LOADING ##
 #############
-begin_step = None
 def load_solution(exec_regime):
     """
     Loads the previously produced solution.
@@ -90,9 +89,9 @@ def set_choices(init_step,r_criteria,h_criteria):
     final_leaves = init_step.get_final_leaves()
 
     r_ranked_leaves = ConM.sorting_branches(final_leaves, r_criteria, is_robot=True) #type: List[ConM.Step]
-    h_ranked_leaves = ConM.sorting_branches(final_leaves, h_criteria, is_robot=False) #type: List[ConM.Step]
-
     ConM.update_robot_choices(init_step)
+
+    h_ranked_leaves = ConM.sorting_branches(final_leaves, h_criteria, is_robot=False) #type: List[ConM.Step]
     ConM.update_human_choices(init_step)
 
     print('Policy update done')
@@ -102,7 +101,7 @@ def set_choices(init_step,r_criteria,h_criteria):
 ###############
 ## EXECUTION ##
 ###############
-def execution_HF(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
+def execution_HF(begin_step: ConM.Step):
     """
     Main algorithm 
     """
@@ -173,9 +172,9 @@ def execution_HF(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
     print(f"END => {curr_step}")
     g_text_plugin_pub.publish(String(f"Task Done"))
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
 
-def execution_RF(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
+def execution_RF(begin_step: ConM.Step):
     """
     Main algorithm 
     """
@@ -228,9 +227,9 @@ def execution_RF(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
     print(f"END => {curr_step}")
     g_text_plugin_pub.publish(String(f"Task Done"))
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
 
-def execution_TT(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
+def execution_TT(begin_step: ConM.Step):
     global g_possible_human_actions
     """
     Main algorithm 
@@ -295,7 +294,7 @@ def execution_TT(begin_step: ConM.Step, r_ranked_leaves, h_ranked_leaves):
     print(f"END => {curr_step}")
     g_text_plugin_pub.publish(String(f"Task Done"))
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h, r_ranked_leaves, h_ranked_leaves
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
 
 
 #########################
@@ -404,11 +403,6 @@ def MOCK_robot_has_degraded_human_best_solution():
     lg.debug(f"#{rank_before} -> #{rank_after}")
 
     return rank_after>rank_before
-
-def adjust_robot_preferences(begin_step,r_pref,h_pref):
-    r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_pref,h_pref)
-    lg.debug("ROBOT PREFERENCES ALIGNED !!!!")
-    return (r_ranked_leaves, h_ranked_leaves)
 
 ##########################
 ## MOCK Robot execution ##
@@ -860,103 +854,12 @@ def robot_visual_signal_cb(msg: Signal):
 ##########
 ## MAIN ##
 ##########
-def show_solution_exec():
-    ConM.render_tree(begin_step)
-
 def find_r_rank_of_id(steps, id):
     for s in steps:
         if s.id == id:
             return s.get_f_leaf().branch_rank_r
 
-def get_estimations():
-    estimations = {
-        "optimal": [[
-            ("TimeTaskCompletion",  False),
-            ("GlobalEffort",        False),
-            ("TimeEndHumanDuty",    False),
-            ("HumanEffort",         False),
-            # ("RiskConflict",      False),
-        ],[
-            ("TimeTaskCompletion",  False),
-            ("GlobalEffort",        False),
-            ("TimeEndHumanDuty",    False),
-            ("HumanEffort",         False),
-            # ("RiskConflict",      False),
-        ]],
-
-        "aligned": [[
-            ("TimeEndHumanDuty",    False),
-            ("HumanEffort",         False),
-            ("TimeTaskCompletion",  False),
-            ("GlobalEffort",        False),
-            # ("RiskConflict",      False),
-        ],[
-            ("TimeEndHumanDuty",    False),
-            ("HumanEffort",         False),
-            ("TimeTaskCompletion",  False),
-            ("GlobalEffort",        False),
-            # ("RiskConflict",      False),
-        ]],
-
-        "adversarial": [[
-            ("TimeEndHumanDuty",    False),
-            ("HumanEffort",         False),
-            ("TimeTaskCompletion",  False),
-            ("GlobalEffort",        False),
-            # ("RiskConflict",      False),
-        ],[
-            ("TimeEndHumanDuty",    True),
-            ("HumanEffort",         True),
-            ("TimeTaskCompletion",  True),
-            ("GlobalEffort",        True),
-            # ("RiskConflict",      False),
-        ]],
-
-        "not_aligned_1": [[
-            ("TimeEndHumanDuty",    False),
-            ("TimeTaskCompletion",  False),
-            ("GlobalEffort",        False),
-            ("HumanEffort",         False),
-            # ("RiskConflict",      False),
-        ],[
-            ("TimeTaskCompletion",  False),
-            ("HumanEffort",         True),
-            ("TimeEndHumanDuty",    False),
-            ("GlobalEffort",        True),
-            # ("RiskConflict",      False),
-        ]],
-
-        "not_aligned_2": [[
-            ("GlobalEffort",        False),
-            ("TimeEndHumanDuty",    False),
-            ("HumanEffort",         False),
-            ("TimeTaskCompletion",  False),
-            # ("RiskConflict",      False),
-        ],[
-            ("GlobalEffort",        True),
-            ("HumanEffort",         True),
-            ("TimeEndHumanDuty",    False),
-            ("TimeTaskCompletion",  False),
-            # ("RiskConflict",      False),
-        ]],
-
-        "test": [[
-            ("TimeTaskCompletion",  False),
-            ("GlobalEffort",        False),
-            ("TimeEndHumanDuty",    False),
-            ("HumanEffort",         False),
-            # ("RiskConflict",      False),
-        ],[
-            ("HumanEffort",         False),
-            ("TimeEndHumanDuty",    False),
-            ("GlobalEffort",        False),
-            ("TimeTaskCompletion",  False),
-            # ("RiskConflict",      False),
-        ]],
-    }
-    return estimations
-
-def main_exec(domain_name, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves, exec_regime):
+def main_exec():
     global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY
     global default_human_passive_action, default_robot_passive_action
 
@@ -980,10 +883,25 @@ def main_exec(domain_name, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves,
     random.seed(seed)
     lg.debug(f"\nSeed was: {seed}")
 
+    # Solution loading  
+    exec_regime = rospy.get_param("/exec_automaton/exec_regime")
+    domain_name, begin_step = load_solution(exec_regime)
+
+    # Characterization
+    esti_prefs = rospy.get_param("/exec_automaton/esti_prefs") # type: str
+    pair = ConM.esti_prefs_pairs()[esti_prefs]
+    h_criteria = ConM.get_exec_prefs()[pair[0]]
+    r_criteria = ConM.get_exec_prefs()[pair[1]]
+    r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
+
     initDomain()
 
     default_human_passive_action = CM.Action.create_passive(CM.g_human_name, "PASS")
     default_robot_passive_action = CM.Action.create_passive(CM.g_robot_name, "PASS")
+
+    rospy.loginfo("Wait for hmi to be started...")
+    rospy.wait_for_service("hmi_started")
+    g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
 
     if INPUT:
         rospy.loginfo("READY TO START, Press Enter to start...")
@@ -991,17 +909,17 @@ def main_exec(domain_name, begin_step,r_p,h_p, r_ranked_leaves, h_ranked_leaves,
 
     try:
         if exec_regime == "hf":
-            id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_HF(begin_step, r_ranked_leaves, h_ranked_leaves)
+            id,r_rank,h_rank = execution_HF(begin_step)
         elif exec_regime == "rf":
-            id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_RF(begin_step, r_ranked_leaves, h_ranked_leaves)
+            id,r_rank,h_rank = execution_RF(begin_step)
         elif exec_regime == "tt":
-            id,r_rank,h_rank, r_ranked_leaves, h_ranked_leaves = execution_TT(begin_step, r_ranked_leaves, h_ranked_leaves)
+            id,r_rank,h_rank = execution_TT(begin_step)
 
         nb_sol = len(begin_step.get_final_leaves())
         # print(r_rank,h_rank,nb_sol)
         r_score = convert_rank_to_score(r_rank,nb_sol)
         h_score = convert_rank_to_score(h_rank,nb_sol)
-        return (id,r_score,h_score, seed, r_ranked_leaves, h_ranked_leaves)
+        return (begin_step,id,r_score,h_score, seed, r_ranked_leaves, h_ranked_leaves)
     except WrongException as inst:
         lg.debug(f"Exception catched: {inst.args[0]}")
         return (-1, seed)
@@ -1034,23 +952,10 @@ if __name__ == "__main__":
     g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
     g_go_home_pose_client = rospy.ServiceProxy("go_home_pose", EmptyS)
     start_human_action_service = rospy.Service("start_human_action", Int, start_human_action_server)
-
-    # Execution Regime Selection
-    exec_regime = rospy.get_param("/exec_automaton/exec_regime")
-
-    # Solution loading + characterization 
-    domain_name, begin_step = load_solution(exec_regime)
-    r_criteria = get_estimations()["optimal"][0]
-    h_criteria = get_estimations()["optimal"][1]
-    r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
-
-    rospy.loginfo("Wait pub/sub to be initialized...")
-    # rospy.sleep(0.5)
-    rospy.loginfo("Wait for hmi to be started...")
-    rospy.wait_for_service("hmi_started")
+    ###
     
     # Execution simulation
-    result = main_exec(domain_name, begin_step,r_criteria,h_criteria, r_ranked_leaves, h_ranked_leaves, exec_regime)
+    result = main_exec()
 
     # Result plot
     do_plot=False
@@ -1058,7 +963,7 @@ if __name__ == "__main__":
     if result[0]==-1:
         rospy.loginfo("Failed... -1")
     else:
-        (id, r_score, h_score, seed, r_ranked_leaves, h_ranked_leaves) = result
+        (begin_step, id, r_score, h_score, seed, r_ranked_leaves, h_ranked_leaves) = result
 
         # find step with with id
         nb_sols = len(h_ranked_leaves)
