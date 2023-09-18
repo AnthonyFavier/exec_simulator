@@ -1,10 +1,12 @@
 <launch>
 
     <arg name="exec_regime" default="hf"/>
+    <arg name="esti_prefs" default="tee_tee"/>
 
     <rosparam command="load" file="/home/afavier/ws/HATPEHDA/domains_and_results/dom_name.p"/>
     <node name="exec_automaton" pkg="exec_automaton" type="exec_automaton.py" respawn="false" output="screen">
         <param name="exec_regime" value="$(arg exec_regime)"/>
+        <param name="esti_prefs" value="$(arg esti_prefs)"/>
     </node>
 
 </launch>

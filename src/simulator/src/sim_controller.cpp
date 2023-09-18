@@ -1,6 +1,5 @@
 #include "sim_controller.h"
 
-
 bool waiting_step_start = true;
 bool action_received[2] = {false, false};
 bool action_done[2] = {false, false};
@@ -422,7 +421,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         {
             // log event
             sim_msgs::EventLog event;
-            event.timestamp = ros::Time::now().toSec();
+            event.timestamp = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
             event.name = compute_event_name(agent, action, true);
             event_log_pub[agent].publish(event);
             ROS_INFO("Start EVENT SENT");
@@ -851,7 +850,7 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         {
             // log event
             sim_msgs::EventLog event;
-            event.timestamp = ros::Time::now().toSec();
+            event.timestamp = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
             event.name = compute_event_name(agent, action, true);
             event_log_pub[agent].publish(event);
             ROS_INFO("Start EVENT SENT");
@@ -955,7 +954,7 @@ void grab_obj(AGENT agent, const std::string &object)
 {
     ROS_INFO("\t\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
 
-    ros::Duration(0.5).sleep();
+    sleep(0.5);
 
     gazebo_ros_link_attacher::Attach srv;
     if (agent == AGENT::ROBOT)
@@ -980,7 +979,7 @@ void drop(AGENT agent, const std::string &object)
 {
     ROS_INFO("\t\t%s DROP START", get_agent_str(agent).c_str());
 
-    ros::Duration(0.5).sleep();
+    sleep(0.5);
 
     gazebo_ros_link_attacher::Attach srv;
     if (agent == AGENT::ROBOT)

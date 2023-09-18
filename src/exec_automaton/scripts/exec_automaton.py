@@ -10,6 +10,7 @@ import importlib
 import rospy
 import logging as lg
 import logging.config
+import time
 from enum import Enum
 import matplotlib.pyplot as plt
 sys.path.insert(0, "/home/afavier/new_exec_sim_ws/src/progress/")
@@ -156,12 +157,12 @@ def execution_HF(begin_step: ConM.Step):
         if RA.is_passive() and HA.is_passive():
             # Repeat current step
             reset()
-            rospy.sleep(0.1)
+            time.sleep(0.1)
         else:
             curr_step = get_next_step(curr_step, HA, RA)
 
             reset()
-            rospy.sleep(0.1)
+            time.sleep(0.1)
 
     log_event("OVER")
     msg = HeadCmd()
@@ -211,12 +212,12 @@ def execution_RF(begin_step: ConM.Step):
         if RA.is_passive() and HA.is_passive():
             # Repeat current step
             reset()
-            rospy.sleep(0.1)
+            time.sleep(0.1)
         else:
             curr_step = get_next_step(curr_step, HA, RA)
 
             reset()
-            rospy.sleep(0.1)
+            time.sleep(0.1)
 
     log_event("OVER")
     msg = HeadCmd()
@@ -278,12 +279,12 @@ def execution_TT(begin_step: ConM.Step):
             # Repeat previous step
             curr_step = curr_step.parent
             reset()
-            rospy.sleep(0.1)
+            time.sleep(0.1)
         else:
             curr_step = get_next_step(curr_step, HA, RA)
 
             reset()
-            rospy.sleep(0.1)
+            time.sleep(0.1)
 
     log_event("OVER")
     msg = HeadCmd()
@@ -416,7 +417,7 @@ def MOCK_run_id_phase(step: ConM.Step):
     g_text_plugin_pub.publish(String("Indentifying Human action"))
 
     rospy.loginfo("Start ID phase...")
-    rospy.sleep(ID_DELAY)
+    time.sleep(ID_DELAY)
     if random.random()<P_SUCCESS_ID_PHASE:
         rospy.loginfo("ID Success")
         id_result = hidden_HC
@@ -445,7 +446,7 @@ def MOCK_assess_human_action() -> CM.Action:
     else:
         rospy.loginfo(f"Assessed Human action: {hidden_HC}")
 
-    rospy.sleep(ASSESS_DELAY)
+    time.sleep(ASSESS_DELAY)
     log_event("R_E_ASSESS")
     
     return hidden_HC
@@ -479,7 +480,7 @@ def wait_human_start_acting(step: ConM.Step):
     while not rospy.is_shutdown():
         if hidden_HC!=None:
             break
-        rospy.sleep(0.1)
+        time.sleep(0.1)
 
     log_event("R_E_WAIT_HSA")
     rospy.loginfo("Step start detected!")
@@ -492,14 +493,14 @@ def wait_human_decision(step: ConM.Step):
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
     str_bar = StrBar(max=TIMEOUT_DELAY, width=15)
 
-    start_waiting_time = rospy.get_rostime()
+    start_waiting_time = time.time()
 
     timeout_reached = True
     if step.isHInactive():
         timeout_reached = False 
     
-    while not rospy.is_shutdown() and not step.isHInactive() and (rospy.get_rostime()-start_waiting_time).to_sec()<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
-        elapsed = (rospy.get_rostime()-start_waiting_time).to_sec()
+    while not rospy.is_shutdown() and not step.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
+        elapsed = time.time()-start_waiting_time
 
         # Update progress bars
         bar.goto(elapsed)
@@ -513,7 +514,7 @@ def wait_human_decision(step: ConM.Step):
             break
 
         # Loop rate
-        rospy.sleep(0.1)
+        time.sleep(0.1)
 
     # Finish progress bars
     bar.goto(bar.max)
@@ -552,11 +553,11 @@ def wait_step_end():
     while not rospy.is_shutdown() and not step_over:
         if not text_updated and g_robot_action_over:
             g_text_plugin_pub.publish(String("Waiting end of human action..."))
-        rospy.sleep(0.1)
+        time.sleep(0.1)
 
     if human_active():
         # Because step_over isn't sent as a human visual signal....
-        rospy.sleep(ESTIMATED_R_REACTION_TIME)
+        time.sleep(ESTIMATED_R_REACTION_TIME)
 
     g_robot_acting = False
     rospy.loginfo("Current step is over.")
@@ -569,7 +570,7 @@ def wait_step_end():
 def log_event(name):
     msg = EventLog()
     msg.name = name
-    msg.timestamp = rospy.get_time()
+    msg.timestamp = time.time()
     g_event_log_pub.publish(msg)
 
 def human_active():
@@ -820,7 +821,7 @@ def human_visual_signal_cb(msg: Signal):
 
     print(f"\nCB human visual signal: {msg}")
 
-    rospy.sleep(ESTIMATED_R_REACTION_TIME)
+    time.sleep(ESTIMATED_R_REACTION_TIME)
 
     # Human is passive
     if msg.type == Signal.H_PASS:
@@ -864,19 +865,18 @@ def main_exec():
     global default_human_passive_action, default_robot_passive_action
 
     # CONSTANTS #
-    TIMEOUT_DELAY               = 1000.0
-    ESTIMATED_R_REACTION_TIME   = 0.5
+    # Delays 
+    TIMEOUT_DELAY               = 5.0
+    ESTIMATED_R_REACTION_TIME   = 0.3
     ID_DELAY                    = 1.0
-    ASSESS_DELAY                = 0.3
+    ASSESS_DELAY                = 0.2
+    # Proba
     P_SUCCESS_ID_PHASE          = 1.0
 
 
     HUMAN_UPDATING = False
 
-    # Init timeout delay HMI
-    g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
-
-    rospy.sleep(0.5)
+    time.sleep(0.5)
 
     # Init Seed
     seed = random.randrange(sys.maxsize)
