@@ -56,7 +56,7 @@ std_msgs::Empty e_msg;
 std::string opti_planner_name = "RRTstarkConfigDefault";
 double opti_planning_time = 0.6;
 std::string fast_planner_name = "SBLkConfigDefault";
-double fast_planning_time = 5.0;
+double fast_planning_time = 20.0;
 
 void use_opti_planner()
 {
