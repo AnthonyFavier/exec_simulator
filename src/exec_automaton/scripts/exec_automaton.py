@@ -116,7 +116,7 @@ def execution_HF(begin_step: ConM.Step):
         g_head_cmd_pub.publish(msg)
 
         if curr_step.isRInactive():
-            g_text_plugin_pub.publish(String(f"Step started\nGoing IDLE\nWaiting for human to act..."))
+            prompt("HF_idle_step_started")
             send_NS_update_HAs(curr_step, VHA.NS_IDLE)
             go_idle_pose_once()
             RA = select_valid_passive(curr_step)
@@ -165,13 +165,13 @@ def execution_HF(begin_step: ConM.Step):
             time.sleep(0.1)
 
     log_event("OVER")
+    prompt("task_done")
     msg = HeadCmd()
     msg.type = HeadCmd.RESET
     g_head_cmd_pub.publish(msg)
     go_idle_pose_once()
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
-    g_text_plugin_pub.publish(String(f"Task Done"))
     g_hmi_finish_pub.publish(EmptyM())
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
 
@@ -189,7 +189,7 @@ def execution_RF(begin_step: ConM.Step):
         g_head_cmd_pub.publish(msg)
 
         if curr_step.isRInactive():
-            g_text_plugin_pub.publish(String(f"Step started\nGoing IDLE\nWaiting for human to act..."))
+            prompt("RF_idle_step_started")
             send_NS_update_HAs(curr_step, VHA.NS_IDLE)
             go_idle_pose_once()
             RA = select_valid_passive(curr_step)
@@ -233,13 +233,13 @@ def execution_RF(begin_step: ConM.Step):
             time.sleep(0.1)
 
     log_event("OVER")
+    prompt("task_done")
     msg = HeadCmd()
     msg.type = HeadCmd.RESET
     g_head_cmd_pub.publish(msg)
     go_idle_pose_once()
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
-    g_text_plugin_pub.publish(String(f"Task Done"))
     g_hmi_finish_pub.publish(EmptyM())
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
 
@@ -300,13 +300,13 @@ def execution_TT(begin_step: ConM.Step):
             time.sleep(0.1)
 
     log_event("OVER")
+    prompt("task_done")
     msg = HeadCmd()
     msg.type = HeadCmd.RESET
     g_head_cmd_pub.publish(msg)
     go_idle_pose_once()
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
-    g_text_plugin_pub.publish(String(f"Task Done"))
     g_hmi_finish_pub.publish(EmptyM())
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
 
@@ -427,7 +427,7 @@ def MOCK_run_id_phase(step: ConM.Step):
     Wait ID_DELAY then identify human action with a P_SUCCESS_ID chance. 
     """
     log_event("R_S_ID")
-    g_text_plugin_pub.publish(String("Indentifying Human action"))
+    prompt("ID_started")
 
     rospy.loginfo("Start ID phase...")
     time.sleep(ID_DELAY)
@@ -478,7 +478,7 @@ def go_idle_pose_once():
 def go_home_pose_once():
     global R_idle
     if R_idle:
-        g_text_plugin_pub.publish(String(f"Going out of IDLE mode..."))
+        prompt("out_of_idle")
         g_hmi_r_idle_client.call(False)
         g_go_home_pose_client.call()
         R_idle = False
@@ -520,7 +520,7 @@ def wait_human_decision(step: ConM.Step):
         bar.goto(elapsed)
         update_hmi_timeout_progress(elapsed)
         str_bar.goto(elapsed)
-        g_text_plugin_pub.publish(String(f"Step started\nRobot waiting for human decision...\n{str_bar.get_str()}"))
+        prompt("wait_human_decision", f"\n{str_bar.get_str()}")
 
         # Check termination condition
         if g_human_decision!=None:
@@ -542,7 +542,7 @@ def wait_human_decision(step: ConM.Step):
         g_hmi_timeout_reached_pub.publish(EmptyM()) # Rename with step started
     if g_human_decision==None:
         rospy.loginfo("Timeout reached, human not acting...")
-        g_text_plugin_pub.publish(String(f"Timeout reached\nHuman not acting"))
+        prompt("wait_h_decision_timeout")
         sgl = Signal()
         sgl.type = Signal.TO
         robot_visual_signal_pub.publish(sgl)
@@ -566,7 +566,7 @@ def wait_step_end():
     text_updated = False
     while not rospy.is_shutdown() and not step_over:
         if not text_updated and g_robot_action_over:
-            g_text_plugin_pub.publish(String("Waiting end of human action..."))
+            prompt("wait_end_ha")
         time.sleep(0.1)
 
     if human_active():
@@ -790,9 +790,9 @@ def start_execute_RA(RA: CM.Action):
     rospy.loginfo(f"Execute Robot Action {RA}")
 
     if RA.is_passive():
-        g_text_plugin_pub.publish(String("Robot is passive..."))
+        prompt("robot_is_passive")
     else:
-        g_text_plugin_pub.publish(String("Robot is acting"))
+        prompt("robot_is_acting")
 
     msg = compute_msg_action(RA)
     g_robot_action_pub.publish(msg)
@@ -874,6 +874,57 @@ def robot_visual_signal_cb(msg: Signal):
         g_robot_action_over = True
         rospy.loginfo("Robot action over.")
 
+############
+## PROMPT ##
+############
+
+LANG = "FR" # ENG | FR
+
+g_prompt_messages = {
+    "HF_idle_step_started": {
+        "ENG": "Step started\nGoing in IDLE Mode\nWaiting for human to act...",
+        "FR":  "Début du Step\nMise en mode PASSIF\nEn attente d'actions de l'humain...",
+        },
+    "task_done": {
+        "ENG": "Task Done.",
+        "FR":  "Tâche terminée.",
+        },
+    "RF_idle_step_started": {
+        "ENG": "Step started\nGoing in IDLE Mode\nWaiting for human to act...",
+        "FR":  "Début du Step\nMise en mode PASSIF\nEn attente d'actions de l'humain...",
+        },
+    "ID_started": {
+        "ENG": "Identifying Human action",
+        "FR":  "Identification de l'action de l'humain",
+        },
+    "out_of_idle": {
+        "ENG": "Going out of IDLE mode",
+        "FR":  "Sortie du mode PASSIF",
+        },
+    "wait_human_decision": {
+        "ENG": "Step started\nRobot waiting for human decision...",
+        "FR":  "Début du Step\nEn attente d'une action de l'humain...",
+        },
+    "wait_h_decision_timeout": {
+        "ENG": "Timeout reached\nHuman not acting",
+        "FR":  "Délai d'attente atteint\nHumain est passif",
+        },
+    "wait_end_ha": {
+        "ENG": "Waiting end of human action...",
+        "FR":  "En attente de la fin de l'action de l'humain...",
+        },
+    "robot_is_passive": {
+        "ENG": "Robot is passive",
+        "FR":  "Le Robot est passif",
+        },
+    "robot_is_acting": {
+        "ENG": "Robot is acting",
+        "FR":  "Le robot agit",
+        },
+}
+
+def prompt(msg_id: str, extra=""):
+    g_prompt_pub.publish(String( g_prompt_messages[msg_id][LANG] + extra ))
 
 ##########
 ## MAIN ##
@@ -961,7 +1012,7 @@ if __name__ == "__main__":
     g_hmi_finish_pub = rospy.Publisher('/hmi_finish', EmptyM, queue_size=1)
     g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
     g_event_log_pub = rospy.Publisher('/event_log', EventLog, queue_size=10)
-    g_text_plugin_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
+    g_prompt_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
 
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)

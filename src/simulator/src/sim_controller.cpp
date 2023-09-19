@@ -20,6 +20,8 @@ ros::Publisher visual_signals_pub[2];
 ros::Publisher event_log_pub[2];
 ros::Publisher text_pluging_pub;
 ros::Publisher head_cmd_pub;
+ros::Publisher prompt_pub;
+
 
 // DOMAIN_NAME
 // STACK_EMPILER | STACK_EMPILER_1  
@@ -1202,6 +1204,10 @@ void send_visual_signal_action_over(AGENT agent, sim_msgs::Action action)
 
 bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
+    // Reset prompt
+    std_msgs::String prompt_msg;
+    prompt_pub.publish(prompt_msg);
+
     // Reset robot head
     sim_msgs::HeadCmd head_cmd;
     head_cmd.type = sim_msgs::HeadCmd::RESET;
@@ -1347,6 +1353,9 @@ int main(int argc, char **argv)
     set_model_state_client[AGENT::HUMAN] = node_handle.serviceClient<gazebo_msgs::SetModelState>("/gazebo/set_model_state");
 
     head_cmd_pub = node_handle.advertise<sim_msgs::HeadCmd>(r_head_cmd_topic_name, 10);
+
+    prompt_pub = node_handle.advertise<std_msgs::String>("/simu_prompt", 10);
+
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
 
