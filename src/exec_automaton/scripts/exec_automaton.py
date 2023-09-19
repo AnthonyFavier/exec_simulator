@@ -111,9 +111,7 @@ def execution_HF(begin_step: ConM.Step):
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
-        msg = HeadCmd()
-        msg.type = HeadCmd.LOOK_AT_HUMAN
-        g_head_cmd_pub.publish(msg)
+        look_at_human()
 
         if curr_step.isRInactive():
             prompt("HF_idle_step_started")
@@ -166,9 +164,7 @@ def execution_HF(begin_step: ConM.Step):
 
     log_event("OVER")
     prompt("task_done")
-    msg = HeadCmd()
-    msg.type = HeadCmd.RESET
-    g_head_cmd_pub.publish(msg)
+    reset_head()
     go_idle_pose_once()
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
@@ -184,9 +180,7 @@ def execution_RF(begin_step: ConM.Step):
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
-        msg = HeadCmd()
-        msg.type = HeadCmd.LOOK_AT_HUMAN
-        g_head_cmd_pub.publish(msg)
+        look_at_human()
 
         if curr_step.isRInactive():
             prompt("RF_idle_step_started")
@@ -234,9 +228,7 @@ def execution_RF(begin_step: ConM.Step):
 
     log_event("OVER")
     prompt("task_done")
-    msg = HeadCmd()
-    msg.type = HeadCmd.RESET
-    g_head_cmd_pub.publish(msg)
+    reset_head()
     go_idle_pose_once()
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
@@ -253,9 +245,7 @@ def execution_TT(begin_step: ConM.Step):
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
-        msg = HeadCmd()
-        msg.type = HeadCmd.LOOK_AT_HUMAN
-        g_head_cmd_pub.publish(msg)
+        look_at_human()
 
         send_NS(VHA.NS)
 
@@ -301,9 +291,7 @@ def execution_TT(begin_step: ConM.Step):
 
     log_event("OVER")
     prompt("task_done")
-    msg = HeadCmd()
-    msg.type = HeadCmd.RESET
-    g_head_cmd_pub.publish(msg)
+    reset_head()
     go_idle_pose_once()
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
@@ -654,6 +642,15 @@ def get_agents_before_step(step: ConM.Step):
 def exec_over(step):
     return step.is_final()
 
+def look_at_human():
+    msg = HeadCmd()
+    msg.type = HeadCmd.LOOK_AT_HUMAN
+    g_head_cmd_pub.publish(msg)
+
+def reset_head():
+    msg = HeadCmd()
+    msg.type = HeadCmd.RESET
+    g_head_cmd_pub.publish(msg)
 
 #########################
 ## Select Robot Action ##
