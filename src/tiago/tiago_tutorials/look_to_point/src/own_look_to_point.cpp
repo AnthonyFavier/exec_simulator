@@ -371,9 +371,9 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "look_to_point");
 
   // g_camera_pose
-  g_camera_pose.x = 2.237550;
+  g_camera_pose.x = 2.6;
   g_camera_pose.y = 0.0;
-  g_camera_pose.z = 2.492110;
+  g_camera_pose.z = 2.0;
 
   // g_stack_pose
   g_stack_pose.x = 0.86;

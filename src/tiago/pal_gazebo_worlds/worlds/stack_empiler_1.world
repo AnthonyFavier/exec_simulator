@@ -15,7 +15,7 @@
     <gui fullscreen='1'>
       <!-- <plugin name="GUITextPlugin" filename="libGUITextPlugin.so" /> -->
       <camera name='user_camera'>
-        <pose>2.8 0 2.2 0 0.56 3.14159</pose>
+        <pose>2.6 0 2.0 0 0.56 3.14159</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
@@ -854,12 +854,9 @@
         </visual>
       </link>
 
-
-
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <!-- <pose>0.2 0.8 1.0 0 -0 0</pose> -->
-      <pose>0.19 1.25 1.15 0.064 -0.64 -0.18</pose>
+      <pose>0.19 1.12 1.1 0.0532 -0.6259 -0.162</pose>
     </model>
 
 

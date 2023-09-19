@@ -488,6 +488,7 @@ std::map<std::string, geometry_msgs::Pose> locations =
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
         {"scene",           make_pose(make_point(0.0, 0.0, 0.0),            make_quaternion())},
+        {"goal",            make_pose(make_point(0.19, 1.12, 1.1),          make_quaternion_RPY(0.0532, -0.6259, -0.162))},
         {"table_slot",      make_pose(make_point(0.86, 0.24, 0.7),          make_quaternion())},
         {"table_slot_0",    make_pose(make_point(0.86, 0.44, 0.7),          make_quaternion())},
         {"g1",              make_pose(make_point(0.5, -0.65, 0.75),         make_quaternion())},
