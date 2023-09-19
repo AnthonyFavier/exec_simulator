@@ -456,7 +456,7 @@ def MOCK_assess_human_action() -> CM.Action:
 #######################################
 ## SWITCH BETWEEN IDLE AND HOME POSE ##
 #######################################
-R_idle = True
+R_idle = False
 def go_idle_pose_once():
     global R_idle
     if not R_idle:
