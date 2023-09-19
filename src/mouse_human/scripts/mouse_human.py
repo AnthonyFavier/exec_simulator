@@ -88,13 +88,17 @@ if DOMAIN_NAME=="stack_empiler":
     create_zone(5, 1.55, 0.46,  0.95, ["PASS"])
 
 elif DOMAIN_NAME=="stack_empiler_1":
-    create_zone(0, 2.5, 0.05, 1.99,     ["place"])
-    create_zone(1, 2.2, -0.03, 1.75,    ["pick('w1',)"])
-    create_zone(2, 2.2, -0.15, 1.75,    ["drop"])
-    create_zone(3, 2.25, -0.225, 1.7,   ["pick('g2',)"])
-    create_zone(4, 2.25, -0.172, 1.7,   ["pick('b2',)"])
-    create_zone(6, 2.25, -0.088, 1.7,   ["pick('p1',)"])
-    create_zone(5, 2.5, 0.11, 1.9,      ["PASS"])
+    create_zone(0,  2.0, 0.084, 1.57,       ["place('l1"])
+    create_zone(1,  2.0, 0.152, 1.57,       ["place('l2"])
+    create_zone(6,  2.05, 0.11, 1.635,      ["place('l3"])
+    create_zone(2,  2.0, 0.084, 1.64,       ["place('l4"])
+    create_zone(3,  2.0, 0.152, 1.64,       ["place('l5"])
+    create_zone(4,  2.0, -0.035, 1.57,      ["pick('w1',)"])
+    create_zone(5,  2.0, -0.15, 1.57,       ["drop"])
+    create_zone(7,  2.1, -0.235, 1.55,      ["pick('g2',)"])
+    create_zone(8,  2.1, -0.18, 1.55,       ["pick('b2',)"])
+    create_zone(13, 2.15, -0.083, 1.595,    ["pick('p1',)"])
+    create_zone(9,  2.3, 0.13, 1.7,         ["PASS"])
 
 elif DOMAIN_NAME=="classic":
     create_zone(0, 1.12, 0.30, 1.03,    ["place"])
@@ -232,7 +236,7 @@ def main():
         print(f"zones spawned")
 
     else:
-        nb_zones = 7
+        nb_zones = 13
         for i in range(nb_zones+1):
             f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/z{i}.sdf','r')
             sdff = f.read()

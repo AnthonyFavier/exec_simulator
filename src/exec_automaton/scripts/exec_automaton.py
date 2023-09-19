@@ -708,8 +708,8 @@ def compute_msg_action_stack_empiler(a):
         msg.obj_name=a.parameters[0]
     elif "place"==a.name:
         msg.type=Action.PLACE_OBJ_NAME
-        msg.obj_name=a.parameters[0]
-        msg.location=a.parameters[1]
+        msg.location=a.parameters[0]
+        msg.obj_name=a.parameters[1]
     elif "push"==a.name:
         msg.type=Action.PUSH
     elif "open_box"==a.name:

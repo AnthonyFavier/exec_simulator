@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <sdf version='1.7'>
-  <model name='z5'>
+  <model name='z13'>
 
-    <link name='z5'>
+    <link name='z13'>
       <inertial>
         <mass>1</mass>
         <inertia>
