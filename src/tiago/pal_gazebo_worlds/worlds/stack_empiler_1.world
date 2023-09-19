@@ -440,7 +440,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.86 -0.1 0.75 0 -0 0</pose>
+      <pose>0.86 0.0 0.75 0 -0 0</pose>
     </model>
     <model name='g2'>
       <link name='link'>

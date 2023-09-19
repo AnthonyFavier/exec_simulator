@@ -498,7 +498,7 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"b1",              make_pose(make_point(0.5, -0.65, 0.75),         make_quaternion())},
         {"o1",              make_pose(make_point(0.5, -0.65, 0.85),         make_quaternion())},
         {"y1",              make_pose(make_point(0.5, -0.65, 0.95),         make_quaternion())},
-        {"w1",              make_pose(make_point(0.86, -0.10, 0.75),        make_quaternion())},
+        {"w1",              make_pose(make_point(0.86, 0.0, 0.75),          make_quaternion())},
         {"g2",              make_pose(make_point(1.21, -0.65, 0.75),        make_quaternion())},
         {"b2",              make_pose(make_point(1.21, -0.50, 0.75),        make_quaternion())},
         {"p1",              make_pose(make_point(1.21, -0.25, 0.75),        make_quaternion())},
@@ -512,6 +512,7 @@ public:
     {
         m_pose = make_pose( point, make_quaternion() );
         m_occupied = false;
+        m_obj_name = "";
     }
     void setOccupied(bool v)
     {
@@ -528,14 +529,15 @@ public:
 
 private:
     bool m_occupied;
+    std::string m_obj_name;
     geometry_msgs::Pose m_pose;
 };
 std::vector<DropZone> g_center_drop_zones;
 void init_drop_zones()
 {
-    g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.25, 0.75)) );
-    g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.40, 0.75)) );
-    g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.55, 0.75)) );
+    g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.20, 0.75)) );
+    g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.35, 0.75)) );
+    g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.50, 0.75)) );
 }
 
 class Cube
@@ -597,7 +599,7 @@ void PickName(AGENT agent, std::string obj_name)
     if (!found)
         throw ros::Exception(agent + " PICK " + obj_name + " not found...");
 
-    std::cout << "Agent " << agent << " is now holding " << g_holding[agent].c_str() << std::endl;
+    // std::cout << "Agent " << agent << " is now holding " << g_holding[agent].c_str() << std::endl;
 
     /* GET OBJ POSE */
     gazebo_msgs::GetModelState srv;
