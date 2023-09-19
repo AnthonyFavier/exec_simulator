@@ -72,6 +72,31 @@ class StrBar(Bar):
         suffix = self.suffix % self
         line = ''.join([self.bar_prefix, bar, empty, self.bar_suffix])
         return line
+    
+class IncrementalBarStr(Bar):
+    if sys.platform.startswith('win'):
+        phases = (u' ', u'▌', u'█')
+    else:
+        phases = (' ', '▏', '▎', '▍', '▌', '▋', '▊', '▉', '█')
+
+    def update(self):
+        pass
+
+    def get_str(self):
+        nphases = len(self.phases)
+        filled_len = self.width * self.progress
+        nfull = int(filled_len)                      # Number of full chars
+        phase = int((filled_len - nfull) * nphases)  # Phase of last char
+        nempty = self.width - nfull                  # Number of empty chars
+
+        message = self.message % self
+        bar = color(self.phases[-1] * nfull, fg=self.color)
+        current = self.phases[phase] if phase > 0 else ''
+        empty = self.empty_fill * max(0, nempty - len(current))
+        suffix = self.suffix % self
+        line = ''.join([message, self.bar_prefix, bar, current, empty,
+                        self.bar_suffix, suffix])
+        return line
 
 
 class FillingSquaresBar(ChargingBar):

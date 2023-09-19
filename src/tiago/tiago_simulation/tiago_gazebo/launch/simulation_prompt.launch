@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+  <node name="simulation_prompt" pkg="tiago_gazebo" type="simulation_prompt.py" respawn="false" output="screen"/>
+
+</launch>

@@ -14,7 +14,7 @@ import time
 from enum import Enum
 import matplotlib.pyplot as plt
 sys.path.insert(0, "/home/afavier/new_exec_sim_ws/src/progress/")
-from progress.bar import IncrementalBar, StrBar
+from progress.bar import IncrementalBar, StrBar, IncrementalBarStr
 from std_msgs.msg import Int32, Bool
 from std_msgs.msg import Empty as EmptyM
 from std_msgs.msg import String
@@ -504,7 +504,8 @@ def wait_human_decision(step: ConM.Step):
     rospy.loginfo("Waiting for human to act...")
 
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
-    str_bar = StrBar(max=TIMEOUT_DELAY, width=15)
+    # str_bar = StrBar(max=TIMEOUT_DELAY, width=15)
+    str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=35)
 
     start_waiting_time = time.time()
 
@@ -960,7 +961,7 @@ if __name__ == "__main__":
     g_hmi_finish_pub = rospy.Publisher('/hmi_finish', EmptyM, queue_size=1)
     g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
     g_event_log_pub = rospy.Publisher('/event_log', EventLog, queue_size=10)
-    g_text_plugin_pub = rospy.Publisher("/text_gazebo_label", String, queue_size=1)
+    g_text_plugin_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
 
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
