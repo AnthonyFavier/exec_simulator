@@ -955,53 +955,57 @@ def robot_visual_signal_cb(msg: Signal):
 ## PROMPT ##
 ############
 
-LANG = "FR" # ENG | FR
+LANG = "ENG" # ENG | FR
 
 g_prompt_messages = {
-    "HF_idle_step_started": {
-        "ENG": "Step started\nGoing in IDLE Mode\nWaiting for human to act...",
-        "FR":  "Début du Step\nMise en mode PASSIF\nEn attente d'actions de l'humain...",
+    "start_simu_delay": {
+        "ENG":  "Starting in:",
+        "FR":   "Début dans :",
         },
-    "task_done": {
-        "ENG": "Task Done.",
-        "FR":  "Tâche terminée.",
+    "HF_idle_step_started": {
+        "ENG": "You must act, I will wait.",
+        "FR":  "Vous devez agir, je vais patientier.",
         },
     "RF_idle_step_started": {
-        "ENG": "Step started\nGoing in IDLE Mode\nWaiting for human to act...",
-        "FR":  "Début du Step\nMise en mode PASSIF\nEn attente d'actions de l'humain...",
+        "ENG": "You must act, I will wait.",
+        "FR":  "Vous devez agir, je vais patientier.",
+        },
+    "task_done": {
+        "ENG": "The task done.",
+        "FR":  "Tâche terminée.",
         },
     "ID_started": {
-        "ENG": "Identifying Human action",
-        "FR":  "Identification de l'action de l'humain",
+        "ENG": "*Identifying Action*",
+        "FR":  "*Identification de l'action*",
         },
     "out_of_idle": {
-        "ENG": "Going out of IDLE mode",
-        "FR":  "Sortie du mode PASSIF",
+        "ENG": "I'm getting ready..",
+        "FR":  "Je me prepare..",
         },
     "wait_human_decision": {
-        "ENG": "Step started\nRobot waiting for human decision...",
-        "FR":  "Début du Step\nEn attente d'une action de l'humain...",
+        "ENG": "Act if you will.",
+        "FR":  "Agissez si vous le souhaitez.",
         },
     "wait_h_decision_timeout": {
-        "ENG": "Timeout reached\nHuman not acting",
-        "FR":  "Délai d'attente atteint\nHumain est passif",
+        "ENG": "Then, I will start.",
+        "FR":  "Je vais commencer alors.",
         },
     "wait_end_ha": {
-        "ENG": "Waiting end of human action...",
-        "FR":  "En attente de la fin de l'action de l'humain...",
+        "ENG": "I'm waiting for you to be done.",
+        "FR":  "J'attends que vous ayez terminé.",
         },
     "robot_is_passive": {
-        "ENG": "Robot is passive",
-        "FR":  "Le Robot est passif",
+        "ENG": "I will be passive this step.",
+        "FR":  "Je serai passif.",
         },
     "robot_is_acting": {
-        "ENG": "Robot is acting",
-        "FR":  "Le robot agit",
+        "ENG": "I'm performing an action...",
+        "FR":  "J'agis...",
         },
 }
 
 def prompt(msg_id: str, extra=""):
-    g_prompt_pub.publish(String( g_prompt_messages[msg_id][LANG] + extra ))
+    g_prompt_pub.publish(String( "  " + g_prompt_messages[msg_id][LANG] + extra ))
 
 ##########
 ## MAIN ##
