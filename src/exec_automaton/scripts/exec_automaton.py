@@ -30,7 +30,7 @@ class IdResult(Enum):
     NOT_NEEDED=0
     FAILED=1
 
-DOMAIN_NAME = "stack_empiler_1"
+DOMAIN_NAME = "stack_box"
 
 DEBUG = False
 INPUT = True
@@ -697,6 +697,36 @@ def select_best_active_RA(step: ConM.Step) -> CM.Action:
 def compute_msg_action_stack_empiler_1(a):
     return compute_msg_action_stack_empiler(a)
 
+def compute_msg_action_stack_empiler_2(a):
+    return compute_msg_action_stack_empiler(a)
+
+def compute_msg_action_stack_box(a):
+    msg = Action()
+    msg.type = -1
+
+    if "pick"==a.name:
+        msg.type=Action.PICK_OBJ_NAME
+        msg.obj_name=a.parameters[0]
+    elif "place"==a.name:
+        msg.type=Action.PLACE_OBJ_NAME
+        msg.location=a.parameters[0]
+        msg.obj_name=a.parameters[1]
+    elif "push"==a.name:
+        msg.type=Action.PUSH
+    elif "open_box"==a.name:
+        msg.type=Action.OPEN_BOX
+    elif "drop"==a.name:
+        msg.type=Action.DROP
+        msg.obj_name=a.parameters[0]
+
+    elif a.is_passive():
+        msg.type=Action.PASSIVE
+
+    if msg.type==-1:
+        raise Exception("Unknown action")
+    
+    return msg
+
 def compute_msg_action_stack_empiler(a):
     msg = Action()
     msg.type = -1
@@ -757,8 +787,12 @@ def compute_msg_action(a):
         msg = compute_msg_action_stack_empiler(a)
     elif DOMAIN_NAME=="stack_empiler_1":
         msg = compute_msg_action_stack_empiler_1(a)
+    elif DOMAIN_NAME=="stack_empiler_2":
+        msg = compute_msg_action_stack_empiler_2(a)
     elif DOMAIN_NAME=="classic":
         msg = compute_msg_action_classic(a)
+    elif DOMAIN_NAME=="stack_box":
+        msg = compute_msg_action_stack_box(a)
     else:
         raise Exception("Domain_name unknown...")
         

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple
 from progress.bar import IncrementalBar
 
 
-DOMAIN_NAME = "stack_empiler_1"
+DOMAIN_NAME = "stack_empiler_2"
 
 PATH = "/home/afavier/new_exec_sim_ws/src/gazebo_plugin/"
 
@@ -13,6 +13,8 @@ if DOMAIN_NAME=="stack_empiler":
     INPUT_FILENAME = "zones_stack_empiler.png"
 if DOMAIN_NAME=="stack_empiler_1":
     INPUT_FILENAME = "zones_stack_empiler_1.png"
+if DOMAIN_NAME=="stack_empiler_2":
+    INPUT_FILENAME = "zones_stack_empiler_2.png"
 elif DOMAIN_NAME=="classic":
     INPUT_FILENAME = "zones_classic.png"
 else:

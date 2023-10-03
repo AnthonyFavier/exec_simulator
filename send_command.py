@@ -4,8 +4,8 @@ import typing
 from sim_msgs.msg import Action
 import sys
 
-# stack_empiler | stack_empiler_1 | new_stack
-DOMAIN_NAME = "stack_empiler_1"
+# stack_empiler | stack_empiler_1 | stack_empiler_2 | stack_box
+DOMAIN_NAME = "stack_box"
 
 rospy.init_node('send_command')
 
@@ -14,6 +14,12 @@ rospy.sleep(0.1)
 
 
 def treat_input_empiler_1(cmd):
+    return treat_input_empiler(cmd)
+
+def treat_input_empiler_2(cmd):
+    return treat_input_empiler(cmd)
+
+def treat_input_stack_box(cmd):
     return treat_input_empiler(cmd)
 
 def treat_input_empiler(cmd):
@@ -42,6 +48,12 @@ def treat_input_empiler(cmd):
     elif cmd=="d":
         msg = Action()
         msg.type = Action.DROP
+        cmd_pub.publish(msg)
+
+    ## Open Box
+    elif cmd=="o":
+        msg = Action()
+        msg.type = Action.OPEN_BOX
         cmd_pub.publish(msg)
 
 def treat_input_classic(cmd):
@@ -98,6 +110,10 @@ while not rospy.is_shutdown():
             treat_input_empiler(cmd)
         elif DOMAIN_NAME=="stack_empiler_1":
             treat_input_empiler_1(cmd)
+        elif DOMAIN_NAME=="stack_empiler_2":
+            treat_input_empiler_2(cmd)
+        elif DOMAIN_NAME=="stack_box":
+            treat_input_stack_box(cmd)
         elif DOMAIN_NAME=="new_stack":
             treat_input_classic(cmd)
         else:
