@@ -519,7 +519,7 @@ def wait_human_decision(step: ConM.Step):
 
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
     # str_bar = StrBar(max=TIMEOUT_DELAY, width=15)
-    str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=35)
+    str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
 
     start_waiting_time = time.time()
 
@@ -1014,6 +1014,7 @@ def find_r_rank_of_id(steps, id):
 def main_exec():
     global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY
     global default_human_passive_action, default_robot_passive_action
+    global INCREMENTAL_BAR_STR_WIDTH
 
     # CONSTANTS #
     #   Delays 
@@ -1026,6 +1027,9 @@ def main_exec():
 
 
     HUMAN_UPDATING = False
+
+    START_SIMU_DELAY            = 5.0
+    INCREMENTAL_BAR_STR_WIDTH = 26
 
     time.sleep(0.5)
 
@@ -1064,6 +1068,20 @@ def main_exec():
     if INPUT:
         rospy.loginfo("READY TO START, Press Enter to start...")
         input()
+        
+        bar = IncrementalBar(max = START_SIMU_DELAY)
+        str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
+
+        start_time = time.time()
+        while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
+            elapsed = time.time() - start_time
+
+            bar.goto(elapsed)
+            str_bar.goto(elapsed)
+            prompt("start_simu_delay", f"\n{str_bar.get_str()}")
+
+            time.sleep(0.05)
+
 
     try:
         if exec_regime == "hf":
