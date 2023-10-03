@@ -146,7 +146,7 @@ def h_sgl_cb(sgl: Signal):
 # Activities Extraction
 g_r_activities_names = { # act_name : [display_name, shape_color, text_color]
     "wait_hc":          ["Wait H",              "yellow",       "black"],
-    "idle_wait_h":      ["IDLE\nWait HA",       "silver",       "black"],
+    "idle_wait_h":      ["Passive\nWait HA",    "silver",       "black"],
     "wait_end_ha":      ["Wait E_HA",           "forestgreen",  "white"],
     "id":               ["ID Phase",            "lightgreen",   "black"],
     "sa":               ["SA",                  "lightgreen",   "black"],
@@ -154,12 +154,12 @@ g_r_activities_names = { # act_name : [display_name, shape_color, text_color]
     "grns":             ["GRNS",                "silver",       "black"],
 }
 g_h_activities_names = { # act_name : [display_name, shape_color, text_color]
-    "idle_wait_ns":         ["Wait NS",         "forestgreen",   "white"],
-    "idle_pass_wait_ns":    ["Wait NS",         "forestgreen",   "white"],
-    "idle_wait_wait_ns":    ["Wait NS",         "forestgreen",   "white"],
-    "idle_wait_compliant":  ["Inactive\nNo Signal", "lightgrey",     "black"],
-    "idle_pass_compliant":  ["Inactive\nPASS", "lightgrey",     "black"],
-    "start_delay":          ["Start Delay",     "yellow",        "black"],
+    "idle_wait_ns":         ["Wait NS",             "forestgreen",   "white"],
+    "idle_pass_wait_ns":    ["Wait NS",             "forestgreen",   "white"],
+    "idle_wait_wait_ns":    ["Wait NS",             "forestgreen",   "white"],
+    "idle_wait_compliant":  ["Passive\nNo Signal",  "lightgrey",     "black"],
+    "idle_pass_compliant":  ["Passive\nPASS",       "lightgrey",     "black"],
+    "start_delay":          ["Decision",            "yellow",        "black"],
 }
 def r_extract_activities():
     global g_events, g_r_activities
@@ -198,6 +198,8 @@ def r_extract_activities():
             if e.name[:4]=="S_RA":
                 tsra = e.stamp
                 act_name = e.name[5:]
+                j_split = act_name.find("(")
+                act_name = act_name[:j_split] + "\n" + act_name[j_split:]
                 while e.name!="SGL_S_RA":
                     i+=1
                     e = g_events[i]
@@ -288,6 +290,8 @@ def h_extract_activities():
             elif t5!=None:
                 g_h_activities.append( Activity("idle_pass_compliant", t5, t3))
             act_name = e.name[5:]
+            j_split = act_name.find("(")
+            act_name = act_name[:j_split] + "\n" + act_name[j_split:]
             while e.name!="SGL_E_HA":
                 i+=1
                 e = g_events[i]
@@ -328,6 +332,7 @@ def show_activities(activities):
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
+    # sys.argv.append("load")
     if len(sys.argv)<2:
         raise Exception("Missing argument... ['load', 'record']")
     record = sys.argv[1] == "record"
@@ -384,6 +389,19 @@ if __name__ == "__main__":
     print("\nTO SIGNALS:")
     show_signals(g_to_signals)
 
+    MIN_DURATION = 0.15
+    activities_zorder = 1
+    ns_lines_zorder = 2
+    signal_arrow_zorder = 3
+    signal_text_zorder = 10
+    signal_width_text = 1.5
+    signal_style="Simple, head_width=8, head_length=4, tail_width=4"
+
+########################
+    WITH_TIMEOUT = True
+########################
+
+
     plt.rcParams.update({'font.size': 13})
 
     fig, ax = plt.subplots(figsize=(18, 5))
@@ -391,40 +409,36 @@ if __name__ == "__main__":
     
     ax.set_axisbelow(True)
     ax.grid(color='lightgrey', linestyle='dashed', axis='x')
-    tick_spacing = 2
-    # ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_spacing))
+    tick_spacing = 1
     max_x = math.ceil(g_events[-1].stamp)
-    ax.set_xlim((-0.5,max_x))
+    ax.set_xlim((-0.2,max_x))
     x_ticks = np.arange(0, max_x, tick_spacing )
     ax.set_xticks(x_ticks)
+    ax.set_xticklabels(["" for x in x_ticks], rotation=90)
+    ax.set_yticks([0.25, 1.0, 2.0, 3.0])
+    ax.set_yticklabels(['TO', 'R', 'Sgls', 'H'], rotation=90)
+    ax.set_ylim(3.5, 0.0)
+    if not WITH_TIMEOUT:
+        ax.set_ylim(3.5, 0.5)
+
+    ax2 = ax.twiny()
+    ax2.set_xticks( ax.get_xticks() )
+    ax2.set_xbound(ax.get_xbound())
     x_tickslabels = []
     for i,t in enumerate(x_ticks):
         if i%2==0:
             x_tickslabels.append(t)
         else:
             x_tickslabels.append("")
-
-    ax.set_xticklabels(x_tickslabels)
-
-    ax.set_ylim(3.5, 0.0)
-    ax.set_yticks([0.25, 1.0, 2.0, 3.0])
-    ax.set_yticklabels(['TO', 'R', 'Signals', 'H'])
-
-
-    MIN_DURATION = 0.15
-
-
-    activities_zorder = 1
-    ns_lines_zorder = 2
-    signal_arrow_zorder = 3
-    signal_text_zorder = 10
-
-    signal_width_text = 1.5
-    signal_style="Simple, head_width=8, head_length=4, tail_width=4"
-    
+    ax2.set_xticklabels(x_tickslabels, rotation=90)
+    ax2.set_xlabel("Time (s)", rotation=0)
+    ax2.format_coord = lambda x, y: 't={:g} s'.format(x)
+        
     # TIMEOUTS #
     rec = ax.barh( ['TO'], [signal_width_text], left=[0.0], height=1.0, color=(0,0,0,0))
     for sig in g_to_signals:
+        # if int(sig.stamp)==77:
+        #     continue
         rec = ax.barh( ['TO'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=0.5, color=(0,0,0,0))
         ax.bar_label(rec, labels=["TO     "], label_type='center', rotation=90, zorder=signal_text_zorder)
         arrow = mpatches.FancyArrowPatch((sig.stamp, 0.25), (sig.stamp , 0.5), color="black", arrowstyle=signal_style, zorder=signal_arrow_zorder)
@@ -456,7 +470,7 @@ if __name__ == "__main__":
         ax.add_patch(arrow)
         # bar step separations
         if sig.name[:2]=="NS":
-            line = mpatches.FancyArrowPatch((sig.stamp, 0.0), (sig.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
+            line = mpatches.FancyArrowPatch((sig.stamp, -1.0), (sig.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
             ax.add_patch(line)
     # H Signals #
     for sig in g_h_signals:
@@ -483,7 +497,6 @@ if __name__ == "__main__":
         rec = ax.barh( ['H'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
         ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
 
-    ax.format_coord = lambda x, y: 't={:g} s'.format(x)
 
 
     plt.tight_layout()
