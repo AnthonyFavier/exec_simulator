@@ -1807,7 +1807,6 @@ void grab_obj(AGENT agent, const std::string &object)
 {
     ROS_INFO("\t\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
 
-    sleep(0.5);
 
     gazebo_ros_link_attacher::Attach srv;
     if (agent == AGENT::ROBOT)
@@ -1817,6 +1816,7 @@ void grab_obj(AGENT agent, const std::string &object)
     }
     else if (agent == AGENT::HUMAN)
     {
+        sleep(0.5);
         srv.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
         srv.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
     }
@@ -1832,7 +1832,6 @@ void drop(AGENT agent, const std::string &object)
 {
     ROS_INFO("\t\t%s DROP START", get_agent_str(agent).c_str());
 
-    sleep(0.5);
 
     gazebo_ros_link_attacher::Attach srv;
     if (agent == AGENT::ROBOT)
@@ -1842,6 +1841,7 @@ void drop(AGENT agent, const std::string &object)
     }
     else if (agent == AGENT::HUMAN)
     {
+        sleep(0.5);
         srv.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
         srv.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
     }
