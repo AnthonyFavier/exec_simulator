@@ -1026,8 +1026,8 @@ def main_exec():
 
     initDomain()
 
-    default_human_passive_action = CM.Action.create_passive(CM.g_human_name, "PASS")
-    default_robot_passive_action = CM.Action.create_passive(CM.g_robot_name, "PASS")
+    default_human_passive_action = CM.Action.create_passive("H", "PASS")
+    default_robot_passive_action = CM.Action.create_passive("R", "PASS")
 
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
