@@ -134,12 +134,20 @@ def execution_HF(begin_step: ConM.Step):
         if curr_step.isRInactive():
             prompt("HF_idle_step_started")
             send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+            look_at_human()
             go_idle_pose_once()
             RA = select_valid_passive(curr_step)
             wait_human_start_acting(curr_step)
 
         else:
             go_home_pose_once()
+            look_at_human()
+
+            if check_if_human_is_done(curr_step):
+                rospy.loginfo("YOU ARE DONE, GO !!!!")
+            elif check_if_human_can_leave(curr_step):
+                rospy.loginfo("YOU CAN LEAVE, GO !!!!!!")
+
             send_NS_update_HAs(curr_step, VHA.NS)
             wait_human_decision(curr_step)
 
@@ -669,6 +677,26 @@ def reset_head():
     msg = HeadCmd()
     msg.type = HeadCmd.RESET
     g_head_cmd_pub.publish(msg)
+
+def check_if_human_can_leave(step):
+    # human can leave now if there is from the current step a sequence of pairs of actions leading to a final leaf
+    # where the human is always passive
+    
+    for p in step.get_pairs():
+        if p.human_action.is_passive():
+            if p.is_final() or (p.next!=[] and check_if_human_can_leave(p.next[0].get_in_step())):
+                return True
+    return False
+
+def check_if_human_is_done(step):
+    # human is done if there is from the current step a sequence of pairs of actions leading to a final leaf
+    # where the human is always IDLE
+
+    for p in step.get_pairs():
+        if p.human_action.is_idle():
+            if p.is_final() or (p.next!=[] and check_if_human_is_done(p.next[0].get_in_step())):
+                return True
+    return False
 
 #########################
 ## Select Robot Action ##
