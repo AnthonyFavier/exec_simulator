@@ -63,15 +63,24 @@ logging.config.fileConfig(path + 'log.conf')
 #############
 ## LOADING ##
 #############
-def load_solution(exec_regime):
+def load_solution(exec_regime, with_choices=False):
     """
     Loads the previously produced solution.
     The domain name is retreived and returned and as well as the solution tree and the initial step.
     """
+
     print("Loading solution...")
-    path = CM.path + "dom_n_sol.p"
-    if exec_regime=="tt":
-        path = CM.path + "dom_n_sol_tt.p"
+    if with_choices:
+        if exec_regime=="tt":
+            file_name = "dom_n_sol_tt_with_choices.p"
+        else:
+            file_name = "dom_n_sol_with_choices.p"
+    else:
+        if exec_regime=="tt":
+            file_name = "dom_n_sol_tt.p"
+        else:
+            file_name = "dom_n_sol.p"
+    path = CM.path + file_name
     d = dill.load(open(path, "rb"))
 
     domain_name = d[0]
@@ -98,6 +107,16 @@ def set_choices(init_step,r_criteria,h_criteria):
     print('Policy update done')
     return r_ranked_leaves, h_ranked_leaves
 
+def set_r_choices(init_step,r_criteria):
+    print('Start policy update...')
+
+    final_leaves = init_step.get_final_leaves()
+
+    r_ranked_leaves = ConM.sorting_branches(final_leaves, r_criteria, is_robot=True) #type: List[ConM.Step]
+    ConM.update_robot_choices(init_step)
+
+    print('Policy update done')
+    return r_ranked_leaves
 
 ###############
 ## EXECUTION ##
@@ -111,7 +130,6 @@ def execution_HF(begin_step: ConM.Step):
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
-        look_at_human()
 
         if curr_step.isRInactive():
             prompt("HF_idle_step_started")
@@ -313,15 +331,15 @@ def send_NS_update_HAs(step: ConM.Step, type):
     send_vha(g_possible_human_actions, type)
 
     # Find best human action id, sent to hmi mock
-    best_ha = Int32()
-    if step.best_human_pair.human_action.is_passive():
-        best_ha.data = -1
-    else:
-        for i,ho in enumerate(step.human_options):
-            if CM.Action.are_similar(ho.human_action, step.best_human_pair.human_action):
-                best_ha.data = i+1
-                break
-    g_best_human_action.publish(best_ha)
+    # best_ha = Int32()
+    # if step.best_human_pair.human_action.is_passive():
+    #     best_ha.data = -1
+    # else:
+    #     for i,ho in enumerate(step.human_options):
+    #         if CM.Action.are_similar(ho.human_action, step.best_human_pair.human_action):
+    #             best_ha.data = i+1
+    #             break
+    # g_best_human_action.publish(best_ha)
 
 def send_NS(type):
     sgl = Signal()
@@ -344,22 +362,22 @@ def passive_update_HAs(step: ConM.step, RA: CM.Action):
 
         # find best human action in compliant actions
         ## find best pair
-        best_rank_i = 0
-        best_rank_v = compliant_pairs[best_rank_i].best_rank_h
-        for i,p in enumerate(compliant_pairs[1:]):
-            if p.best_rank_h < best_rank_v:
-                best_rank_i = i
-                best_rank_v = p.best_rank_h
-        ## find id of corresponding best action
-        best_ha = Int32()
-        if compliant_pairs[best_rank_i].human_action.is_passive():
-            best_ha.data = -1
-        else:
-            for i,ho in enumerate(step.human_options):
-                if CM.Action.are_similar( ho.human_action, compliant_pairs[best_rank_i].human_action ):
-                    best_ha.data = i+1
-                    break
-        g_best_human_action.publish(best_ha)
+        # best_rank_i = 0
+        # best_rank_v = compliant_pairs[best_rank_i].best_rank_h
+        # for i,p in enumerate(compliant_pairs[1:]):
+        #     if p.best_rank_h < best_rank_v:
+        #         best_rank_i = i
+        #         best_rank_v = p.best_rank_h
+        # ## find id of corresponding best action
+        # best_ha = Int32()
+        # if compliant_pairs[best_rank_i].human_action.is_passive():
+        #     best_ha.data = -1
+        # else:
+        #     for i,ho in enumerate(step.human_options):
+        #         if CM.Action.are_similar( ho.human_action, compliant_pairs[best_rank_i].human_action ):
+        #             best_ha.data = i+1
+        #             break
+        # g_best_human_action.publish(best_ha)
 
 def find_compliant_pairs_with_RA(curr_step: ConM.Step, RA):
     compliant_pairs = []
@@ -990,14 +1008,21 @@ def main_exec():
 
     # Solution loading  
     exec_regime = rospy.get_param("/exec_automaton/exec_regime")
-    domain_name, begin_step = load_solution(exec_regime)
+    with_choices = True
+    domain_name, begin_step = load_solution(exec_regime, with_choices=with_choices)
+    if not with_choices:
+        r_criteria_name = rospy.get_param("/exec_automaton/r_criteria") # type: str
+        r_criteria = ConM.get_exec_prefs()[r_criteria_name]
+        r_ranked_leaves, h_ranked_leaves = set_r_choices(begin_step,r_criteria)
 
-    # Characterization
-    esti_prefs = rospy.get_param("/exec_automaton/esti_prefs") # type: str
-    pair = ConM.esti_prefs_pairs()[esti_prefs]
-    h_criteria = ConM.get_exec_prefs()[pair[0]]
-    r_criteria = ConM.get_exec_prefs()[pair[1]]
-    r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
+    # # Characterization
+    # esti_prefs = rospy.get_param("/exec_automaton/esti_prefs") # type: str
+    # pair = ConM.esti_prefs_pairs()[esti_prefs]
+    # h_criteria = ConM.get_exec_prefs()[pair[0]]
+    # r_criteria = ConM.get_exec_prefs()[pair[1]]
+    # r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
+
+    
 
     initDomain()
 
