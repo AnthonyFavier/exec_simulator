@@ -120,7 +120,7 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
 	// std::cout << "dir vec normalized : " << dir_vec.position.x <<","<< dir_vec.position.y <<","<< dir_vec.position.z << std::endl;
 
 	// Define speed
-	double desired_speed = 0.4; // m
+	double desired_speed = 0.3; // m
 	ros::Rate loop(50); // Hz
 	double step = desired_speed * loop.expectedCycleTime().toSec();
 	// std::cout << "step : " << step << std::endl;
