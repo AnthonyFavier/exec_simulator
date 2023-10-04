@@ -1062,67 +1062,89 @@ def main_exec():
     random.seed(seed)
     lg.debug(f"\nSeed was: {seed}")
 
-    # Solution loading  
-    exec_regime = rospy.get_param("/exec_automaton/exec_regime")
-    with_choices = True
-    domain_name, begin_step = load_solution(exec_regime, with_choices=with_choices)
-    if not with_choices:
-        r_criteria_name = rospy.get_param("/exec_automaton/r_criteria") # type: str
-        r_criteria = ConM.get_exec_prefs()[r_criteria_name]
-        r_ranked_leaves, h_ranked_leaves = set_r_choices(begin_step,r_criteria)
-
-    # # Characterization
-    # esti_prefs = rospy.get_param("/exec_automaton/esti_prefs") # type: str
-    # pair = ConM.esti_prefs_pairs()[esti_prefs]
-    # h_criteria = ConM.get_exec_prefs()[pair[0]]
-    # r_criteria = ConM.get_exec_prefs()[pair[1]]
-    # r_ranked_leaves, h_ranked_leaves = set_choices(begin_step,r_criteria,h_criteria)
-
-    
-
-    initDomain()
-
     default_human_passive_action = CM.Action.create_passive("H", "PASS")
     default_robot_passive_action = CM.Action.create_passive("R", "PASS")
+
+    ## LOADING ##
+    sol_tee =       load("stack_empiler_2_tee.p")
+    sol_hmw =       load("stack_empiler_2_hmw.p")
+    sol_tt_tee =    load("stack_empiler_2_tt_tee.p")
+    sol_tt_hmw =    load("stack_empiler_2_tt_hmw.p")
+    if g_domain_name!=DOMAIN_NAME:
+        raise Exception("Missmatching domain names CONSTANT and loaded")
+    robots = {
+        "hf1" : ("hf", sol_tee),
+        "rf2" : ("rf", sol_tee),
+
+        "hf3" : ("hf", sol_hmw),
+        "rf4" : ("rf", sol_hmw),
+    
+        "hf5" : ("hf", sol_hmw),
+        "rf6" : ("rf", sol_hmw),
+
+        "hf7" : ("hf", sol_tt_hmw),
+        "tt8" : ("tt", sol_tt_hmw),
+
+        "hf9" : ("hf", sol_tt_tee),
+        "tt10": ("tt", sol_tt_tee),
+    }
+    robot_name = input("Which robot? ")
+    if robot_name=="":
+        robot_name = "hf1"
 
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
     g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
 
-    if INPUT:
-        rospy.loginfo("READY TO START, Press Enter to start...")
-        input()
+    continuer = True
+    while continuer:
         
-        bar = IncrementalBar(max = START_SIMU_DELAY)
-        str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
+        exec_regime, begin_step = robots[robot_name]
 
-        start_time = time.time()
-        while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
-            elapsed = time.time() - start_time
+        if INPUT:
+            rospy.loginfo("READY TO START, Press Enter to start...")
+            input()
+            
+            bar = IncrementalBar(max = START_SIMU_DELAY)
+            str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
 
-            bar.goto(elapsed)
-            str_bar.goto(elapsed)
-            prompt("start_simu_delay", f"\n{str_bar.get_str()}")
+            start_time = time.time()
+            while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
+                elapsed = time.time() - start_time
 
-            time.sleep(0.05)
+                bar.goto(elapsed)
+                str_bar.goto(elapsed)
+                prompt("start_simu_delay", f"\n{str_bar.get_str()}")
 
+                time.sleep(0.05)
 
-    try:
-        if exec_regime == "hf":
-            id,r_rank,h_rank = execution_HF(begin_step)
-        elif exec_regime == "rf":
-            id,r_rank,h_rank = execution_RF(begin_step)
-        elif exec_regime == "tt":
-            id,r_rank,h_rank = execution_TT(begin_step)
+        try:
+            if exec_regime == "hf":
+                id,r_rank = execution_HF(begin_step)
+            elif exec_regime == "rf":
+                id,r_rank = execution_RF(begin_step)
+            elif exec_regime == "tt":
+                id,r_rank = execution_TT(begin_step)
+            else:
+                raise Exception("unknown exec_regime.")
+            nb_sol = len(begin_step.get_final_leaves())
+            r_score = convert_rank_to_score(r_rank,nb_sol)
+            print(f"END: id={id}, r_score={r_score}")
+            in_choice = input("repeat? (y,robot_name,n)")
+            if in_choice=="y":
+                prompt("reset_world")
+                g_reset_world_client()
+                continue
+            elif in_choice=="n":
+                continuer = False
+            elif in_choice in ["hf1,rf2,hf3,rf4,hf5,rf6,hf7,tt8,hf9,tt10"]:
+                robot_name = in_choice
+                g_reset_world_client()
+                continue
 
-        nb_sol = len(begin_step.get_final_leaves())
-        # print(r_rank,h_rank,nb_sol)
-        r_score = convert_rank_to_score(r_rank,nb_sol)
-        h_score = convert_rank_to_score(h_rank,nb_sol)
-        return (begin_step,id,r_score,h_score, seed, r_ranked_leaves, h_ranked_leaves)
-    except WrongException as inst:
-        lg.debug(f"Exception catched: {inst.args[0]}")
-        return (-1, seed)
+        except WrongException as inst:
+            lg.debug(f"Exception catched: {inst.args[0]}")
+            input()
 
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
