@@ -3,10 +3,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Tuple
 from copy import deepcopy
 import random
-import pickle
 import dill
 import sys
-import importlib
 import rospy
 import logging as lg
 import logging.config
@@ -30,7 +28,8 @@ class IdResult(Enum):
     NOT_NEEDED=0
     FAILED=1
 
-DOMAIN_NAME = "stack_box"
+# stack_empiler | stack_empiler_1 | stack_empiler_2 | stack_box
+DOMAIN_NAME = "stack_empiler_2"
 
 DEBUG = False
 INPUT = True
@@ -42,14 +41,6 @@ path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
 import ConcurrentModule as ConM
 import CommonModule as CM
-
-# Dynamically loads domain file
-g_domain_name = rospy.get_param("/domain_name")
-spec = importlib.util.spec_from_file_location(g_domain_name, path+g_domain_name+".py")
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-sys.modules["domain"] = module
-from domain import *
 
 step_over = False
 
@@ -63,13 +54,24 @@ logging.config.fileConfig(path + 'log.conf')
 #############
 ## LOADING ##
 #############
-def load_solution(exec_regime, with_choices=False):
+def load(filename):
+    global g_domain_name
     """
     Loads the previously produced solution.
     The domain name is retreived and returned and as well as the solution tree and the initial step.
     """
 
-    print("Loading solution...")
+    print(f"Loading solution '{filename}' ... ", end="", flush=True)
+    s_t = time.time()
+
+    g_domain_name, init_step = dill.load(open(CM.path + filename, "rb"))
+
+
+    print("Loaded! - %.2fs" %(time.time()-s_t))
+
+    return init_step
+
+def load_solution(exec_regime, with_choices=False):
     if with_choices:
         if exec_regime=="tt":
             file_name = "dom_n_sol_tt_with_choices.p"
@@ -80,17 +82,8 @@ def load_solution(exec_regime, with_choices=False):
             file_name = "dom_n_sol_tt.p"
         else:
             file_name = "dom_n_sol.p"
-    path = CM.path + file_name
-    d = dill.load(open(path, "rb"))
 
-    domain_name = d[0]
-    init_step = d[1]
-
-    if domain_name!=g_domain_name:
-        raise Exception("Mismatching domain names!")
-    
-    print("Solution loaded")
-    return domain_name, init_step
+    return load(file_name)
 
 def set_choices(init_step,r_criteria,h_criteria):
 
@@ -108,14 +101,15 @@ def set_choices(init_step,r_criteria,h_criteria):
     return r_ranked_leaves, h_ranked_leaves
 
 def set_r_choices(init_step,r_criteria):
-    print('Start policy update...')
+    print('Start policy update...  ', end="", flush=True)
+    s_t = time.time()
 
     final_leaves = init_step.get_final_leaves()
 
     r_ranked_leaves = ConM.sorting_branches(final_leaves, r_criteria, is_robot=True) #type: List[ConM.Step]
     ConM.update_robot_choices(init_step)
 
-    print('Policy update done')
+    print('Done! - %.2fs' %(time.time()-s_t), )
     return r_ranked_leaves
 
 ###############
@@ -200,7 +194,7 @@ def execution_HF(begin_step: ConM.Step):
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
 
 def execution_RF(begin_step: ConM.Step):
     """
@@ -264,7 +258,7 @@ def execution_RF(begin_step: ConM.Step):
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
 
 def execution_TT(begin_step: ConM.Step):
     global g_possible_human_actions
@@ -327,7 +321,7 @@ def execution_TT(begin_step: ConM.Step):
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r, curr_step.get_f_leaf().branch_rank_h
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
 
 
 #########################
@@ -1044,6 +1038,7 @@ def main_exec():
     global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY
     global default_human_passive_action, default_robot_passive_action
     global INCREMENTAL_BAR_STR_WIDTH
+    global g_domain_name
 
     # CONSTANTS #
     #   Delays 
@@ -1144,14 +1139,14 @@ if __name__ == "__main__":
     g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
     g_event_log_pub = rospy.Publisher('/event_log', EventLog, queue_size=10)
     g_prompt_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
+    g_head_cmd_pub = rospy.Publisher("/tiago_head_cmd", HeadCmd, queue_size=10)
 
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
     robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
     robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
 
-    g_head_cmd_pub = rospy.Publisher("/tiago_head_cmd", HeadCmd, queue_size=10)
-
+    g_reset_world_client = rospy.ServiceProxy("/reset_world", EmptyS)
     g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
     g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
     g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
@@ -1160,46 +1155,4 @@ if __name__ == "__main__":
     ###
     
     # Execution simulation
-    result = main_exec()
-
-    # Result plot
-    do_plot=False
-    solutions = []
-    if result[0]==-1:
-        rospy.loginfo("Failed... -1")
-    else:
-        (begin_step, id, r_score, h_score, seed, r_ranked_leaves, h_ranked_leaves) = result
-
-        # find step with with id
-        nb_sols = len(h_ranked_leaves)
-        solution_step = None
-        for l in begin_step.get_final_leaves():
-            if l.id == id:
-                solution_step = l
-                break
-        score_r = convert_rank_to_score(solution_step.get_f_leaf().branch_rank_r, nb_sols)
-        score_h = convert_rank_to_score(solution_step.get_f_leaf().branch_rank_h, nb_sols)
-        solutions.append( (score_h,score_r) )
-        print(f"solution: r#{score_r:.2f}-h#{score_h:.2f}-{nb_sols}")
-
-        
-        if do_plot:
-            xdata = []
-            ydata = []
-            nb_sols = len(h_ranked_leaves)
-            for l in h_ranked_leaves:
-                xdata.append( convert_rank_to_score(l.get_f_leaf().branch_rank_h, nb_sols) )
-                ydata.append( convert_rank_to_score(find_r_rank_of_id(h_ranked_leaves, l.id),nb_sols) )
-
-            # plt.figure(figsize=(3, 3))
-            plt.plot(xdata, ydata, 'b+')
-            plt.plot([score_h], [score_r], 'ro')
-            plt.xlabel("score human solution")
-            plt.ylabel("score robot solution")
-            plt.show()
-    rospy.loginfo("\nfinish")
-
-    # dill.dump(solutions, open("/home/afavier/ws/HATPEHDA/domains_and_results/solution_exec.p", "wb"))
-    # print(solutions)
-
-
+    main_exec()
