@@ -18,14 +18,13 @@ ros::Publisher r_home_pub;
 ros::Publisher h_home_pub;
 ros::Publisher visual_signals_pub[2];
 ros::Publisher event_log_pub[2];
-ros::Publisher text_pluging_pub;
 ros::Publisher head_cmd_pub;
 ros::Publisher prompt_pub;
 
 
 // DOMAIN_NAME
-// STACK_EMPILER | STACK_EMPILER_1  
-#define STACK_BOX
+// STACK_EMPILER | STACK_EMPILER_1 | STACK_EMPILER_2 | STACK_BOX
+#define STACK_EMPILER_2
 /////////////////
 
 const double tolerance = 0.01;
@@ -2054,9 +2053,7 @@ void send_visual_signal_action_over(AGENT agent, sim_msgs::Action action)
 
 bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
-    // Reset prompt
-    std_msgs::String prompt_msg;
-    prompt_pub.publish(prompt_msg);
+
 
     // Reset robot head
     sim_msgs::HeadCmd head_cmd;
@@ -2105,9 +2102,10 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
         }
     }
 
-    std_msgs::String msg;
-    msg.data = "Robot Status\nText prompt";
-    text_pluging_pub.publish(msg);
+
+    // Reset prompt
+    std_msgs::String prompt_msg;
+    prompt_pub.publish(prompt_msg);
 
     ROS_INFO("World reset ok");
 
@@ -2211,8 +2209,6 @@ int main(int argc, char **argv)
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);
     ros::Subscriber h_start_moving_sub = node_handle.subscribe("/h_start_moving", 1, h_start_moving_cb);
-
-    text_pluging_pub = node_handle.advertise<std_msgs::String>("/text_gazebo_label", 1);
 
     ros::AsyncSpinner spinner(10);
     spinner.start();

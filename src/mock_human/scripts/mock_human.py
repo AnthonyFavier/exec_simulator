@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, Dict, List, Tuple
 from copy import deepcopy
 import random
-import dill
 import sys
 from enum import Enum
 import logging as lg
@@ -17,7 +16,6 @@ from std_srvs.srv import Empty as EmptyS
 from std_srvs.srv import EmptyResponse
 from progress.bar import IncrementalBar
 from sim_msgs.msg import EventLog
-import importlib
 from std_srvs.srv import SetBool, SetBoolResponse
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"

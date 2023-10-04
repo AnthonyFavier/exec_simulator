@@ -17,7 +17,6 @@ from std_srvs.srv import Empty as EmptyS
 from std_srvs.srv import EmptyResponse
 from progress.bar import IncrementalBar
 from sim_msgs.msg import EventLog
-import importlib
 from std_srvs.srv import SetBool, SetBoolResponse
 from gazebo_msgs.srv import SetLinkState, SetLinkStateRequest
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
@@ -25,7 +24,7 @@ from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Pose, Twist, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
-DOMAIN_NAME = "stack_box"
+DOMAIN_NAME = "stack_empiler_2"
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
@@ -238,7 +237,6 @@ def main():
     human_vha_sub = rospy.Subscriber("hmi_vha", VHA, incoming_vha_cb, queue_size=1)
     click_sub = rospy.Subscriber("/mouse_pressed_pose", Point, mouse_pressed_cb, queue_size=1)
 
-    started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())
     timeout_max_service = rospy.Service("hmi_timeout_max", Int, lambda req: IntResponse())
     r_idle_service = rospy.Service("hmi_r_idle", SetBool, lambda req: SetBoolResponse())
 
@@ -251,27 +249,17 @@ def main():
 
     # Spawn zones
     rospy.wait_for_service('gazebo/spawn_sdf_model')
-
-    spawn_zones_individually = True
-    if spawn_zones_individually==False:
-        # zones
-        f = open('/home/afavier/new_exec_sim_ws/src/simulator/worlds/zones.sdf','r')
+    nb_zones = 13
+    for i in range(nb_zones+1):
+        f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/z{i}.sdf','r')
         sdff = f.read()
         f.close()
         spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
-        spawn_model_prox("zones", sdff, "", Pose(), "world")
-        print(f"zones spawned")
+        spawn_model_prox(f"z{i}", sdff, "", g_far_zone_pose, "world")
+        print(f"z{i} spawned")
 
-    else:
-        nb_zones = 13
-        for i in range(nb_zones+1):
-            f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/z{i}.sdf','r')
-            sdff = f.read()
-            f.close()
-            spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
-            spawn_model_prox(f"z{i}", sdff, "", g_far_zone_pose, "world")
-            print(f"z{i} spawned")
-        # show_all_zones()
+
+    started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())
 
     rospy.wait_for_service("start_human_action")
     g_start_human_action_prox = rospy.ServiceProxy("start_human_action", Int)

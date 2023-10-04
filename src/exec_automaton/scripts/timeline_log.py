@@ -15,7 +15,6 @@ from std_msgs.msg import Int32, Bool
 from std_msgs.msg import Empty as EmptyM
 from progress.bar import IncrementalBar
 from sim_msgs.srv import Int, IntResponse
-import importlib
 from std_srvs.srv import Empty as EmptyS
 from std_srvs.srv import SetBool
 from sim_msgs.msg import Signal

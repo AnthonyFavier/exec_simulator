@@ -8,7 +8,7 @@
           <geometry>
             <empty/>
           </geometry>
-          <!-- <plugin name="CameraSimPlugin" filename="libCameraLockPlugin.so" /> -->
+          <plugin name="CameraSimPlugin" filename="libCameraLockPlugin.so" />
         </visual>
       </link>
     </model>

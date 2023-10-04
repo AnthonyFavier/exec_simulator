@@ -1,8 +1,8 @@
 <launch>
 
     <arg name="exec_regime" default="hf"/>
-    <arg name="esti_prefs" default="tee_tee"/>
-    <arg name="r_criteria" default="task_end_early"/>
+    <arg name="esti_prefs" default="tee_tee"/> <!-- deprecated -->
+    <arg name="r_criteria" default="human_min_work"/> <!-- human_free_early | task_end_early | human_min_work -->
 
     <rosparam command="load" file="/home/afavier/ws/HATPEHDA/domains_and_results/dom_name.p"/>
     <node name="exec_automaton" pkg="exec_automaton" type="exec_automaton.py" respawn="false" output="screen">

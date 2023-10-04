@@ -5,7 +5,7 @@ from sim_msgs.msg import Action
 import sys
 
 # stack_empiler | stack_empiler_1 | stack_empiler_2 | stack_box
-DOMAIN_NAME = "stack_box"
+DOMAIN_NAME = "stack_empiler_2"
 
 rospy.init_node('send_command')
 
