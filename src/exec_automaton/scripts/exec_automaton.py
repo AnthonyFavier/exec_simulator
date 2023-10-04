@@ -144,9 +144,13 @@ def execution_HF(begin_step: ConM.Step):
             look_at_human()
 
             if check_if_human_is_done(curr_step):
+                set_permanent_prompt_line("h_done")
                 rospy.loginfo("YOU ARE DONE, GO !!!!")
             elif check_if_human_can_leave(curr_step):
+                set_permanent_prompt_line("h_can_leave")
                 rospy.loginfo("YOU CAN LEAVE, GO !!!!!!")
+            else:
+                reset_permanent_prompt_line()
 
             send_NS_update_HAs(curr_step, VHA.NS)
             wait_human_decision(curr_step)
@@ -189,6 +193,7 @@ def execution_HF(begin_step: ConM.Step):
             time.sleep(0.1)
 
     log_event("OVER")
+    reset_permanent_prompt_line()
     prompt("task_done")
     reset_head()
     go_idle_pose_once()
@@ -955,7 +960,7 @@ def robot_visual_signal_cb(msg: Signal):
 ## PROMPT ##
 ############
 
-LANG = "ENG" # ENG | FR
+LANG = "FR" # ENG | FR
 
 g_prompt_messages = {
     "start_simu_delay": {
@@ -964,11 +969,11 @@ g_prompt_messages = {
         },
     "HF_idle_step_started": {
         "ENG": "You must act, I will wait.",
-        "FR":  "Vous devez agir, je vais patientier.",
+        "FR":  "Vous devez agir, je vais patienter.",
         },
     "RF_idle_step_started": {
         "ENG": "You must act, I will wait.",
-        "FR":  "Vous devez agir, je vais patientier.",
+        "FR":  "Vous devez agir, je vais patienter.",
         },
     "task_done": {
         "ENG": "The task done.",
@@ -1002,10 +1007,30 @@ g_prompt_messages = {
         "ENG": "I'm performing an action...",
         "FR":  "J'agis...",
         },
+    "reset_world":{
+        "ENG": "Resetting the world...",
+        "FR":  "Reinitialisation...",
+        },
+    "h_done":{
+        "ENG": "You are done.",
+        "FR":  "Vous avez terminé.",
+        },
+    "h_can_leave":{
+        "ENG": "I can finish alone.",
+        "FR":  "Je suis capable de terminer seul.",
+        },
 }
 
+g_permanent_prompt = ""
+g_start_extra = "  "
+def set_permanent_prompt_line(msg_id):
+    global g_permanent_prompt
+    g_permanent_prompt = g_start_extra + g_prompt_messages[msg_id][LANG] + "\n"
+def reset_permanent_prompt_line():
+    global g_permanent_prompt
+    g_permanent_prompt = ""
 def prompt(msg_id: str, extra=""):
-    g_prompt_pub.publish(String( "  " + g_prompt_messages[msg_id][LANG] + extra ))
+    g_prompt_pub.publish(String( g_permanent_prompt + g_start_extra + g_prompt_messages[msg_id][LANG] + extra ))
 
 ##########
 ## MAIN ##
