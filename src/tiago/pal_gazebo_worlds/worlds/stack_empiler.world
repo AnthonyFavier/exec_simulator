@@ -123,7 +123,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/blender/new_scene.dae</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/new_scene.dae</uri>
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
@@ -160,7 +160,7 @@
         <visual name='human_hand_link'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/blender/hand.dae</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/hand.dae</uri>
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>

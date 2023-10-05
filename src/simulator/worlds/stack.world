@@ -103,7 +103,8 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/blender/scene.dae</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/scene.dae</uri>
+              /home/afavier/new_exec_sim_ws/src/simulator/meshes/box.stl
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
@@ -139,8 +140,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/blender/robot_head.dae</uri>
-              <!-- <uri>/home/afavier/blender/robot_head.obj</uri> -->
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/robot_head.dae</uri>
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
@@ -694,7 +694,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/blender/box.stl</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/box.stl</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -734,7 +734,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/blender/box_lid.stl</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/box_lid.stl</uri>
               <scale>1 1 1</scale>
             </mesh>
           </geometry>
@@ -775,7 +775,7 @@
         <visual name='human_body_link'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/blender/human.dae</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/human.dae</uri>
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
@@ -811,7 +811,7 @@
         <visual name='human_hand_link'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/blender/hand.dae</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/hand.dae</uri>
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
