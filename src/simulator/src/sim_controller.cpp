@@ -1384,6 +1384,9 @@ void init_drop_zones()
     g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.20, 0.75)) );
     g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.35, 0.75)) );
     g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.50, 0.75)) );
+    g_center_drop_zones.push_back( DropZone(make_point(0.71, -0.20, 0.75)) );
+    g_center_drop_zones.push_back( DropZone(make_point(0.71, -0.35, 0.75)) );
+    g_center_drop_zones.push_back( DropZone(make_point(0.71, -0.50, 0.75)) );
 }
 
 class Cube
@@ -1571,15 +1574,18 @@ void DropCube(AGENT agent)
 
     // Find zone to drop
     geometry_msgs::Pose drop_pose;
-    for(unsigned int i=0; i<g_center_drop_zones.size(); i++)
+    for(auto it = g_center_drop_zones.begin(); it != g_center_drop_zones.end() ; it++)
     {
-        if(!g_center_drop_zones[i].isOccupied())
+        ROS_INFO_STREAM("Checking drop zone : " << (*it).getPose().position.x << "," << (*it).getPose().position.y << "," << (*it).getPose().position.z);
+        if( (*it).isOccupied() == false )
         {
             ROS_INFO("drop zone found!");
-            drop_pose = g_center_drop_zones[i].getPose();
-            g_center_drop_zones[i].setOccupied(true);
+            drop_pose = (*it).getPose();
+            (*it).setOccupied(true);
             break;
         }
+        else
+            ROS_INFO("Zone occupied...");
     }
     ROS_INFO("Drop pose = %f %f %f", drop_pose.position.x, drop_pose.position.y, drop_pose.position.z);
 
@@ -2070,6 +2076,10 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     // Reset g_cubes
     for (unsigned int i = 0; i < g_cubes.size(); i++)
         g_cubes[i].setOnTable(true);
+
+    // Reset Drop zones
+    for (auto it = g_center_drop_zones.begin(); it != g_center_drop_zones.end(); it++)
+        (*it).setOccupied(false);
 
     // Get world models
     gazebo_msgs::GetWorldProperties srv;
