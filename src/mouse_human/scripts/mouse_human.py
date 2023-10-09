@@ -161,6 +161,7 @@ def hide_all_zones(req = None):
     for z in g_zones.values():
         srv.model_state.model_name = f"z{z.id}"
         srv.model_state.pose = g_far_zone_pose
+        z.current_action_id = -10
         srv.model_state.reference_frame = "world" 
         g_set_model_state_client(srv)
     return EmptyResponse()
@@ -225,6 +226,9 @@ def mouse_pressed_cb(msg: Point):
         hide_all_zones()
         print("human decision sent")
 
+def TO_reached_cb(msg: EmptyM):
+    hide_all_zones()
+
 ##########
 ## MAIN ##
 ##########
@@ -236,6 +240,9 @@ def main():
 
     human_vha_sub = rospy.Subscriber("hmi_vha", VHA, incoming_vha_cb, queue_size=1)
     click_sub = rospy.Subscriber("/mouse_pressed_pose", Point, mouse_pressed_cb, queue_size=1)
+
+    
+    TO_reached = rospy.Subscriber("/hmi_timeout_reached", EmptyM, TO_reached_cb, queue_size=1)
 
     timeout_max_service = rospy.Service("hmi_timeout_max", Int, lambda req: IntResponse())
     r_idle_service = rospy.Service("hmi_r_idle", SetBool, lambda req: SetBoolResponse())
