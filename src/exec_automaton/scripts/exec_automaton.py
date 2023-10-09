@@ -120,7 +120,7 @@ def execution_HF(begin_step: ConM.Step):
     Main algorithm 
     """
     curr_step = get_first_step(begin_step)
-    while not exec_over(curr_step) and not rospy.is_shutdown():
+    while not exec_over(curr_step) and not rospy.is_shutdown() and not g_force_exec_stop:
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
@@ -187,6 +187,13 @@ def execution_HF(begin_step: ConM.Step):
             reset()
             time.sleep(0.1)
 
+    # if forced stop
+    if g_force_exec_stop:
+        prompt("force_stop")
+        reset_head()
+        go_idle_pose_once()
+        return -1, -1
+
     log_event("OVER")
     reset_permanent_prompt_line()
     prompt("task_done")
@@ -202,7 +209,7 @@ def execution_RF(begin_step: ConM.Step):
     Main algorithm 
     """
     curr_step = get_first_step(begin_step)
-    while not exec_over(curr_step) and not rospy.is_shutdown():
+    while not exec_over(curr_step) and not rospy.is_shutdown() and not g_force_exec_stop:
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
@@ -253,6 +260,13 @@ def execution_RF(begin_step: ConM.Step):
             reset()
             time.sleep(0.1)
 
+    # if forced stop
+    if g_force_exec_stop:
+        prompt("force_stop")
+        reset_head()
+        go_idle_pose_once()
+        return -1, -1
+
     log_event("OVER")
     prompt("task_done")
     reset_head()
@@ -269,7 +283,7 @@ def execution_TT(begin_step: ConM.Step):
     """
     curr_step = get_first_step(begin_step)
     robot_idle = False
-    while not exec_over_tt(curr_step) and not rospy.is_shutdown():
+    while not exec_over_tt(curr_step) and not rospy.is_shutdown() and not g_force_exec_stop:
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
@@ -359,6 +373,13 @@ def execution_TT(begin_step: ConM.Step):
 
             reset()
             time.sleep(0.1)
+
+    # if forced stop
+    if g_force_exec_stop:
+        prompt("force_stop")
+        reset_head()
+        go_idle_pose_once()
+        return -1, -1
 
     # Since we are in Turn Taking, each branch finishes with two IDLE action (Human and Robot ones)
     # We actually stop at the first of the two consecutive IDLE
@@ -1019,6 +1040,11 @@ def start_signal_cb(msg):
     global g_start_signal_received
     g_start_signal_received = True
 
+g_force_exec_stop = False
+def force_exec_stop_cb(msg):
+    global g_force_exec_stop
+    g_force_exec_stop = True
+
 ############
 ## PROMPT ##
 ############
@@ -1106,6 +1132,10 @@ g_prompt_messages = {
         "ENG": "Press Enter",
         "FR":  "Appuyez sur Entrée",
         },
+    "force_stop":{
+        "ENG": "Force Stop",
+        "FR":  "Force Stop",
+        },
 }
 
 g_permanent_prompt = ""
@@ -1133,6 +1163,7 @@ def main_exec():
     global INCREMENTAL_BAR_STR_WIDTH
     global g_domain_name
     global g_start_signal_received
+    global g_force_exec_stop
 
     # CONSTANTS #
     #   Delays 
@@ -1241,9 +1272,10 @@ def main_exec():
             id,r_rank = execution_TT(begin_step)
         else:
             raise Exception("unknown exec_regime.")
-        nb_sol = len(begin_step.get_final_leaves())
-        r_score = convert_rank_to_score(r_rank,nb_sol)
-        print(f"END: id={id}, r_score={r_score}")
+        if id!=-1 and r_rank!=-1:
+            nb_sol = len(begin_step.get_final_leaves())
+            r_score = convert_rank_to_score(r_rank,nb_sol)
+            print(f"END: id={id}, r_score=%.3f" % r_score)
 
         # Repeat loop
         while True:
@@ -1290,6 +1322,8 @@ if __name__ == "__main__":
 
     g_wait_start_signal_pub = rospy.Publisher("/wait_start_signal", EmptyM, queue_size=1)
     start_signal_sub = rospy.Subscriber('/start_signal', EmptyM, start_signal_cb)
+
+    force_exec_stop_sub = rospy.Subscriber('/force_exec_stop', EmptyM, force_exec_stop_cb)
     
     g_reset_world_client = rospy.ServiceProxy("/reset_world", EmptyS)
     g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
