@@ -2059,20 +2059,6 @@ void send_visual_signal_action_over(AGENT agent, sim_msgs::Action action)
 
 bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
-
-
-    // Reset robot head
-    sim_msgs::HeadCmd head_cmd;
-    head_cmd.type = sim_msgs::HeadCmd::RESET;
-    head_cmd_pub.publish(head_cmd);
-
-    // Home agents
-    home_agents();
-    action_received[AGENT::ROBOT] = false;
-    action_received[AGENT::HUMAN] = false;
-    action_done[AGENT::ROBOT] = false;
-    action_done[AGENT::HUMAN] = false;
-
     // Reset g_cubes
     for (unsigned int i = 0; i < g_cubes.size(); i++)
         g_cubes[i].setOnTable(true);
@@ -2112,6 +2098,17 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
         }
     }
 
+    // Reset robot head
+    sim_msgs::HeadCmd head_cmd;
+    head_cmd.type = sim_msgs::HeadCmd::RESET;
+    head_cmd_pub.publish(head_cmd);
+
+    // Home agents
+    home_agents();
+    action_received[AGENT::ROBOT] = false;
+    action_received[AGENT::HUMAN] = false;
+    action_done[AGENT::ROBOT] = false;
+    action_done[AGENT::HUMAN] = false;
 
     // Reset prompt
     std_msgs::String prompt_msg;
