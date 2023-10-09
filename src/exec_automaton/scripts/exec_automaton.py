@@ -1014,6 +1014,11 @@ def robot_visual_signal_cb(msg: Signal):
         g_robot_action_over = True
         rospy.loginfo("Robot action over.")
 
+g_start_signal_received = False
+def start_signal_cb(msg):
+    global g_start_signal_received
+    g_start_signal_received = True
+
 ############
 ## PROMPT ##
 ############
@@ -1093,6 +1098,14 @@ g_prompt_messages = {
         "ENG": "I let you proceed.",
         "FR":  "Je vous laisse faire.",
         },
+    "start_ready":{
+        "ENG": "READY TO START",
+        "FR":  "PRET A DEMARRER",
+        },
+    "start_press_enter":{
+        "ENG": "Press Enter",
+        "FR":  "Appuyez sur Entrée",
+        },
 }
 
 g_permanent_prompt = ""
@@ -1115,10 +1128,11 @@ def find_r_rank_of_id(steps, id):
             return s.get_f_leaf().branch_rank_r
 
 def main_exec():
-    global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY
+    global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY, TT_R_PASSIVE_DELAY
     global default_human_passive_action, default_robot_passive_action
     global INCREMENTAL_BAR_STR_WIDTH
     global g_domain_name
+    global g_start_signal_received
 
     # CONSTANTS #
     #   Delays 
@@ -1190,8 +1204,14 @@ def main_exec():
         exec_regime, begin_step = robots[robot_name]
 
         if INPUT:
-            rospy.loginfo("READY TO START, Press Enter to start...")
-            input()
+            rospy.loginfo("READY TO START, waiting for start signal...")
+            set_permanent_prompt_line("start_ready")
+            prompt("start_press_enter")
+            g_wait_start_signal_pub.publish(EmptyM())
+            while not rospy.is_shutdown() and not g_start_signal_received:
+                time.sleep(0.05)
+            reset_permanent_prompt_line()
+            g_start_signal_received = False
             
             bar = IncrementalBar(max = START_SIMU_DELAY)
             str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
@@ -1261,6 +1281,9 @@ if __name__ == "__main__":
     robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
     robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
 
+    g_wait_start_signal_pub = rospy.Publisher("/wait_start_signal", EmptyM, queue_size=1)
+    start_signal_sub = rospy.Subscriber('/start_signal', EmptyM, start_signal_cb)
+    
     g_reset_world_client = rospy.ServiceProxy("/reset_world", EmptyS)
     g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
     g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
