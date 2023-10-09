@@ -263,37 +263,81 @@ def execution_RF(begin_step: ConM.Step):
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
 
 def execution_TT(begin_step: ConM.Step):
-    global g_possible_human_actions
+    global g_possible_human_actions, g_robot_acting
     """
     Main algorithm 
     """
     curr_step = get_first_step(begin_step)
-    while not exec_over(curr_step) and not rospy.is_shutdown():
+    robot_idle = False
+    while not exec_over_tt(curr_step) and not rospy.is_shutdown():
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
-        look_at_human()
-
-        send_NS(VHA.NS)
-
         # identify acting agent
         p = curr_step.get_pairs()[0]
 
         # ROBOT TURN
         if p.human_action.is_wait_turn():
-            HA = p.human_action
-            RA = select_best_RA(curr_step)
-            start_execute_RA(RA)
+            set_permanent_prompt_line("robot_turn")
 
-            if not RA.is_passive():
-                wait_step_end()
+            if not curr_step.isRInactive():
+                robot_idle = False
+                go_home_pose_once()
+
+
+            HA = p.human_action # WAIT_TURN
+            RA = select_best_RA(curr_step)
+
+            if robot_idle:
+                look_at_human()
+                send_NS(VHA.NS_IDLE)
+                start_execute_RA(RA)
+                set_permanent_prompt_line("turn_idle")
+                prompt("TT_idle")
+
+                time.sleep(TT_R_PASSIVE_DELAY)
+                g_robot_acting = False
+
+            else:
+                send_NS(VHA.NS)
+                start_execute_RA(RA)
+                if RA.is_passive():
+                    prompt("robot_is_passive")
+                    time.sleep(TT_R_PASSIVE_DELAY)
+                    g_robot_acting = False
+                else:
+                    prompt("robot_is_acting")
+                    wait_step_end()
+
+            robot_should_go_idle = True
+            next_step = get_next_step(curr_step, HA, RA)
+            for next_pair in next_step.get_pairs():
+                next_next_step = get_next_step(next_step, next_pair.human_action, next_pair.robot_action)
+                if next_next_step!= None and not next_next_step.isRInactive():
+                    robot_should_go_idle = False
+                    break
+            if robot_should_go_idle:
+                robot_idle = True
+                go_idle_pose_once()
 
         # HUMAN TURN
         elif p.robot_action.is_wait_turn():
-            RA = p.robot_action
-            g_possible_human_actions = [ho.human_action for ho in curr_step.human_options]
-            send_vha(g_possible_human_actions, VHA.NS)
-            wait_human_decision(curr_step)
+            look_at_human()
+            set_permanent_prompt_line("human_turn")
+            RA = p.robot_action # WAIT
+
+            if robot_idle:
+                prompt("HF_idle_step_started")
+                send_NS(VHA.NS_IDLE)
+                look_at_human()
+                g_possible_human_actions = [ho.human_action for ho in curr_step.human_options]
+                send_vha(g_possible_human_actions, VHA.NS_IDLE)
+                wait_human_start_acting(curr_step)
+
+            else:
+                g_possible_human_actions = [ho.human_action for ho in curr_step.human_options]
+                send_vha(g_possible_human_actions, VHA.NS)
+                wait_human_decision(curr_step)
 
             HA = MOCK_assess_human_action()
             if not HA.is_passive():
@@ -316,7 +360,13 @@ def execution_TT(begin_step: ConM.Step):
             reset()
             time.sleep(0.1)
 
+    # Since we are in Turn Taking, each branch finishes with two IDLE action (Human and Robot ones)
+    # We actually stop at the first of the two consecutive IDLE
+    # Thus, the final step is actually the next one 
+    curr_step = curr_step.children[0]
+
     log_event("OVER")
+    reset_permanent_prompt_line()
     prompt("task_done")
     reset_head()
     go_idle_pose_once()
@@ -641,8 +691,11 @@ def get_executed_pair(step: ConM.Step, HA: CM.Action, RA: CM.Action):
 
 def get_next_step(step: ConM.Step, HA: CM.Action, RA: CM.Action):
     executed_pair = get_executed_pair(step, HA, RA)
-    first_next_pair = executed_pair.next[0]
-    return first_next_pair.get_in_step()
+    if executed_pair.next == []:
+        return None
+    else:
+        first_next_pair = executed_pair.next[0]
+        return first_next_pair.get_in_step()
 
 def convert_rank_to_score(rank, nb):
     return -1/(nb-1) * rank + nb/(nb-1)
@@ -668,6 +721,13 @@ def get_agents_before_step(step: ConM.Step):
 
 def exec_over(step):
     return step.is_final()
+
+def exec_over_tt(step):
+    pairs = step.get_pairs()
+    if len(pairs)==1 and (pairs[0].human_action.is_idle() or pairs[0].robot_action.is_idle()):
+        if len(pairs[0].next)==1 and (pairs[0].next[0].human_action.is_idle() or pairs[0].next[0].robot_action.is_idle()):
+            return True
+    return False
 
 def look_at_human():
     msg = HeadCmd()
@@ -703,7 +763,10 @@ def check_if_human_is_done(step):
 ## Select Robot Action ##
 #########################
 def select_best_RA(curr_step: ConM.Step) -> CM.Action:
-    return curr_step.best_robot_pair.robot_action
+    if curr_step.best_robot_pair.robot_action != None:
+        return curr_step.best_robot_pair.robot_action
+    else:
+        return default_robot_passive_action
 
 def select_best_RA_H_passive(curr_step: ConM.Step) -> CM.Action:
     for ho in curr_step.human_options:
@@ -1015,6 +1078,22 @@ g_prompt_messages = {
         "ENG": "I can finish alone.",
         "FR":  "Je suis capable de terminer seul.",
         },
+    "human_turn":{
+        "ENG": "It's your turn to act.",
+        "FR":  "C'est à votre tour d'agir.",
+        },
+    "robot_turn":{
+        "ENG": "It's my turn to act.",
+        "FR":  "C'est à mon tour d'agir.",
+        },
+    "turn_idle":{
+        "ENG": "I can't act.",
+        "FR":  "Je ne peux pas agir.",
+        },
+    "TT_idle":{
+        "ENG": "I let you proceed.",
+        "FR":  "Je vous laisse faire.",
+        },
 }
 
 g_permanent_prompt = ""
@@ -1048,6 +1127,7 @@ def main_exec():
     ESTIMATED_R_REACTION_TIME   = 0.3
     ID_DELAY                    = 1.0
     ASSESS_DELAY                = 0.2
+    TT_R_PASSIVE_DELAY          = 1.0
     #   Proba
     P_SUCCESS_ID_PHASE          = 1.0
 
