@@ -331,6 +331,7 @@ def execution_TT(begin_step: ConM.Step):
                     robot_should_go_idle = False
                     break
             if robot_should_go_idle:
+                prompt("going_idle")
                 robot_idle = True
                 go_idle_pose_once()
 
@@ -419,7 +420,7 @@ def send_NS_update_HAs(step: ConM.Step, type):
     #         if CM.Action.are_similar(ho.human_action, step.best_human_pair.human_action):
     #             best_ha.data = i+1
     #             break
-    # g_best_human_action.publish(best_ha)
+    # g_best_human_action_pub.publish(best_ha)
 
 def send_NS(type):
     sgl = Signal()
@@ -457,7 +458,7 @@ def passive_update_HAs(step: ConM.step, RA: CM.Action):
         #         if CM.Action.are_similar( ho.human_action, compliant_pairs[best_rank_i].human_action ):
         #             best_ha.data = i+1
         #             break
-        # g_best_human_action.publish(best_ha)
+        # g_best_human_action_pub.publish(best_ha)
 
 def find_compliant_pairs_with_RA(curr_step: ConM.Step, RA):
     compliant_pairs = []
@@ -1076,6 +1077,10 @@ g_prompt_messages = {
         "ENG": "I'm getting ready..",
         "FR":  "Je me prepare..",
         },
+    "going_idle": {
+        "ENG": "I'm getting ready..",
+        "FR":  "Je me prepare..",
+        },
     "wait_human_decision": {
         "ENG": "Act if you will.",
         "FR":  "Agissez si vous le souhaitez.",
@@ -1179,7 +1184,7 @@ def main_exec():
     HUMAN_UPDATING = False
 
     START_SIMU_DELAY            = 5.0
-    INCREMENTAL_BAR_STR_WIDTH = 26
+    INCREMENTAL_BAR_STR_WIDTH   = 26
 
     time.sleep(0.5)
 
@@ -1227,9 +1232,6 @@ def main_exec():
     ask_robot = True
     robot_name = ""
     while continuer:
-
-############################
-
         # Asking which robot to use?
         if ask_robot:
             while True:
@@ -1310,7 +1312,7 @@ if __name__ == "__main__":
     g_hmi_timeout_value_pub = rospy.Publisher('/hmi_timeout_value', Int32, queue_size=1)
     g_hmi_timeout_reached_pub = rospy.Publisher('/hmi_timeout_reached', EmptyM, queue_size=1)
     g_hmi_finish_pub = rospy.Publisher('/hmi_finish', EmptyM, queue_size=1)
-    g_best_human_action = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
+    g_best_human_action_pub = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
     g_event_log_pub = rospy.Publisher('/event_log', EventLog, queue_size=10)
     g_prompt_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
     g_head_cmd_pub = rospy.Publisher("/tiago_head_cmd", HeadCmd, queue_size=10)
