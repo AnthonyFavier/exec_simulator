@@ -735,6 +735,16 @@ def reset():
     step_over = False
     g_previous_elapsed = -1
 
+def full_reset():
+    global g_robot_acting, g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_start_signal_received
+    reset()
+    reset_permanent_prompt_line()
+    g_robot_acting = False
+    g_force_exec_stop = False
+    g_best_reachable_human_solution = None
+    g_best_reachable_human_solution_after_robot_choice = None
+    g_start_signal_received = False
+
 def get_first_step(begin_step: ConM.Step):
     if len(begin_step.children)!=1:
         raise Exception("begin_step should only have 1 child.")
@@ -1307,7 +1317,7 @@ def main_exec():
             else:
                 print("Unrecognized input, please answer again.")
 
-############################
+        full_reset()
 
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
