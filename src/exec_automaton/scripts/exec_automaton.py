@@ -1065,7 +1065,16 @@ def force_exec_stop_cb(msg):
 ############
 
 LANG = "FR" # ENG | FR
-
+g_permanent_prompt = ""
+g_prompt_start_extra = "  "
+def set_permanent_prompt_line(msg_id):
+    global g_permanent_prompt
+    g_permanent_prompt = g_prompt_start_extra + g_prompt_messages[msg_id][LANG] + "\n"
+def reset_permanent_prompt_line():
+    global g_permanent_prompt
+    g_permanent_prompt = ""
+def prompt(msg_id: str, extra=""):
+    g_prompt_pub.publish(String( g_permanent_prompt + g_prompt_start_extra + g_prompt_messages[msg_id][LANG] + extra ))
 g_prompt_messages = {
     "start_simu_delay": {
         "ENG":  "Starting in:",
@@ -1145,11 +1154,11 @@ g_prompt_messages = {
         },
     "start_ready":{
         "ENG": "READY TO START",
-        "FR":  "PRET A DEMARRER",
+        "FR":  "\t* Prêt à démarrer *",
         },
     "start_press_enter":{
         "ENG": "Press Enter",
-        "FR":  "Appuyez sur Entrée",
+        "FR":  "Cliquez ici puis appuyez sur 'Entrée'",
         },
     "force_stop":{
         "ENG": "Force Stop",
@@ -1161,16 +1170,6 @@ g_prompt_messages = {
         },
 }
 
-g_permanent_prompt = ""
-g_start_extra = "  "
-def set_permanent_prompt_line(msg_id):
-    global g_permanent_prompt
-    g_permanent_prompt = g_start_extra + g_prompt_messages[msg_id][LANG] + "\n"
-def reset_permanent_prompt_line():
-    global g_permanent_prompt
-    g_permanent_prompt = ""
-def prompt(msg_id: str, extra=""):
-    g_prompt_pub.publish(String( g_permanent_prompt + g_start_extra + g_prompt_messages[msg_id][LANG] + extra ))
 
 ##########
 ## MAIN ##
