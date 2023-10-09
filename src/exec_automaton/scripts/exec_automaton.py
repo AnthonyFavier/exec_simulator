@@ -628,10 +628,9 @@ def wait_human_decision(step: ConM.Step):
 def wait_step_end():
     global g_robot_acting
     rospy.loginfo("Waiting step end...")
-    text_updated = False
+    if not g_robot_acting:
+        prompt("wait_end_ha")
     while not rospy.is_shutdown() and not step_over:
-        if not text_updated and g_robot_action_over:
-            prompt("wait_end_ha")
         time.sleep(0.1)
 
     if human_active():
