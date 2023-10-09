@@ -1147,6 +1147,10 @@ def main_exec():
     default_robot_passive_action = CM.Action.create_passive("R", "PASS")
 
     ## LOADING ##
+    sol_tee =       None
+    sol_hmw =       None
+    sol_tt_tee =    None
+    sol_tt_hmw =    None
     sol_tee =       load("stack_empiler_2_tee.p")
     sol_hmw =       load("stack_empiler_2_hmw.p")
     sol_tt_tee =    load("stack_empiler_2_tt_tee.p")
@@ -1169,9 +1173,12 @@ def main_exec():
         "hf9" : ("hf", sol_tt_tee),
         "tt10": ("tt", sol_tt_tee),
     }
-    robot_name = input("Which robot? ")
-    if robot_name=="":
-        robot_name = "hf1"
+    while True:
+        robot_name = input("Which robot? ")
+        if robot_name in robots:
+            break
+        else:
+            print("robot name unknown...")
 
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
@@ -1211,17 +1218,22 @@ def main_exec():
             nb_sol = len(begin_step.get_final_leaves())
             r_score = convert_rank_to_score(r_rank,nb_sol)
             print(f"END: id={id}, r_score={r_score}")
-            in_choice = input("repeat? (y,robot_name,n)")
-            if in_choice=="y":
-                prompt("reset_world")
-                g_reset_world_client()
-                continue
-            elif in_choice=="n":
-                continuer = False
-            elif in_choice in ["hf1,rf2,hf3,rf4,hf5,rf6,hf7,tt8,hf9,tt10"]:
-                robot_name = in_choice
-                g_reset_world_client()
-                continue
+            while True:
+                in_choice = input("repeat? (y,robot_name,n) ")
+                print("in_choice ", in_choice)
+                if in_choice=="y":
+                    prompt("reset_world")
+                    g_reset_world_client()
+                    break
+                elif in_choice=="n":
+                    continuer = False
+                    break
+                elif in_choice in ["hf1","rf2","hf3","rf4","hf5","rf6","hf7","tt8","hf9","tt10"]:
+                    robot_name = in_choice
+                    g_reset_world_client()
+                    break
+                else:
+                    print("Unrecognized input, please answer again.")
 
         except WrongException as inst:
             lg.debug(f"Exception catched: {inst.args[0]}")
