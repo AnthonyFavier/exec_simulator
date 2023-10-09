@@ -350,9 +350,13 @@ def execution_TT(begin_step: ConM.Step):
                 wait_human_start_acting(curr_step)
 
             else:
-                g_possible_human_actions = [ho.human_action for ho in curr_step.human_options]
-                send_vha(g_possible_human_actions, VHA.NS)
-                wait_human_decision(curr_step)
+                if curr_step.isHInactive():
+                    prompt("h_can_t_act")
+                    time.sleep(TT_R_PASSIVE_DELAY)
+                else:
+                    g_possible_human_actions = [ho.human_action for ho in curr_step.human_options]
+                    send_vha(g_possible_human_actions, VHA.NS)
+                    wait_human_decision(curr_step)
 
             HA = MOCK_assess_human_action()
             if not HA.is_passive():
@@ -1140,6 +1144,10 @@ g_prompt_messages = {
     "force_stop":{
         "ENG": "Force Stop",
         "FR":  "Force Stop",
+        },
+    "h_can_t_act":{
+        "ENG": "You can't act, I proceed.",
+        "FR":  "Vous ne pouvez pas agir, je continue.",
         },
 }
 
