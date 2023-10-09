@@ -1294,6 +1294,7 @@ def main_exec():
             if in_choice=="1":
                 prompt("reset_world")
                 g_reset_world_client()
+                ask_robot = False
                 break
             elif in_choice=="2":
                 prompt("reset_world")
