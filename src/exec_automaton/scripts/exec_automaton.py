@@ -139,10 +139,10 @@ def execution_HF(begin_step: ConM.Step):
 
             if check_if_human_is_done(curr_step):
                 set_permanent_prompt_line("h_done")
-                rospy.loginfo("YOU ARE DONE, GO !!!!")
+                rospy.loginfo("You are done.")
             elif check_if_human_can_leave(curr_step):
                 set_permanent_prompt_line("h_can_leave")
-                rospy.loginfo("YOU CAN LEAVE, GO !!!!!!")
+                rospy.loginfo("You can leave.")
             else:
                 reset_permanent_prompt_line()
 
@@ -151,6 +151,7 @@ def execution_HF(begin_step: ConM.Step):
 
             ## 1 & 2 & 3 ##
             if human_active(): 
+                reset_permanent_prompt_line()
                 ## 1 & 2 ##
                 if ID_needed(curr_step): 
                     result_id = MOCK_run_id_phase(curr_step)
