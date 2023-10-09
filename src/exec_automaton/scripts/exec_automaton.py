@@ -1187,77 +1187,84 @@ def main_exec():
         "hf9" : ("hf", sol_tt_tee),
         "tt10": ("tt", sol_tt_tee),
     }
-    while True:
-        robot_name = input("Which robot? ")
-        if robot_name in robots:
-            break
-        else:
-            print("robot name unknown...")
 
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
     g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
 
     continuer = True
+    ask_robot = True
+    robot_name = ""
     while continuer:
-        
-        exec_regime, begin_step = robots[robot_name]
 
-        if INPUT:
-            rospy.loginfo("READY TO START, waiting for start signal...")
-            set_permanent_prompt_line("start_ready")
-            prompt("start_press_enter")
-            g_wait_start_signal_pub.publish(EmptyM())
-            while not rospy.is_shutdown() and not g_start_signal_received:
-                time.sleep(0.05)
-            reset_permanent_prompt_line()
-            g_start_signal_received = False
-            
-            bar = IncrementalBar(max = START_SIMU_DELAY)
-            str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
+############################
 
-            start_time = time.time()
-            while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
-                elapsed = time.time() - start_time
-
-                bar.goto(elapsed)
-                str_bar.goto(elapsed)
-                prompt("start_simu_delay", f"\n{str_bar.get_str()}")
-
-                time.sleep(0.05)
-
-        try:
-            if exec_regime == "hf":
-                id,r_rank = execution_HF(begin_step)
-            elif exec_regime == "rf":
-                id,r_rank = execution_RF(begin_step)
-            elif exec_regime == "tt":
-                id,r_rank = execution_TT(begin_step)
-            else:
-                raise Exception("unknown exec_regime.")
-            nb_sol = len(begin_step.get_final_leaves())
-            r_score = convert_rank_to_score(r_rank,nb_sol)
-            print(f"END: id={id}, r_score={r_score}")
+        # Asking which robot to use?
+        if ask_robot:
             while True:
-                in_choice = input("repeat? (y,robot_name,n) ")
-                print("in_choice ", in_choice)
-                if in_choice=="y":
-                    prompt("reset_world")
-                    g_reset_world_client()
-                    break
-                elif in_choice=="n":
-                    continuer = False
-                    break
-                elif in_choice in ["hf1","rf2","hf3","rf4","hf5","rf6","hf7","tt8","hf9","tt10"]:
-                    robot_name = in_choice
-                    g_reset_world_client()
+                robot_name = input("Which robot? ")
+                if robot_name in robots:
                     break
                 else:
-                    print("Unrecognized input, please answer again.")
+                    print("robot name unknown...")
 
-        except WrongException as inst:
-            lg.debug(f"Exception catched: {inst.args[0]}")
-            input()
+        # Load correct policy and exec_regime
+        exec_regime, begin_step = robots[robot_name]
+
+        # Wait for Start Signal from Prompt Window
+        rospy.loginfo("READY TO START, waiting for start signal...")
+        set_permanent_prompt_line("start_ready")
+        prompt("start_press_enter")
+        g_wait_start_signal_pub.publish(EmptyM())
+        while not rospy.is_shutdown() and not g_start_signal_received:
+            time.sleep(0.05)
+        reset_permanent_prompt_line()
+        g_start_signal_received = False
+        
+        # Start delay before beginning
+        bar = IncrementalBar(max = START_SIMU_DELAY)
+        str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
+        start_time = time.time()
+        while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
+            elapsed = time.time() - start_time
+            bar.goto(elapsed)
+            str_bar.goto(elapsed)
+            prompt("start_simu_delay", f"\n{str_bar.get_str()}")
+            time.sleep(0.05)
+
+        # Starting execution
+        if exec_regime == "hf":
+            id,r_rank = execution_HF(begin_step)
+        elif exec_regime == "rf":
+            id,r_rank = execution_RF(begin_step)
+        elif exec_regime == "tt":
+            id,r_rank = execution_TT(begin_step)
+        else:
+            raise Exception("unknown exec_regime.")
+        nb_sol = len(begin_step.get_final_leaves())
+        r_score = convert_rank_to_score(r_rank,nb_sol)
+        print(f"END: id={id}, r_score={r_score}")
+
+        # Repeat loop
+        while True:
+            in_choice = input("\nChoices:\n\t1- Repeat\n\t2- Change Robot\n\t3- Stop\nAnswer: ")
+            
+            if in_choice=="1":
+                prompt("reset_world")
+                g_reset_world_client()
+                break
+            elif in_choice=="2":
+                prompt("reset_world")
+                g_reset_world_client()
+                ask_robot = True
+                break
+            elif in_choice=="3":
+                continuer = False
+                break
+            else:
+                print("Unrecognized input, please answer again.")
+
+############################
 
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
