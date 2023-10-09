@@ -206,11 +206,11 @@ def execution_RF(begin_step: ConM.Step):
 
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
-        look_at_human()
 
         if curr_step.isRInactive():
             prompt("RF_idle_step_started")
             send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+            look_at_human()
             go_idle_pose_once()
             RA = select_valid_passive(curr_step)
             wait_human_start_acting(curr_step)
@@ -225,6 +225,7 @@ def execution_RF(begin_step: ConM.Step):
             passive_update_HAs(curr_step, RA)
 
             if RA.is_passive():
+                look_at_human()
                 start_waiting_time = time.time()
                 timeout_reached = True
                 while not rospy.is_shutdown() and time.time()-start_waiting_time<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
