@@ -1284,6 +1284,11 @@ def main_exec():
             str_bar.goto(elapsed)
             prompt("start_simu_delay", f"\n{str_bar.get_str()}")
             time.sleep(0.05)
+        bar.goto(bar.max)
+        str_bar.goto(str_bar.max)
+        bar.finish()
+        str_bar.finish()
+        prompt("start_simu_delay", f"\n{str_bar.get_str()}")
 
         # Starting execution
         if exec_regime == "hf":
