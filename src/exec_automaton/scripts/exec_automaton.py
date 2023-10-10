@@ -1257,6 +1257,12 @@ def main_exec():
 
         # Load correct policy and exec_regime
         exec_regime, begin_step = robots[robot_name]
+        if begin_step==None:
+            raise Exception("solution empty...")
+        
+        # Reset world
+        prompt("reset_world")
+        g_reset_world_client()
 
         # Wait for Start Signal from Prompt Window
         rospy.loginfo("READY TO START, waiting for start signal...")
