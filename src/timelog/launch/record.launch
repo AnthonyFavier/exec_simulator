@@ -1,0 +1,5 @@
+<launch>
+
+    <node name="timelog" pkg="timelog" type="timelog.py" args="record" respawn="false" output="screen"/>
+
+</launch>

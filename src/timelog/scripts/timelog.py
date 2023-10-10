@@ -337,7 +337,7 @@ if __name__ == "__main__":
     record = sys.argv[1] == "record"
 
     # ROS Startup
-    rospy.init_node('timeline_log')
+    rospy.init_node('timelog')
 
     # Subscribers
     log_sub = rospy.Subscriber('/event_log', EventLog, log_cb)
