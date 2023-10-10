@@ -225,24 +225,35 @@ def execution_RF(begin_step: ConM.Step):
             go_home_pose_once()
             
             RA = select_best_RA(curr_step)
-            start_execute_RA(RA)
 
-            send_NS(VHA.NS)
-            passive_update_HAs(curr_step, RA)
+            if not RA.is_passive():
+                start_execute_RA(RA, rf=True)
+                send_NS(VHA.NS)
+                passive_update_HAs(curr_step, RA)
 
-            if RA.is_passive():
+            elif RA.is_passive():
                 look_at_human()
+                send_NS(VHA.NS)
+                passive_update_HAs(curr_step, RA)
                 start_waiting_time = time.time()
-                timeout_reached = True
-                while not rospy.is_shutdown() and time.time()-start_waiting_time<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
-                    if g_human_decision!=None:
-                        timeout_reached = False
-                        break
-                time.sleep(0.1)
-                if timeout_reached:
-                    RA = select_best_active_RA(curr_step)
-                    start_execute_RA(RA)
-                    passive_update_HAs(curr_step, RA)
+                str_bar = IncrementalBarStr(max = TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
+                log_event("R_S_RF_WAIT_H")
+                while not rospy.is_shutdown() and time.time()-start_waiting_time<str_bar.max and g_human_decision==None:
+                    elapsed = time.time() - start_waiting_time
+                    str_bar.goto(elapsed)
+                    prompt("rf_r_passif", f"\n{str_bar.get_str()}")
+                    time.sleep(0.05)
+                str_bar.goto(str_bar.max)
+                str_bar.finish()
+                prompt("rf_r_passif", f"\n{str_bar.get_str()}")
+                g_hmi_timeout_reached_pub.publish(EmptyM())
+                if g_human_decision==None:
+                    time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
+                    if g_human_decision==None:
+                        RA = select_best_active_RA(curr_step)
+                log_event("R_E_RF_WAIT_H")
+                start_execute_RA(RA, rf=True)
+
                   
         wait_step_end()
         
@@ -592,43 +603,37 @@ def wait_human_decision(step: ConM.Step):
     rospy.loginfo("Waiting for human to act...")
 
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
-    # str_bar = StrBar(max=TIMEOUT_DELAY, width=15)
     str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
 
     start_waiting_time = time.time()
-
-    timeout_reached = True
-    if step.isHInactive():
-        timeout_reached = False 
-    
-    while not rospy.is_shutdown() and not step.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY+ESTIMATED_R_REACTION_TIME:
+    while not rospy.is_shutdown() and not step.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY and g_human_decision==None:
         elapsed = time.time()-start_waiting_time
 
         # Update progress bars
         bar.goto(elapsed)
-        update_hmi_timeout_progress(elapsed)
         str_bar.goto(elapsed)
         prompt("wait_human_decision", f"\n{str_bar.get_str()}")
-
-        # Check termination condition
-        if g_human_decision!=None:
-            timeout_reached = False
-            break
 
         # Loop rate
         time.sleep(0.1)
 
     # Finish progress bars
+    g_hmi_timeout_reached_pub.publish(EmptyM())
     bar.goto(bar.max)
-    str_bar.goto(str_bar.max)
-    update_hmi_timeout_progress(TIMEOUT_DELAY)
     bar.finish()
+    str_bar.goto(str_bar.max)
     str_bar.finish()
+    prompt("wait_human_decision", f"\n{str_bar.get_str()}")
+
+    # Check if timeout reached
+    timeout_reached = False 
+    if not step.isHInactive() and g_human_decision==None:
+        time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
+        if g_human_decision==None:
+            timeout_reached = True
     
     # If Timeout Reached
     if timeout_reached:
-        g_hmi_timeout_reached_pub.publish(EmptyM()) # Rename with step started
-    if g_human_decision==None:
         rospy.loginfo("Timeout reached, human not acting...")
         prompt("wait_h_decision_timeout")
         sgl = Signal()
@@ -650,10 +655,11 @@ def wait_human_decision(step: ConM.Step):
 
 def wait_step_end():
     global g_robot_acting
+    log_event("R_S_WAIT_STEP_END")
     rospy.loginfo("Waiting step end...")
-    if not g_robot_acting:
-        prompt("wait_end_ha")
     while not rospy.is_shutdown() and not step_over:
+        if g_robot_action_over:
+            prompt("wait_end_ha")
         time.sleep(0.1)
 
     if human_active():
@@ -957,7 +963,7 @@ def send_vha(valid_human_actions: list[CM.Action], type):
     g_update_VHA_pub.publish(msg)
 
 g_robot_acting = False
-def start_execute_RA(RA: CM.Action):
+def start_execute_RA(RA: CM.Action, rf=False):
     global g_robot_acting
     g_robot_acting = True
     rospy.loginfo(f"Execute Robot Action {RA}")
@@ -965,7 +971,10 @@ def start_execute_RA(RA: CM.Action):
     if RA.is_passive():
         prompt("robot_is_passive")
     else:
-        prompt("robot_is_acting")
+        if rf:
+            prompt("rf_robot_acting")
+        else:
+            prompt("robot_is_acting")
 
     msg = compute_msg_action(RA)
     g_robot_action_pub.publish(msg)
@@ -1015,7 +1024,7 @@ hidden_HC = None
 def human_visual_signal_cb(msg: Signal):
     global hidden_HC, g_human_decision
 
-    print(f"\nCB human visual signal: {msg}")
+    print(f"\nCB human visual signal: id: {msg.id} type: {msg.type}")
 
     time.sleep(ESTIMATED_R_REACTION_TIME)
 
@@ -1165,8 +1174,15 @@ g_prompt_messages = {
         "ENG": "You can't act, I proceed.",
         "FR":  "Vous ne pouvez pas agir, je continue.",
         },
+    "rf_r_passif":{
+        "ENG": "I prefer you to act\n" + g_prompt_start_extra + "but I can act myself.",
+        "FR":  "Je prefère que vous agissiez\n" + g_prompt_start_extra + "mais je peux agir moi même.",
+        },
+    "rf_robot_acting":{
+        "ENG": "I'm performing an action\n" + g_prompt_start_extra + "You can act in parallel.",
+        "FR":  "J'agis...\n" + g_prompt_start_extra + "Vous pouvez agir en même temps.",
+        },
 }
-
 
 ##########
 ## MAIN ##
@@ -1191,14 +1207,14 @@ def main_exec():
     ID_DELAY                    = 1.0
     ASSESS_DELAY                = 0.2
     TT_R_PASSIVE_DELAY          = 1.0
+    START_SIMU_DELAY            = 2.0
+    INCREMENTAL_BAR_STR_WIDTH   = 26
     #   Proba
     P_SUCCESS_ID_PHASE          = 1.0
 
 
     HUMAN_UPDATING = False
 
-    START_SIMU_DELAY            = 5.0
-    INCREMENTAL_BAR_STR_WIDTH   = 26
 
     time.sleep(0.5)
 
