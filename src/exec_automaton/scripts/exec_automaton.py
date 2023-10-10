@@ -191,7 +191,6 @@ def execution_HF(begin_step: ConM.Step):
     if g_force_exec_stop:
         prompt("force_stop")
         reset_head()
-        go_idle_pose_once()
         return -1, -1
 
     log_event("OVER")
@@ -264,7 +263,6 @@ def execution_RF(begin_step: ConM.Step):
     if g_force_exec_stop:
         prompt("force_stop")
         reset_head()
-        go_idle_pose_once()
         return -1, -1
 
     log_event("OVER")
@@ -383,7 +381,6 @@ def execution_TT(begin_step: ConM.Step):
     if g_force_exec_stop:
         prompt("force_stop")
         reset_head()
-        go_idle_pose_once()
         return -1, -1
 
     # Since we are in Turn Taking, each branch finishes with two IDLE action (Human and Robot ones)
