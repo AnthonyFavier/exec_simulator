@@ -286,7 +286,7 @@ def execution_RF(begin_step: ConM.Step):
     return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
 
 def execution_TT(begin_step: ConM.Step):
-    global g_possible_human_actions, g_robot_acting
+    global g_possible_human_actions
     """
     Main algorithm 
     """
@@ -319,7 +319,6 @@ def execution_TT(begin_step: ConM.Step):
                 prompt("TT_idle")
 
                 time.sleep(TT_R_PASSIVE_DELAY)
-                g_robot_acting = False
 
             else:
                 send_NS(VHA.NS, Signal.ROBOT_TURN)
@@ -327,7 +326,6 @@ def execution_TT(begin_step: ConM.Step):
                 if RA.is_passive():
                     prompt("robot_is_passive")
                     time.sleep(TT_R_PASSIVE_DELAY)
-                    g_robot_acting = False
                 else:
                     prompt("robot_is_acting")
                     wait_step_end()
@@ -662,11 +660,10 @@ def wait_human_decision(step: ConM.Step):
     return human_acting
 
 def wait_step_end():
-    global g_robot_acting
     log_event("R_S_WAIT_STEP_END")
     rospy.loginfo("Waiting step end...")
     while not rospy.is_shutdown() and not step_over:
-        if g_robot_action_over:
+        if not g_robot_acting:
             prompt("wait_end_ha")
         time.sleep(0.1)
 
@@ -674,7 +671,6 @@ def wait_step_end():
         # Because step_over isn't sent as a human visual signal....
         time.sleep(ESTIMATED_R_REACTION_TIME)
 
-    g_robot_acting = False
     rospy.loginfo("Current step is over.")
     log_event("R_E_WAIT_STEP_END")
 
@@ -738,18 +734,17 @@ def convert_rank_to_score(rank, nb):
     return rank
 
 def reset():
-    global g_possible_human_actions, g_robot_action_over, step_over, g_previous_elapsed, g_new_human_decision
+    global g_possible_human_actions, step_over, g_previous_elapsed, g_new_human_decision, g_robot_acting
     g_possible_human_actions = []
-    g_robot_action_over = False
     g_new_human_decision = None
     step_over = False
     g_previous_elapsed = -1
+    g_robot_acting = False
 
 def full_reset():
-    global g_robot_acting, g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_start_signal_received
+    global g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_start_signal_received
     reset()
     reset_permanent_prompt_line()
-    g_robot_acting = False
     g_force_exec_stop = False
     g_best_reachable_human_solution = None
     g_best_reachable_human_solution_after_robot_choice = None
@@ -972,12 +967,13 @@ def send_vha(valid_human_actions: list[CM.Action], type):
 g_robot_acting = False
 def start_execute_RA(RA: CM.Action, rf=False):
     global g_robot_acting
-    g_robot_acting = True
     rospy.loginfo(f"Execute Robot Action {RA}")
 
     if RA.is_passive():
+        g_robot_acting = False
         prompt("robot_is_passive")
     else:
+        g_robot_acting = True
         if rf:
             prompt("rf_robot_acting")
         else:
@@ -1053,11 +1049,10 @@ def human_visual_signal_cb(msg: Signal):
         g_new_human_decision = g_possible_human_actions[msg.id-1]
         rospy.loginfo(f"\nHuman visual S_HA")
 
-g_robot_action_over = False
 def robot_visual_signal_cb(msg: Signal):
-    global g_robot_action_over
+    global g_robot_acting
     if msg.type == Signal.E_RA:
-        g_robot_action_over = True
+        g_robot_acting = False
         rospy.loginfo("Robot action over.")
 
 g_start_signal_received = False
