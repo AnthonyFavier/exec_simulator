@@ -238,7 +238,7 @@ def execution_RF(begin_step: ConM.Step):
                 start_waiting_time = time.time()
                 str_bar = IncrementalBarStr(max = TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
                 log_event("R_S_RF_WAIT_H")
-                while not rospy.is_shutdown() and time.time()-start_waiting_time<str_bar.max and g_human_decision==None:
+                while not rospy.is_shutdown() and time.time()-start_waiting_time<str_bar.max and g_new_human_decision==None:
                     elapsed = time.time() - start_waiting_time
                     str_bar.goto(elapsed)
                     prompt("rf_r_passif", f"\n{str_bar.get_str()}")
@@ -247,9 +247,9 @@ def execution_RF(begin_step: ConM.Step):
                 str_bar.finish()
                 prompt("rf_r_passif", f"\n{str_bar.get_str()}")
                 g_hmi_timeout_reached_pub.publish(EmptyM())
-                if g_human_decision==None:
+                if g_new_human_decision==None:
                     time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
-                    if g_human_decision==None:
+                    if g_new_human_decision==None:
                         RA = select_best_active_RA(curr_step)
                 log_event("R_E_RF_WAIT_H")
                 start_execute_RA(RA, rf=True)
@@ -540,7 +540,7 @@ def MOCK_run_id_phase(step: ConM.Step):
     time.sleep(ID_DELAY)
     if random.random()<P_SUCCESS_ID_PHASE:
         rospy.loginfo("ID Success")
-        id_result = hidden_HC
+        id_result = g_new_human_decision
     else:
         rospy.loginfo("ID failed...")
         id_result = None
@@ -550,26 +550,26 @@ def MOCK_run_id_phase(step: ConM.Step):
     return id_result
 
 def MOCK_assess_human_action() -> CM.Action:
-    global hidden_HC
+    global g_new_human_decision
     # If Human didn't choose, we try to find passive human action
     log_event("R_S_ASSESS")
 
-    if hidden_HC==None:
+    if g_new_human_decision==None:
         for ha in g_possible_human_actions:
             if ha.is_passive():
-                hidden_HC = ha
+                g_new_human_decision = ha
                 break
         # If didn't find passive HA
-        if hidden_HC==None: 
+        if g_new_human_decision==None: 
             rospy.loginfo("Inactive step...")
-            hidden_HC = default_human_passive_action
+            g_new_human_decision = default_human_passive_action
     else:
-        rospy.loginfo(f"Assessed Human action: {hidden_HC}")
+        rospy.loginfo(f"Assessed Human action: {g_new_human_decision}")
 
     time.sleep(ASSESS_DELAY)
     log_event("R_E_ASSESS")
     
-    return hidden_HC
+    return g_new_human_decision
 
 
 #######################################
@@ -598,7 +598,7 @@ def wait_human_start_acting(step: ConM.Step):
     rospy.loginfo("Waiting for human to act...")
     log_event("R_S_WAIT_HSA")
     while not rospy.is_shutdown():
-        if hidden_HC!=None:
+        if g_new_human_decision!=None:
             break
         time.sleep(0.1)
 
@@ -614,7 +614,7 @@ def wait_human_decision(step: ConM.Step):
     str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
 
     start_waiting_time = time.time()
-    while not rospy.is_shutdown() and not step.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY and g_human_decision==None:
+    while not rospy.is_shutdown() and not step.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY and g_new_human_decision==None:
         elapsed = time.time()-start_waiting_time
 
         # Update progress bars
@@ -635,9 +635,9 @@ def wait_human_decision(step: ConM.Step):
 
     # Check if timeout reached
     timeout_reached = False 
-    if not step.isHInactive() and g_human_decision==None:
+    if not step.isHInactive() and g_new_human_decision==None:
         time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
-        if g_human_decision==None:
+        if g_new_human_decision==None:
             timeout_reached = True
     
     # If Timeout Reached
@@ -651,7 +651,7 @@ def wait_human_decision(step: ConM.Step):
     # Visual signal received, either PASS or Start Action
     else:
         rospy.loginfo("Step start detected!")
-        if g_human_decision.type == Signal.H_PASS:
+        if g_new_human_decision.is_pass():
             rospy.loginfo("Human not acting...")
             human_acting = False
         else:
@@ -689,7 +689,7 @@ def log_event(name):
     g_event_log_pub.publish(msg)
 
 def human_active():
-    return hidden_HC!=None and not hidden_HC.is_passive()
+    return g_new_human_decision!=None and not g_new_human_decision.is_passive()
 
 def ID_needed(step: ConM.Step):
     best_ra = step.human_options[0].best_robot_pair.robot_action
@@ -738,11 +738,10 @@ def convert_rank_to_score(rank, nb):
     return rank
 
 def reset():
-    global hidden_HC, g_possible_human_actions, g_robot_action_over, g_human_decision, step_over, g_previous_elapsed
-    hidden_HC = None
+    global g_possible_human_actions, g_robot_action_over, step_over, g_previous_elapsed, g_new_human_decision
     g_possible_human_actions = []
     g_robot_action_over = False
-    g_human_decision = None
+    g_new_human_decision = None
     step_over = False
     g_previous_elapsed = -1
 
@@ -1027,10 +1026,9 @@ def start_human_action_server(req: IntRequest):
 
     return IntResponse()
 
-g_human_decision = None
-hidden_HC = None
+g_new_human_decision = None # type: CM.Action | None
 def human_visual_signal_cb(msg: Signal):
-    global hidden_HC, g_human_decision
+    global g_new_human_decision
 
     print(f"\nCB human visual signal: id: {msg.id} type: {msg.type}")
 
@@ -1047,14 +1045,12 @@ def human_visual_signal_cb(msg: Signal):
         if pass_ha==None: # Pass ha not found
             # double skip, should repeat 
             pass_ha = default_human_passive_action
-        hidden_HC = pass_ha
-        g_human_decision = msg
+        g_new_human_decision = pass_ha
         rospy.loginfo(f"\nHuman visual : PASS")
 
     # Regular action
     elif msg.type == Signal.S_HA:
-        hidden_HC = g_possible_human_actions[msg.id-1]
-        g_human_decision = msg
+        g_new_human_decision = g_possible_human_actions[msg.id-1]
         rospy.loginfo(f"\nHuman visual S_HA")
 
 g_robot_action_over = False
