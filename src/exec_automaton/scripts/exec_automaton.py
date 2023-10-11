@@ -1247,11 +1247,11 @@ def main_exec():
         "hf5" : ("hf", sol_hmw),
         "rf6" : ("rf", sol_hmw),
 
-        "hf7" : ("hf", sol_tt_hmw),
-        "tt8" : ("tt", sol_tt_hmw),
+        "hf7" : ("hf", sol_tee),
+        "tt8" : ("tt", sol_tt_tee),
 
-        "hf9" : ("hf", sol_tt_tee),
-        "tt10": ("tt", sol_tt_tee),
+        "hf9" : ("hf", sol_hmw),
+        "tt10": ("tt", sol_tt_hmw),
     }
 
     rospy.loginfo("Wait for hmi to be started...")
