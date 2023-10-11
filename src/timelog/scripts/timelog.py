@@ -130,7 +130,12 @@ def r_sgl_cb(sgl: Signal):
         # t = rospy.get_time()
         t = time.time()
         g_r_signals.append( LogSignal(g_r_signals_names[sgl.type][0], t, sgl.type, g_r_signals_names[sgl.type][1], g_r_signals_names[sgl.type][2]) )
-        g_events.append( Event("SGL_"+g_r_signals_names[sgl.type][0], t) )
+        event_name = g_r_signals_names[sgl.type][0]
+        if sgl.turn == Signal.ROBOT_TURN:
+            event_name += "_ROBOT_TURN"
+        elif sgl.turn == Signal.HUMAN_TURN:
+            event_name += "_HUMAN_TURN"
+        g_events.append( Event("SGL_"+event_name, t) )
 def h_sgl_cb(sgl: Signal):
     global g_h_signals
 

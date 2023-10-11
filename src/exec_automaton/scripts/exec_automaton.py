@@ -313,7 +313,7 @@ def execution_TT(begin_step: ConM.Step):
 
             if robot_idle:
                 look_at_human()
-                send_NS(VHA.NS_IDLE)
+                send_NS(VHA.NS_IDLE, Signal.ROBOT_TURN)
                 start_execute_RA(RA)
                 set_permanent_prompt_line("turn_idle")
                 prompt("TT_idle")
@@ -322,7 +322,7 @@ def execution_TT(begin_step: ConM.Step):
                 g_robot_acting = False
 
             else:
-                send_NS(VHA.NS)
+                send_NS(VHA.NS, Signal.ROBOT_TURN)
                 start_execute_RA(RA)
                 if RA.is_passive():
                     prompt("robot_is_passive")
@@ -352,13 +352,14 @@ def execution_TT(begin_step: ConM.Step):
 
             if robot_idle:
                 prompt("HF_idle_step_started")
-                send_NS(VHA.NS_IDLE)
+                send_NS(VHA.NS_IDLE, Signal.HUMAN_TURN)
                 look_at_human()
                 g_possible_human_actions = [ho.human_action for ho in curr_step.human_options]
                 send_vha(g_possible_human_actions, VHA.NS_IDLE)
                 wait_human_start_acting(curr_step)
 
             else:
+                send_NS(VHA.NS, Signal.HUMAN_TURN)
                 if curr_step.isHInactive():
                     prompt("h_can_t_act")
                     time.sleep(TT_R_PASSIVE_DELAY)
@@ -434,7 +435,7 @@ def send_NS_update_HAs(step: ConM.Step, type):
     #             break
     # g_best_human_action_pub.publish(best_ha)
 
-def send_NS(type):
+def send_NS(type, turn=None):
     sgl = Signal()
     if type==VHA.NS:
         sgl.type = Signal.NS
@@ -442,6 +443,13 @@ def send_NS(type):
         sgl.type = Signal.NS_IDLE
     else:
         raise Exception("Invalid type to send NS signal")
+    
+    if turn==None:
+        pass
+    elif turn in [Signal.ROBOT_TURN, Signal.HUMAN_TURN]:
+        sgl.turn = turn
+    else:
+        raise Exception("Invalid turn")
     robot_visual_signal_pub.publish(sgl)
 
 def passive_update_HAs(step: ConM.step, RA: CM.Action):
