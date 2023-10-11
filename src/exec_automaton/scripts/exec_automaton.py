@@ -243,9 +243,6 @@ def execution_RF(begin_step: ConM.Step):
                     str_bar.goto(elapsed)
                     prompt("rf_r_passif", f"\n{str_bar.get_str()}")
                     time.sleep(0.05)
-                str_bar.goto(str_bar.max)
-                str_bar.finish()
-                prompt("rf_r_passif", f"\n{str_bar.get_str()}")
                 g_hmi_timeout_reached_pub.publish(EmptyM())
                 if g_new_human_decision==None:
                     time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
@@ -623,14 +620,6 @@ def wait_human_decision(step: ConM.Step):
 
         # Loop rate
         time.sleep(0.1)
-
-    # Finish progress bars
-    g_hmi_timeout_reached_pub.publish(EmptyM())
-    bar.goto(bar.max)
-    bar.finish()
-    str_bar.goto(str_bar.max)
-    str_bar.finish()
-    prompt("wait_human_decision", f"\n{str_bar.get_str()}")
 
     # Check if timeout reached
     timeout_reached = False 
