@@ -128,8 +128,8 @@ def execution_HF(begin_step: ConM.Step):
         if curr_step.isRInactive():
             prompt("HF_idle_step_started")
             send_NS_update_HAs(curr_step, VHA.NS_IDLE)
-            look_at_human()
             go_idle_pose_once()
+            look_at_human()
             RA = select_valid_passive(curr_step)
             wait_human_start_acting(curr_step)
 
@@ -216,8 +216,8 @@ def execution_RF(begin_step: ConM.Step):
         if curr_step.isRInactive():
             prompt("RF_idle_step_started")
             send_NS_update_HAs(curr_step, VHA.NS_IDLE)
-            look_at_human()
             go_idle_pose_once()
+            look_at_human()
             RA = select_valid_passive(curr_step)
             wait_human_start_acting(curr_step)
 
@@ -338,8 +338,8 @@ def execution_TT(begin_step: ConM.Step):
                     robot_should_go_idle = False
                     break
             if robot_should_go_idle:
-                prompt("going_idle")
                 robot_idle = True
+                prompt("going_idle")
                 go_idle_pose_once()
 
         # HUMAN TURN
@@ -577,6 +577,7 @@ R_idle = False
 def go_idle_pose_once():
     global R_idle
     if not R_idle:
+        reset_head()
         g_hmi_r_idle_client.call(True)
         g_go_idle_pose_client.call()
         R_idle = True
@@ -584,10 +585,10 @@ def go_home_pose_once():
     global R_idle
     if R_idle:
         prompt("out_of_idle")
+        reset_head()
         g_hmi_r_idle_client.call(False)
         g_go_home_pose_client.call()
         R_idle = False
-
 
 #######################
 ## Waiting Functions ##
