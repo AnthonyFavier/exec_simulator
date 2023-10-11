@@ -1263,19 +1263,21 @@ def main_exec():
     robot_name = ""
     while continuer:
         # Asking which robot to use?
+        exec_regime = None
+        begin_step = None 
         if ask_robot:
             while True:
                 robot_name = input("Which robot? ")
                 if robot_name in robots:
-                    break
+                    # Load correct policy and exec_regime
+                    exec_regime, begin_step = robots[robot_name]
+                    if begin_step!=None:
+                        break
+                    else:
+                        print("Solution empty...")
                 else:
                     print("robot name unknown...")
 
-        # Load correct policy and exec_regime
-        exec_regime, begin_step = robots[robot_name]
-        if begin_step==None:
-            raise Exception("solution empty...")
-        
         # Reset world
         prompt("reset_world")
         g_reset_world_client()
@@ -1325,13 +1327,9 @@ def main_exec():
             in_choice = input("\nChoices:\n\t1- Repeat\n\t2- Change Robot\n\t3- Stop\nAnswer: ")
             
             if in_choice=="1":
-                prompt("reset_world")
-                g_reset_world_client()
                 ask_robot = False
                 break
             elif in_choice=="2":
-                prompt("reset_world")
-                g_reset_world_client()
                 ask_robot = True
                 break
             elif in_choice=="3":
