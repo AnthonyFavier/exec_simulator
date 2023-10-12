@@ -227,8 +227,8 @@ def execution_RF(begin_step: ConM.Step):
             RA = select_best_RA(curr_step)
 
             if not RA.is_passive():
-                start_execute_RA(RA, rf=True)
                 send_NS(VHA.NS)
+                start_execute_RA(RA, rf=True)
                 passive_update_HAs(curr_step, RA)
 
             elif RA.is_passive():
@@ -363,9 +363,9 @@ def execution_TT(begin_step: ConM.Step):
                     send_vha(g_possible_human_actions, VHA.NS)
                     wait_human_decision(curr_step)
 
-            HA = MOCK_assess_human_action()
-            if not HA.is_passive():
+            if human_active():
                 wait_step_end()
+            HA = MOCK_assess_human_action()
 
         else:
             raise Exception("Unable to identify acting agent")
@@ -446,6 +446,7 @@ def send_NS(type, turn=None):
     else:
         raise Exception("Invalid turn")
     robot_visual_signal_pub.publish(sgl)
+    time.sleep(0.001)
 
 def passive_update_HAs(step: ConM.step, RA: CM.Action):
     global g_possible_human_actions
