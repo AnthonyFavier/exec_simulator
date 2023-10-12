@@ -148,22 +148,26 @@ def h_sgl_cb(sgl: Signal):
         g_events.append( Event("SGL_"+g_h_signals_names[sgl.type][0], t) )
 
 # Activities Extraction
-g_r_activities_names = { # act_name : [display_name, shape_color, text_color]
-    "wait_hc":          ["Wait H",              "yellow",       "black"],
-    "idle_wait_h":      ["Passive\nWait HA",    "silver",       "black"],
-    "wait_end_ha":      ["Wait E_HA",           "forestgreen",  "white"],
-    "id":               ["ID Phase",            "lightgreen",   "black"],
-    "sa":               ["SA",                  "lightgreen",   "black"],
-    "plan_mvt":         ["Plan Mvt",            "silver",       "black"],
-    "grns":             ["GRNS",                "silver",       "black"],
+g_r_activities_names = { 
+    # act_name :            [display_name,                  shape_color,            text_color]
+    "rf_wait_h":            ["Wait H",                      "yellow",               "black"],
+    "wait_hc":              ["Wait H",                      "yellow",               "black"],
+    "plan_mvt":             ["Plan Mvt",                    "silver",               "black"],
+    "idle_wait_h":          ["Passive\nWait HA",            "silver",               "black"],
+    "grns":                 ["GRNS",                        "silver",               "black"],
+    "id":                   ["ID Phase",                    "lightgreen",           "black"],
+    "sa":                   ["SA",                          "lightgreen",           "black"],
+    "wait_end_step":        ["Wait End Step",               "forestgreen",          "white"],
+    "passive":              ["Pass",                        "lightgrey",           "black"],
+    "wait_turn":            ["Wait Turn",                   "lightgrey",           "black"],
 }
-g_h_activities_names = { # act_name : [display_name, shape_color, text_color]
-    "idle_wait_ns":         ["Wait NS",             "forestgreen",   "white"],
-    "idle_pass_wait_ns":    ["Wait NS",             "forestgreen",   "white"],
-    "idle_wait_wait_ns":    ["Wait NS",             "forestgreen",   "white"],
-    "idle_wait_compliant":  ["Passive\nNo Signal",  "lightgrey",     "black"],
-    "idle_pass_compliant":  ["Passive\nPASS",       "lightgrey",     "black"],
-    "start_delay":          ["Decision",            "yellow",        "black"],
+g_h_activities_names = { 
+    # act_name :            [display_name,                  shape_color,            text_color]
+    "start_delay":          ["Decision",                    "yellow",               "black"],
+    "passive":              ["Passive\nNo Signal",          "lightgrey",            "black"],
+    "pass":                 ["Passive\nWith Signal",        "lightgrey",            "black"],
+    "wait_ns":              ["Wait NS",                     "forestgreen",          "white"],
+    "wait_turn":            ["Wait Turn",                   "lightgrey",            "black"],
 }
 def r_extract_activities():
     global g_events, g_r_activities
@@ -173,150 +177,298 @@ def r_extract_activities():
     while e.name[:6]!="SGL_NS":
         i+=1
         e = g_events[i]
-    while True:
-
-        if e.name == "SGL_NS":
-            
-            t1 = e.stamp
-            while e.name!="R_E_WAIT_HC":
-                i+=1
-                e = g_events[i]
-            tsplan = e.stamp
-            g_r_activities.append( Activity("wait_hc", t1, tsplan) )
-
-            while e.name[:4]!="S_RA" and e.name!="SGL_R_PASS" and e.name!="R_E_ID":
-                i+=1
-                e = g_events[i]
-                
-            if e.name=="R_E_ID":
-                g_r_activities.append( Activity("id", tsplan, e.stamp) )
-                tsplan = e.stamp
-                while e.name[:4]!="S_RA" and e.name!="SGL_R_PASS":
-                    i+=1
-                    e = g_events[i]
-
-            if e.name=="SGL_R_PASS":
-                tsweha = e.stamp
-                g_r_activities.append( Activity("plan_mvt", tsplan, tsweha) )
-
-            if e.name[:4]=="S_RA":
-                tsra = e.stamp
-                act_name = e.name[5:]
-                j_split = act_name.find("(")
-                act_name = act_name[:j_split] + "\n" + act_name[j_split:]
-                while e.name!="SGL_S_RA":
-                    i+=1
-                    e = g_events[i]
-                tssra = e.stamp
-                g_r_activities.append( Activity("plan_mvt", tsra, tssra) )
-
-                while e.name!="SGL_E_RA":
-                    i+=1
-                    e = g_events[i]
-                tsweha = e.stamp
-                g_r_activities.append( Activity(act_name, tssra, tsweha) )
-
-            
-
-        elif e.name=="SGL_NS_IDLE":
-            t1 = e.stamp
-            while e.name!="R_E_WAIT_HSA":
-                i+=1
-                e = g_events[i]
-            tsweha = e.stamp
-            g_r_activities.append( Activity("idle_wait_h", t1, tsweha) )
-
-        while e.name!="R_S_ASSESS":
-            i+=1
-            e = g_events[i]
-        teweha = e.stamp
-        g_r_activities.append( Activity("wait_end_ha", tsweha, teweha) )
-
-        while e.name!="R_E_ASSESS":
-            i+=1
-            e = g_events[i]
-        teass = e.stamp
-        g_r_activities.append( Activity("sa", teweha, teass) )
-
-        while e.name[:6]!="SGL_NS" and e.name!="OVER":
-            i+=1
-            e = g_events[i]
-        tf = e.stamp
-        g_r_activities.append( Activity("grns", teass, tf) )
-        if e.name == "OVER":
-            break
-def h_extract_activities():
-    global g_events, g_h_activities
     
-    i = 0
-    e = g_events[i]
-    while e.name[:6]!="SGL_NS":
-        i+=1
-        e = g_events[i]
-    while True:
 
-        t1 = t2 = t3 = t4 = t5 = t6 = t7 = None
+    # Turn Taking #
+    if e.name[-len("ROBOT_TURN"):] in ["ROBOT_TURN", "HUMAN_TURN"]:
+        while True:
 
-        if e.name=="SGL_NS":
-            t1 = e.stamp
+            last_act_name = "grns"
 
-            while e.name!="SGL_TIMEOUT" and e.name[:4]!="S_HA" and e.name!="SGL_H_PASS":
+            if e.name=="SGL_NS_ROBOT_TURN":
                 i+=1
                 e = g_events[i]
-            
-            if e.name=="SGL_TIMEOUT":
+
+                while e.name!="SGL_R_PASS" and e.name[:4]!="S_RA":
+                    i+=1
+                    e = g_events[i]
+
+                if e.name=="SGL_R_PASS":
+                    t2 = e.stamp
+                    last_act_name = "passive"
+
+                elif e.name[:4]=="S_RA":
+                    t5 = e.stamp
+                    j_split = e.name.find("(")
+                    action_name = e.name[:j_split] + "\n" + e.name[j_split:]
+
+                    while e.name!="SGL_S_RA":
+                        i+=1
+                        e = g_events[i]
+                    t4 = e.stamp
+                    g_r_activities.append( Activity("plan_mvt", t5, t4) )
+
+                    while e.name!="SGL_E_RA":
+                        i+=1
+                        e = g_events[i]
+                    t3 = e.stamp
+                    g_r_activities.append( Activity(action_name, t4, t3) )
+
+                    while e.name!="R_E_WAIT_STEP_END":
+                        i+=1
+                        e = g_events[i]
+                    t2 = e.stamp
+                    g_r_activities.append( Activity("wait_end_step", t3, t2) )
+
+            elif e.name in ["SGL_NS_HUMAN_TURN", "SGL_NS_IDLE_HUMAN_TURN"]:
+                t4 = e.stamp
+                i+=1
+                e = g_events[i]
+
+                while e.name!="R_S_ASSESS":
+                    i+=1
+                    e = g_events[i]
+                t3 = e.stamp
+                g_r_activities.append( Activity("wait_turn", t4, t3) )
+
+                while e.name!="R_E_ASSESS":
+                    i+=1
+                    e = g_events[i]
                 t2 = e.stamp
-                while e.name!="OVER" and e.name!="SGL_NS" and e.name!="SGL_NS_IDLE" and e.name[:4]!="S_HA":
+                g_r_activities.append( Activity("sa", t3, t2) )
+
+            elif e.name == "SGL_NS_IDLE_ROBOT_TURN":
+                t2 = e.stamp
+                i+=1
+                e = g_events[i]
+                last_act_name = "passive"
+
+            while e.name[:6]!="SGL_NS" and e.name!="OVER":
+                i+=1
+                e = g_events[i]
+            t1 = e.stamp
+            g_r_activities.append( Activity(last_act_name, t2, t1) )
+
+            if e.name == "OVER":
+                break
+    
+    # HF or RF
+    else:
+        while True:
+
+            if e.name == "SGL_NS":
+
+                while e.name!="R_S_RF_WAIT_H" and e.name[:4]!="S_RA" and e.name!="R_S_WAIT_HC":
                     i+=1
                     e = g_events[i]
 
-            elif e.name=="SGL_H_PASS":
+                if e.name=="R_S_RF_WAIT_H":
+                    t9 = e.stamp
+
+                    while e.name!="R_E_RF_WAIT_H":
+                        i+=1
+                        e = g_events[i]
+                    t8 = e.stamp
+                    g_r_activities.append( Activity("rf_wait_h", t9, t8) )
+
+                    while e.name!="R_S_WAIT_STEP_END" and e.name[:4]!="S_RA":
+                        i+=1
+                        e = g_events[i]
+
+                    if e.name=="R_S_WAIT_STEP_END":
+                        t5 = e.stamp
+
+                if e.name=="R_S_WAIT_HC":
+                    t10 = e.stamp
+                    
+                    while e.name!="R_E_WAIT_HC":
+                        i+=1
+                        e = g_events[i]
+                    t8 = e.stamp
+                    g_r_activities.append( Activity("wait_hc", t10, t8) )
+
+                    while e.name[:4]!="S_RA" and e.name!="SGL_R_PASS" and e.name!="R_E_ID":
+                        i+=1
+                        e = g_events[i]
+
+                    if e.name=="R_E_ID":
+                        g_r_activities.append( Activity("id", t8, e.stamp))
+                        t8 = e.stamp
+
+                        while e.name[:4]!="S_RA" and e.name!="SGL_R_PASS":
+                            i+=1
+                            e = g_events[i]
+                    
+                    if e.name=="SGL_R_PASS":
+                        t5 = e.stamp
+                        g_r_activities.append( Activity("plan_mvt", t8, t5) )
+
+
+                if e.name[:4]=="S_RA":
+                    t7 = e.stamp
+                    j_split = e.name.find("(")
+                    action_name = e.name[:j_split] + "\n" + e.name[j_split:]
+                    
+                    while e.name!="SGL_S_RA":
+                        i+=1
+                        e = g_events[i]
+                    t6 = e.stamp
+                    g_r_activities.append( Activity("plan_mvt", t7, t6) )
+
+                    while e.name!="SGL_E_RA":
+                        i+=1
+                        e = g_events[i]
+                    t5 = e.stamp
+                    g_r_activities.append( Activity(action_name, t6, t5) )
+
+            elif e.name == "SGL_NS_IDLE":
+                t6 = e.stamp
+
+                while e.name!="R_E_WAIT_HSA":
+                    i+=1
+                    e = g_events[i]
                 t5 = e.stamp
-                g_h_activities.append( Activity("start_delay", t1, t5) )
-                while e.name!="OVER" and e.name!="SGL_NS" and e.name!="SGL_NS_IDLE" and e.name[:4]!="S_HA":
-                    i+=1
-                    e = g_events[i]
+                g_r_activities.append( Activity("idle_wait_h", t6, t5) )
 
-        elif e.name=="SGL_NS_IDLE":
-            t6 = e.stamp
-            while e.name[:4]!="S_HA":
-                    i+=1
-                    e = g_events[i]
-
-        if e.name[:4]=="S_HA":
-            t3 = e.stamp
-            if t6!=None:
-                g_h_activities.append( Activity("start_delay", t6, t3))
-            elif t2==None and t5==None:
-                g_h_activities.append( Activity("start_delay", t1, t3))
-            elif t2!=None:
-                g_h_activities.append( Activity("idle_wait_compliant", t1, t3))
-            elif t5!=None:
-                g_h_activities.append( Activity("idle_pass_compliant", t5, t3))
-            act_name = e.name[5:]
-            j_split = act_name.find("(")
-            act_name = act_name[:j_split] + "\n" + act_name[j_split:]
-            while e.name!="SGL_E_HA":
+            while e.name!="R_E_WAIT_STEP_END":
                 i+=1
                 e = g_events[i]
             t4 = e.stamp
-            g_h_activities.append( Activity(act_name, t3, t4) )
+            g_r_activities.append( Activity("wait_end_step", t5, t4) )
 
-            while e.name!="OVER" and e.name!="SGL_NS" and e.name!="SGL_NS_IDLE":
+            while e.name!="R_S_ASSESS":
+                i+=1
+                e = g_events[i]
+            t3 = e.stamp
+
+            while e.name!="R_E_ASSESS":
+                i+=1
+                e = g_events[i]
+            t2 = e.stamp
+            g_r_activities.append( Activity("sa", t3, t2) )
+
+            while e.name[:6]!="SGL_NS" and e.name!="OVER":
+                i+=1
+                e = g_events[i]
+            t1 = e.stamp
+            g_r_activities.append( Activity("GRNS", t2, t1) )
+
+            if e.name == "OVER":
+                break
+def h_extract_activities():
+    global g_events, g_h_activities
+
+    i=0
+    e = g_events[i]
+
+    while e.name[:6]!="SGL_NS":
+        i+=1
+        e = g_events[i]
+    
+
+    # Turn Taking #
+    if e.name[-len("ROBOT_TURN"):] in ["ROBOT_TURN", "HUMAN_TURN"]:
+        while True:
+
+            last_act_name = "passive"
+
+            if e.name in ["SGL_NS_ROBOT_TURN", "SGL_NS_IDLE_ROBOT_TURN"]:
+                t2 = e.stamp
+                i+=1
+                e = g_events[i]
+                last_act_name = "wait_turn"
+
+            elif e.name in ["SGL_NS_HUMAN_TURN", "SGL_NS_IDLE_HUMAN_TURN"]:
+                t2 = e.stamp
                 i+=1
                 e = g_events[i]
 
-        if e.name=="OVER" or e.name=="SGL_NS" or e.name=="SGL_NS_IDLE":
-            t7 = e.stamp
-            if t4!=None:
-                g_h_activities.append( Activity("idle_wait_ns", t4, t7) )
-            elif t2!=None:
-                g_h_activities.append( Activity("idle_wait_wait_ns", t1, t7) )
-            elif t5!=None:
-                g_h_activities.append( Activity("idle_pass_wait_ns", t5, t7) )
+                while e.name[:6]!="SGL_NS" and e.name!="OVER" and e.name[:4]!="S_HA" and e.name!="SGL_H_PASS":
+                    i+=1
+                    e = g_events[i]
 
-        if e.name=="OVER":
-            break
+                if e.name[:4]=="S_HA":
+                    t3 = e.stamp
+                    last_act_name = "wait_ns"
+                    j_split = e.name.find("(")
+                    action_name = e.name[:j_split] + "\n" + e.name[j_split:]
+                    g_h_activities.append( Activity("start_delay", t2, t3) )
+
+                    while e.name!="SGL_E_HA":
+                        i+=1
+                        e = g_events[i]
+                    t2 = e.stamp
+                    g_h_activities.append( Activity(action_name, t3, t2) )
+
+                elif e.name=="SGL_H_PASS":
+                    last_act_name = "wait_ns"
+                    g_h_activities.append( Activity("start_delay", t2, e.stamp) )
+                    t2 = e.stamp
+
+            while e.name[:6]!="SGL_NS" and e.name!="OVER":
+                i+=1
+                e = g_events[i]
+            t1 = e.stamp
+            g_h_activities.append( Activity(last_act_name, t2, t1) )
+
+            if e.name == "OVER":
+                break
+    
+    # HF or RF
+    else:
+        while True:
+
+            last_act_name = "passive"
+            before_s_ha_name = "start_delay"
+
+            if e.name=="SGL_NS_IDLE":
+                t2 = e.stamp
+                i+=1
+                e = g_events[i]
+
+                while e.name[:4]!="S_HA":
+                    i+=1
+                    e = g_events[i]
+
+            elif e.name == "SGL_NS":
+                t2 = e.stamp
+                i+=1
+                e = g_events[i]
+
+                while e.name[:6]!="SGL_NS" and e.name!="OVER" and e.name[:4]!="S_HA" and e.name!="SGL_H_PASS":
+                    i+=1
+                    e = g_events[i]
+
+                if e.name=="SGL_H_PASS":
+                    g_h_activities.append( Activity("start_delay", t2, e.stamp))
+                    t2 = e.stamp
+                    before_s_ha_name = "pass"
+
+                    while e.name[:4]!="S_HA" and e.name[:6]!="SGL_NS" and e.name!="OVER":
+                        i+=1
+                        e = g_events[i]
+
+            if e.name[:4]=="S_HA":
+                last_act_name = "wait_ns"
+                t3 = e.stamp
+                j_split = e.name.find("(")
+                action_name = e.name[:j_split] + "\n" + e.name[j_split:]
+                g_h_activities.append( Activity(before_s_ha_name, t2, t3))
+
+                while e.name!="SGL_E_HA":
+                    i+=1
+                    e = g_events[i] 
+                t2 = e.stamp
+                g_h_activities.append( Activity(action_name, t3, t2))
+                
+            while e.name[:6]!="SGL_NS" and e.name!="OVER":
+                i+=1
+                e = g_events[i]
+            t1 = e.stamp
+            g_h_activities.append( Activity(last_act_name, t2, t1) )
+
+            if e.name == "OVER":
+                break
 
 # Display
 def show_events(events):
@@ -379,9 +531,9 @@ if __name__ == "__main__":
     
     # TREAT ACTIVITIES
     r_extract_activities()
-    h_extract_activities()
     print("\nROBOT ACTIVITIES:")
     show_activities(g_r_activities)
+    h_extract_activities()
     print("\nHUMAN ACTIVITIES:")
     show_activities(g_h_activities)
 
