@@ -501,6 +501,11 @@ if __name__ == "__main__":
         rec = ax.barh( ['H'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
         ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
 
+    
+    # OVER bar
+    over_event = g_events[-1]
+    line = mpatches.FancyArrowPatch((over_event.stamp, -1.0), (over_event.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
+    ax.add_patch(line)
 
 
     plt.tight_layout()
