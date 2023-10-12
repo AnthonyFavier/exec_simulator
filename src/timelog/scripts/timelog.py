@@ -414,8 +414,9 @@ if __name__ == "__main__":
     ax.set_axisbelow(True)
     ax.grid(color='lightgrey', linestyle='dashed', axis='x')
     tick_spacing = 1
-    max_x = math.ceil(g_events[-1].stamp)
-    ax.set_xlim((-0.2,max_x))
+    horizontal_space = 0.2
+    max_x = g_events[-1].stamp
+    ax.set_xlim((-horizontal_space,max_x+horizontal_space))
     x_ticks = np.arange(0, max_x, tick_spacing )
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(["" for x in x_ticks], rotation=90)
