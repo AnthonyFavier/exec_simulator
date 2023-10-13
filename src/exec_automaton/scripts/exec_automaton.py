@@ -1221,10 +1221,10 @@ def main_exec():
     sol_hmw =       None
     sol_tt_tee =    None
     sol_tt_hmw =    None
-    sol_tee =       load("stack_empiler_2_tee.p")
-    sol_hmw =       load("stack_empiler_2_hmw.p")
-    sol_tt_tee =    load("stack_empiler_2_tt_tee.p")
-    sol_tt_hmw =    load("stack_empiler_2_tt_hmw.p")
+    sol_tee =       load("sol_stack_empiler_2_tee.p")
+    sol_hmw =       load("sol_stack_empiler_2_hmw.p")
+    sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
+    sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
     if g_domain_name!=DOMAIN_NAME:
         raise Exception("Missmatching domain names CONSTANT and loaded")
     robots = {
