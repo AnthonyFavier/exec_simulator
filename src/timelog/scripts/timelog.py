@@ -31,7 +31,7 @@ import time
 import matplotlib.patches as mpatches
 
 from sim_msgs.msg import EventLog
-
+from datetime import datetime
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
@@ -512,6 +512,8 @@ if __name__ == "__main__":
 
         # Dumping
         dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events.p", "wb"))
+        str_date = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/"+str_date+"_events.p", "wb"))
         print("events dumped")
     else:
         # Loading
