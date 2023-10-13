@@ -2119,6 +2119,17 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     return true;
 }
 
+bool go_init_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+    move_named_target(AGENT::ROBOT, "init");
+    return true;
+}
+
+void go_init_pose_cb(const std_msgs::Empty &msg)
+{
+    move_named_target(AGENT::ROBOT, "init");
+}
+
 bool go_idle_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
 {
     move_named_target(AGENT::ROBOT, "idle");
@@ -2191,8 +2202,10 @@ int main(int argc, char **argv)
 
     // ros::Subscriber go_idle_pose_sub = node_handle.subscribe("/go_idle_pose", 1, go_idle_pose_cb);
     // ros::Subscriber go_home_pose_sub = node_handle.subscribe("/go_home_pose", 1, go_home_pose_cb);
+    // ros::Subscriber go_init_pose_sub = node_handle.subscribe("/go_init_pose", 1, go_init_pose_cb);
     ros::ServiceServer go_idle_pose_service = node_handle.advertiseService("go_idle_pose", go_idle_pose_server);
     ros::ServiceServer go_home_pose_service = node_handle.advertiseService("go_home_pose", go_home_pose_server);
+    ros::ServiceServer go_init_pose_service = node_handle.advertiseService("go_init_pose", go_init_pose_server);
 
     event_log_pub[AGENT::ROBOT] = node_handle.advertise<sim_msgs::EventLog>("/event_log", 10);
     event_log_pub[AGENT::HUMAN] = node_handle.advertise<sim_msgs::EventLog>("/event_log", 10);

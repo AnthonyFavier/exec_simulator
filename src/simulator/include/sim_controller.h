@@ -76,6 +76,8 @@ bool go_idle_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &r
 void go_idle_pose_cb(const std_msgs::Empty &msg);
 bool go_home_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
 void go_home_pose_cb(const std_msgs::Empty &msg);
+bool go_init_pose_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
+void go_init_pose_cb(const std_msgs::Empty &msg);
 void home_agents();
 
 
