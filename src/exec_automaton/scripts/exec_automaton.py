@@ -115,6 +115,100 @@ def set_r_choices(init_step,r_criteria):
 ###############
 ## EXECUTION ##
 ###############
+def training(begin_step: ConM.Step):
+    global TIMEOUT_DELAY
+
+    # Present zones and robot waiting for H choice, ask to click on one (pick yellow cube)
+    # Present hand zone (PASS), either explicitly be passive (click hand), or wait Timeout, ask to pass
+    # Present Idle, robot can't act thus wait indefinitly for H, ask pick and place pick
+    # Present Act after, after being passive (PASS or TO) you can still act, ask to wait for TO then pick blue while robot is picking white
+    # Finish task by placing cube. 
+
+    back_TIMEOUT_DELAY = TIMEOUT_DELAY
+    TIMEOUT_DELAY = TRAINING_TIMEOUT_DELAY
+
+    curr_step = get_first_step(begin_step)
+    while not exec_over(curr_step) and not rospy.is_shutdown() and not g_force_exec_stop:
+
+        rospy.loginfo(f"Step {curr_step.id} begins.")
+        set_permanent_prompt_line("training")
+        
+
+        if curr_step.isRInactive():
+            prompt("HF_idle_step_started")
+            send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+            look_at_human()
+            go_idle_pose_once()
+            RA = select_valid_passive(curr_step)
+            wait_human_start_acting(curr_step)
+
+        else:
+            go_home_pose_once()
+
+            reset_permanent_prompt_line()
+
+            send_NS_update_HAs(curr_step, VHA.NS)
+            look_at_human()
+
+            
+            wait_human_decision(curr_step)
+
+            ## 1 & 2 & 3 ##
+            if human_active(): 
+                ## 1 & 2 ##
+                if ID_needed(curr_step): 
+                    result_id = MOCK_run_id_phase(curr_step)
+                    ## 1 ##
+                    if ID_successful(result_id): 
+                        RA = select_best_compliant_RA(curr_step, result_id)
+                    ## 2 ##
+                    else: 
+                        RA = select_valid_passive(curr_step)
+                ## 3 ##
+                else: 
+                    lg.debug("ID not needed.")
+                    RA = select_best_RA(curr_step)
+            ## 4 ##
+            else: 
+                RA = select_best_RA_H_passive(curr_step)
+
+            start_execute_RA(RA)
+            passive_update_HAs(curr_step, RA)
+                  
+        wait_step_end()
+        
+        HA = MOCK_assess_human_action()
+
+        # Check Passive Step
+        if RA.is_passive() and HA.is_passive():
+            # Repeat current step
+            reset()
+            time.sleep(0.1)
+        else:
+            curr_step = get_next_step(curr_step, HA, RA)
+
+            reset()
+            time.sleep(0.1)
+
+    TIMEOUT_DELAY = back_TIMEOUT_DELAY
+
+    # if forced stop
+    if g_force_exec_stop:
+        prompt("force_stop")
+        reset_head()
+        return -1, -1
+    
+
+    log_event("OVER")
+    reset_permanent_prompt_line()
+    prompt("task_done")
+    reset_head()
+    g_go_init_pose_client.call()
+    lg.info(f"END => {curr_step}")
+    print(f"END => {curr_step}")
+    g_hmi_finish_pub.publish(EmptyM())
+    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
+
 def execution_HF(begin_step: ConM.Step):
     """
     Main algorithm 
@@ -1173,6 +1267,10 @@ g_prompt_messages = {
         "ENG": "I'm performing an action\n" + g_prompt_start_extra + "You can act in parallel.",
         "FR":  "J'agis...\n" + g_prompt_start_extra + "Vous pouvez agir en même temps.",
         },
+    "training":{
+        "ENG": "TRAINING",
+        "FR":  "TRAINING",
+        },
 }
 
 ##########
@@ -1184,7 +1282,7 @@ def find_r_rank_of_id(steps, id):
             return s.get_f_leaf().branch_rank_r
 
 def main_exec():
-    global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY, TT_R_PASSIVE_DELAY
+    global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY, TT_R_PASSIVE_DELAY, TRAINING_TIMEOUT_DELAY
     global default_human_passive_action, default_robot_passive_action
     global INCREMENTAL_BAR_STR_WIDTH
     global g_domain_name
@@ -1194,6 +1292,7 @@ def main_exec():
     # CONSTANTS #
     #   Delays 
     TIMEOUT_DELAY               = 4.0
+    TRAINING_TIMEOUT_DELAY      = 20.0
     ESTIMATED_R_REACTION_TIME   = 0.3
     ID_DELAY                    = 1.0
     ASSESS_DELAY                = 0.2
@@ -1225,10 +1324,12 @@ def main_exec():
     sol_tee =       load("sol_stack_empiler_2_tee.p")
     # sol_hmw =       load("sol_stack_empiler_2_hmw.p")
     sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
-    sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
+    # sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
     if g_domain_name!=DOMAIN_NAME:
         raise Exception("Missmatching domain names CONSTANT and loaded")
     robots = {
+        "training" : ("training", sol_tee),
+
         "hf1" : ("hf", sol_tee),
         "rf2" : ("rf", sol_tee),
 
@@ -1258,7 +1359,7 @@ def main_exec():
         begin_step = None 
         if ask_robot:
             while True:
-                robot_name = input("Which robot? ")
+                robot_name = input("Which robot (or training)? ")
                 if robot_name in robots:
                     # Load correct policy and exec_regime
                     exec_regime, begin_step = robots[robot_name]
@@ -1300,7 +1401,9 @@ def main_exec():
         prompt("start_simu_delay", f"\n{str_bar.get_str()}")
 
         # Starting execution
-        if exec_regime == "hf":
+        if exec_regime == "training":
+            id,r_rank = training(begin_step)
+        elif exec_regime == "hf":
             id,r_rank = execution_HF(begin_step)
         elif exec_regime == "rf":
             id,r_rank = execution_RF(begin_step)
@@ -1315,7 +1418,7 @@ def main_exec():
 
         # Repeat loop
         while True:
-            in_choice = input("\nChoices:\n\t1- Repeat\n\t2- Change Robot\n\t3- Stop\nAnswer: ")
+            in_choice = input("\nChoices:\n\t1- Repeat\n\t2- Change Robot\n\t3- Training\n\t4- Stop\nAnswer: ")
             
             if in_choice=="1":
                 ask_robot = False
@@ -1324,6 +1427,10 @@ def main_exec():
                 ask_robot = True
                 break
             elif in_choice=="3":
+                ask_robot = False
+                exec_regime, begin_step = robots["training"]
+                break
+            elif in_choice=="4":
                 continuer = False
                 break
             else:
