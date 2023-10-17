@@ -513,7 +513,7 @@ if __name__ == "__main__":
         # Dumping
         dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events.p", "wb"))
         str_date = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/"+str_date+"_events.p", "wb"))
+        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events/"+str_date+"_events.p", "wb"))
         print("events dumped")
     else:
         # Loading
