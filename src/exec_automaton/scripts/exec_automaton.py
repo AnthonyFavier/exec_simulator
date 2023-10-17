@@ -1350,13 +1350,13 @@ def main_exec():
     rospy.wait_for_service("hmi_started")
     g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
 
-    continuer = True
-    ask_robot = True
     robot_name = ""
+    exec_regime = None
+    begin_step = None 
+    ask_robot = True
+    continuer = True
     while continuer:
         # Asking which robot to use?
-        exec_regime = None
-        begin_step = None 
         if ask_robot:
             while True:
                 robot_name = input("Which robot (or training)? ")
