@@ -71,6 +71,7 @@ g_best_human_action = 0
 q_all = Quaternion(*quaternion_from_euler(0, 1.0, 0))
 q_0 = Quaternion(*quaternion_from_euler(0, 0, 0))
 g_far_zone_pose = Pose(Point(0,0,-2), q_0)
+g_prompt_button_pose = Pose(Point(1.2, 0.75, 1.22), q_all)
 
 # Create zones
 g_zones = {}
@@ -176,6 +177,28 @@ def show_all_zones(req = None):
         g_set_model_state_client(srv)
     return EmptyResponse()
 
+g_prompt_button_shown = False
+g_prompt_button_zone = Zone(-20, g_prompt_button_pose, None)
+g_prompt_button_zone.setPixelCoords(1634, 401, 1843, 506)
+def show_prompt_button(req = None):
+    global g_prompt_button_shown
+    g_prompt_button_shown = True
+    srv = SetModelStateRequest()
+    srv.model_state.model_name = "prompt_button"
+    srv.model_state.pose = g_prompt_button_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+def hide_prompt_button(req = None):
+    global g_prompt_button_shown
+    g_prompt_button_shown = False
+    srv = SetModelStateRequest()
+    srv.model_state.model_name = "prompt_button"
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+
 #########
 ## ROS ##
 #########
@@ -214,17 +237,23 @@ def incoming_vha_cb(msg: VHA):
         g_set_model_state_client(srv)
         
 def mouse_pressed_cb(msg: Point):
-    zone_clicked = None
-    for z in g_zones.values():
-        if z.current_action_id!=-10 and isInZone(msg, z):
-            zone_clicked = z
-            break
-    print(f"zone clicked: {zone_clicked}")
+    if isInZone(msg, g_prompt_button_zone) and g_prompt_button_shown:
+        print("prompt button pressed !")
+        g_prompt_button_pressed_pub.publish(EmptyM())
+        hide_prompt_button()
 
-    if zone_clicked!=None:
-        g_start_human_action_prox(zone_clicked.current_action_id)
-        hide_all_zones()
-        print("human decision sent")
+    else:
+        zone_clicked = None
+        for z in g_zones.values():
+            if z.current_action_id!=-10 and isInZone(msg, z):
+                zone_clicked = z
+                break
+        print(f"zone clicked: {zone_clicked}")
+
+        if zone_clicked!=None:
+            g_start_human_action_prox(zone_clicked.current_action_id)
+            hide_all_zones()
+            print("human decision sent")
 
 def TO_reached_cb(msg: EmptyM):
     hide_all_zones()
@@ -235,6 +264,7 @@ def TO_reached_cb(msg: EmptyM):
 
 def main():
     global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_human_choice_pub, g_set_model_state_client, g_start_human_action_prox
+    global g_prompt_button_pressed_pub
 
     rospy.init_node('mouse_human', log_level=rospy.INFO)
 
@@ -250,6 +280,12 @@ def main():
     show_zones_service = rospy.Service("show_zones", EmptyS, show_all_zones)
     hide_zones_service = rospy.Service("hide_zones", EmptyS, hide_all_zones)
 
+    show_prompt_button_service = rospy.Service("show_prompt_button", EmptyS, show_prompt_button)
+    hide_prompt_button_service = rospy.Service("hide_prompt_button", EmptyS, hide_prompt_button)
+
+    g_prompt_button_pressed_pub = rospy.Publisher('/prompt_button_pressed', EmptyM, queue_size=1)
+
+
     rospy.wait_for_service("/gazebo/set_model_state")
     g_set_model_state_client = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
 
@@ -264,6 +300,14 @@ def main():
         spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
         spawn_model_prox(f"z{i}", sdff, "", g_far_zone_pose, "world")
         print(f"z{i} spawned")
+    
+    # spawn prompt button
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/prompt_button.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    spawn_model_prox(f"prompt_button", sdff, "", g_far_zone_pose, "world")
+    print(f"prompt button spawned")
 
 
     started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())

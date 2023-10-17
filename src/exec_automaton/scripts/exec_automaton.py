@@ -115,8 +115,22 @@ def set_r_choices(init_step,r_criteria):
 ###############
 ## EXECUTION ##
 ###############
+def wait_prompt_press_enter():
+    global g_enter_pressed
+    g_wait_press_enter_pub.publish(EmptyM())
+    while not rospy.is_shutdown() and not g_enter_pressed:
+        time.sleep(0.05)
+    g_enter_pressed = False
+
+def wait_prompt_button_pressed():
+    global g_prompt_button_pressed
+    g_show_prompt_button_client()
+    while not rospy.is_shutdown() and not g_prompt_button_pressed:
+        time.sleep(0.05)
+    g_prompt_button_pressed = False
+
 def training(begin_step: ConM.Step):
-    global TIMEOUT_DELAY
+    global TIMEOUT_DELAY, g_enter_pressed, g_force_exec_stop, TRAINING_PROMPT_ONLY
 
     # Present zones and robot waiting for H choice, ask to click on one (pick yellow cube)
     # Present hand zone (PASS), either explicitly be passive (click hand), or wait Timeout, ask to pass
@@ -127,87 +141,187 @@ def training(begin_step: ConM.Step):
     back_TIMEOUT_DELAY = TIMEOUT_DELAY
     TIMEOUT_DELAY = TRAINING_TIMEOUT_DELAY
 
+    TRAINING_PROMPT_ONLY = True
+
     curr_step = get_first_step(begin_step)
-    while not exec_over(curr_step) and not rospy.is_shutdown() and not g_force_exec_stop:
+    look_at_human()
+    prompt("training", from_training=True)
+    wait_prompt_button_pressed()
 
-        rospy.loginfo(f"Step {curr_step.id} begins.")
-        set_permanent_prompt_line("training")
-        
+###############################################################
 
-        if curr_step.isRInactive():
-            prompt("HF_idle_step_started")
-            send_NS_update_HAs(curr_step, VHA.NS_IDLE)
-            look_at_human()
-            go_idle_pose_once()
-            RA = select_valid_passive(curr_step)
-            wait_human_start_acting(curr_step)
+    g_prompt_pub.publish(String( "C'est le début du tutoriel. Les zones jaunes indiquent à tous moment sont les actions que vous pouvez effectuer en cliquant dessus. (Appuyez sur Entrée)" ))
+    wait_prompt_button_pressed()
 
-        else:
-            go_home_pose_once()
+    send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+    g_prompt_pub.publish(String( "Cliquez sur le cube jaune central pour le prendre." ))
+    while not rospy.is_shutdown() and g_new_human_decision==None:
+        time.sleep(0.1)
 
-            reset_permanent_prompt_line()
+    result_id = MOCK_run_id_phase(curr_step)
+    RA = select_best_compliant_RA(curr_step, result_id)
+    start_execute_RA(RA)
 
-            send_NS_update_HAs(curr_step, VHA.NS)
-            look_at_human()
+    wait_step_end()
+    HA = MOCK_assess_human_action()
+    curr_step = get_next_step(curr_step, HA, RA)
+    reset()
+    time.sleep(0.1)
 
-            
-            wait_human_decision(curr_step)
 
-            ## 1 & 2 & 3 ##
-            if human_active(): 
-                ## 1 & 2 ##
-                if ID_needed(curr_step): 
-                    result_id = MOCK_run_id_phase(curr_step)
-                    ## 1 ##
-                    if ID_successful(result_id): 
-                        RA = select_best_compliant_RA(curr_step, result_id)
-                    ## 2 ##
-                    else: 
-                        RA = select_valid_passive(curr_step)
-                ## 3 ##
-                else: 
-                    lg.debug("ID not needed.")
-                    RA = select_best_RA(curr_step)
-            ## 4 ##
-            else: 
-                RA = select_best_RA_H_passive(curr_step)
+###############################################################
 
-            start_execute_RA(RA)
-            passive_update_HAs(curr_step, RA)
-                  
-        wait_step_end()
-        
-        HA = MOCK_assess_human_action()
 
-        # Check Passive Step
-        if RA.is_passive() and HA.is_passive():
-            # Repeat current step
-            reset()
+    g_prompt_pub.publish(String( "Le robot a observé votre action et a agit fonction en parallèle.(Entrée)" ))
+    wait_prompt_button_pressed()
+    g_prompt_pub.publish(String( "Le robot peut également agir en premier et à vous d'agir en parallèle en cliquant sur une zone affichée (Entrée)" ))
+    wait_prompt_button_pressed()
+    g_prompt_pub.publish(String( "Après avoir appuyé sur Entrée le robot va commencer à placer le cube rouge, placez le cube jaune en même temps (Entrée)" ))
+    wait_prompt_button_pressed()
+
+    RA = select_best_RA(curr_step)
+    start_execute_RA(RA)
+    passive_update_HAs(curr_step, RA)
+
+    wait_step_end()
+    HA = MOCK_assess_human_action()
+    curr_step = get_next_step(curr_step, HA, RA)
+    reset()
+    time.sleep(0.1)
+
+
+###############################################################
+
+    g_prompt_pub.publish(String( "Quand le robot ne peut rien faire il passe en 'mode passif', attendant que vous aggissiez seul.e. Placez la barre rose." ))
+    send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+    look_at_human()
+    go_idle_pose_once()
+    RA = select_valid_passive(curr_step)
+
+
+    while not rospy.is_shutdown() and g_new_human_decision==None:
+        time.sleep(0.1)
+
+    wait_step_end()
+    HA = MOCK_assess_human_action()
+    curr_step = get_next_step(curr_step, HA, RA)
+    reset()
+    time.sleep(0.1)
+
+    send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+    look_at_human()
+    RA = select_valid_passive(curr_step)
+    while not rospy.is_shutdown() and g_new_human_decision==None:
+        time.sleep(0.1)
+
+    wait_step_end()
+    HA = MOCK_assess_human_action()
+    curr_step = get_next_step(curr_step, HA, RA)
+    reset()
+    time.sleep(0.1)
+    go_home_pose_once()
+    look_at_human()
+
+###############################################################
+
+    g_prompt_pub.publish(String( "Vous pouvez aussi décider de ne pas agir, laissant le robot agir seul. Vous avez 2 manières d'être passif (Entrée)" ))
+    wait_prompt_button_pressed()
+    g_prompt_pub.publish(String( "D'abord vous pouvez faire un signe de la main pour annoncer explicitement que vous n'allez rien faire. (Entrée)" ))
+    wait_prompt_button_pressed()
+    g_prompt_pub.publish(String( "Alors que vous pouvez prendre le cube blanc ou bleu, soyez passif en cliquant sur la main." ))
+
+    send_NS_update_HAs(curr_step, VHA.NS)
+    while not rospy.is_shutdown() and g_new_human_decision==None:
+        time.sleep(0.1)
+
+    g_prompt_pub.publish(String( "Le robot voit votre signal et décide d'agir seul." ))
+
+
+    RA = select_best_RA_H_passive(curr_step)
+    start_execute_RA(RA)
+    passive_update_HAs(curr_step, RA)
+
+    wait_step_end()
+    g_hmi_timeout_reached_pub.publish(EmptyM())
+    HA = MOCK_assess_human_action()
+    curr_step = get_next_step(curr_step, HA, RA)
+    reset()
+    time.sleep(0.1)
+
+###############################################################
+
+    g_prompt_pub.publish(String( "Avez vous remarqué que même après votre signe de la main certaines actions sont disponibles (cube bleu) (Entrée)" ))
+    wait_prompt_button_pressed()
+    g_prompt_pub.publish(String( "Ainsi, vous pouvez volontairement laisser le robot commencer puis agir en parallèle. (Entrée)" ))
+    wait_prompt_button_pressed()
+    g_prompt_pub.publish(String( "Pour être passif vous pouvez aussi ne rien faire, à la fin du timer affiché par la robot il vous considérera comme 'passif' (Entrée)" ))
+    wait_prompt_button_pressed()
+    g_prompt_pub.publish(String( "Cette fois, soyez passif en attendant la fin du timer puis attrapez le cube bleu (Entrée)" ))
+    wait_prompt_button_pressed()
+
+    send_NS_update_HAs(curr_step, VHA.NS)
+
+
+    str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
+
+    start_waiting_time = time.time()
+    while not rospy.is_shutdown() and time.time()-start_waiting_time<TIMEOUT_DELAY:
+        str_bar.goto(time.time()-start_waiting_time)
+        # prompt("wait_human_decision", f"\n{str_bar.get_str()}", from_training=True)
+        g_prompt_pub.publish(String("blablabla" + f"\n{str_bar.get_str()}"))
+        time.sleep(0.1)
+
+    # Check if timeout reached
+    timeout_reached = False 
+    if g_new_human_decision==None:
+        time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
+        if g_new_human_decision==None:
+            timeout_reached = True
+    
+    if timeout_reached:
+        prompt("wait_h_decision_timeout", from_training=True)
+        sgl = Signal()
+        sgl.type = Signal.TO
+        robot_visual_signal_pub.publish(sgl)
+        g_hmi_timeout_reached_pub.publish(EmptyM())
+
+    RA = select_best_RA_H_passive(curr_step)
+    start_execute_RA(RA)
+    passive_update_HAs(curr_step, RA)
+    
+    wait_step_end()
+    HA = MOCK_assess_human_action()
+    curr_step = get_next_step(curr_step, HA, RA)
+    reset()
+    time.sleep(0.1)
+
+
+###############################################################
+
+    g_prompt_pub.publish(String( "Maintenant, placez le cube sur la tour pour terminer la tâche." ))
+    send_NS_update_HAs(curr_step, VHA.NS_IDLE)
+    while not rospy.is_shutdown() and g_new_human_decision==None:
             time.sleep(0.1)
-        else:
-            curr_step = get_next_step(curr_step, HA, RA)
 
-            reset()
-            time.sleep(0.1)
+    RA = select_valid_passive(curr_step)
+    wait_step_end()
+    HA = MOCK_assess_human_action()
+    curr_step = get_next_step(curr_step, HA, RA)
+    reset()
+    time.sleep(0.1)
 
+
+###############################################################
+
+    g_prompt_pub.publish(String( "bien joué" ))
+
+    TRAINING_PROMPT_ONLY = False
     TIMEOUT_DELAY = back_TIMEOUT_DELAY
 
-    # if forced stop
-    if g_force_exec_stop:
-        prompt("force_stop")
-        reset_head()
-        return -1, -1
-    
-
-    log_event("OVER")
-    reset_permanent_prompt_line()
-    prompt("task_done")
+    g_force_exec_stop = True
     reset_head()
     g_go_init_pose_client.call()
-    lg.info(f"END => {curr_step}")
-    print(f"END => {curr_step}")
-    g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
+    return -1, -1
 
 def execution_HF(begin_step: ConM.Step):
     """
@@ -828,13 +942,14 @@ def reset():
     g_robot_acting = False
 
 def full_reset():
-    global g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_start_signal_received
+    global g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_enter_pressed
     reset()
     reset_permanent_prompt_line()
     g_force_exec_stop = False
     g_best_reachable_human_solution = None
     g_best_reachable_human_solution_after_robot_choice = None
-    g_start_signal_received = False
+    g_enter_pressed = False
+    g_prompt_button_pressed = False
 
 def get_first_step(begin_step: ConM.Step):
     if len(begin_step.children)!=1:
@@ -1141,10 +1256,15 @@ def robot_visual_signal_cb(msg: Signal):
         g_robot_acting = False
         rospy.loginfo("Robot action over.")
 
-g_start_signal_received = False
-def start_signal_cb(msg):
-    global g_start_signal_received
-    g_start_signal_received = True
+g_enter_pressed = False
+def enter_pressed_cb(msg):
+    global g_enter_pressed
+    g_enter_pressed = True
+
+g_prompt_button_pressed = False
+def prompt_button_pressed_cb(msg):
+    global g_prompt_button_pressed
+    g_prompt_button_pressed = True
 
 g_force_exec_stop = False
 def force_exec_stop_cb(msg):
@@ -1164,8 +1284,9 @@ def set_permanent_prompt_line(msg_id):
 def reset_permanent_prompt_line():
     global g_permanent_prompt
     g_permanent_prompt = ""
-def prompt(msg_id: str, extra=""):
-    g_prompt_pub.publish(String( g_permanent_prompt + g_prompt_start_extra + g_prompt_messages[msg_id][LANG] + extra ))
+def prompt(msg_id: str, extra="", from_training=False):
+    if not TRAINING_PROMPT_ONLY or (TRAINING_PROMPT_ONLY and from_training):
+        g_prompt_pub.publish(String( g_permanent_prompt + g_prompt_start_extra + g_prompt_messages[msg_id][LANG] + extra ))
 g_prompt_messages = {
     "start_simu_delay": {
         "ENG":  "Starting in:",
@@ -1285,14 +1406,15 @@ def main_exec():
     global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY, TT_R_PASSIVE_DELAY, TRAINING_TIMEOUT_DELAY
     global default_human_passive_action, default_robot_passive_action
     global INCREMENTAL_BAR_STR_WIDTH
+    global TRAINING_PROMPT_ONLY
     global g_domain_name
-    global g_start_signal_received
+    global g_enter_pressed
     global g_force_exec_stop
 
     # CONSTANTS #
     #   Delays 
     TIMEOUT_DELAY               = 4.0
-    TRAINING_TIMEOUT_DELAY      = 20.0
+    TRAINING_TIMEOUT_DELAY      = 4.0
     ESTIMATED_R_REACTION_TIME   = 0.3
     ID_DELAY                    = 0.5
     ASSESS_DELAY                = 0.2
@@ -1305,6 +1427,7 @@ def main_exec():
 
     HUMAN_UPDATING = False
 
+    TRAINING_PROMPT_ONLY = False
 
     time.sleep(0.5)
 
@@ -1322,9 +1445,9 @@ def main_exec():
     sol_tt_tee =    None
     sol_tt_hmw =    None
     sol_tee =       load("sol_stack_empiler_2_tee.p")
-    sol_hmw =       load("sol_stack_empiler_2_hmw.p")
-    sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
-    sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
+    # sol_hmw =       load("sol_stack_empiler_2_hmw.p")
+    # sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
+    # sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
     if g_domain_name!=DOMAIN_NAME:
         raise Exception("Missmatching domain names CONSTANT and loaded")
     robots = {
@@ -1378,11 +1501,8 @@ def main_exec():
         rospy.loginfo("READY TO START, waiting for start signal...")
         set_permanent_prompt_line("start_ready")
         prompt("start_press_enter")
-        g_wait_start_signal_pub.publish(EmptyM())
-        while not rospy.is_shutdown() and not g_start_signal_received:
-            time.sleep(0.05)
+        wait_prompt_button_pressed()
         reset_permanent_prompt_line()
-        g_start_signal_received = False
         
         # Start delay before beginning
         bar = IncrementalBar(max = START_SIMU_DELAY)
@@ -1460,8 +1580,8 @@ if __name__ == "__main__":
     robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
     robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
 
-    g_wait_start_signal_pub = rospy.Publisher("/wait_start_signal", EmptyM, queue_size=1)
-    start_signal_sub = rospy.Subscriber('/start_signal', EmptyM, start_signal_cb)
+    g_wait_press_enter_pub = rospy.Publisher("/wait_press_enter", EmptyM, queue_size=1)
+    enter_pressed_sub = rospy.Subscriber('/enter_pressed', EmptyM, enter_pressed_cb)
 
     force_exec_stop_sub = rospy.Subscriber('/force_exec_stop', EmptyM, force_exec_stop_cb)
     
@@ -1472,7 +1592,13 @@ if __name__ == "__main__":
     g_go_home_pose_client = rospy.ServiceProxy("go_home_pose", EmptyS)
     g_go_init_pose_client = rospy.ServiceProxy("go_init_pose", EmptyS)
     start_human_action_service = rospy.Service("start_human_action", Int, start_human_action_server)
+
+    g_show_prompt_button_client = rospy.ServiceProxy("show_prompt_button", EmptyS)
+    g_hide_prompt_button_client = rospy.ServiceProxy("hide_prompt_button", EmptyS)
+    prompt_button_pressed_sub = rospy.Subscriber('/prompt_button_pressed', EmptyM, prompt_button_pressed_cb)
+
     ###
     
+
     # Execution simulation
     main_exec()
