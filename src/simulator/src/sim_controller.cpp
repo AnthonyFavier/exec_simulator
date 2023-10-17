@@ -1481,7 +1481,7 @@ void PlacePose(AGENT agent, geometry_msgs::Pose pose)
     ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
 
     /* MOVE ROBOT HEAD */
-    robot_head_follow_stack(agent);
+    robot_head_follow_pose(agent, pose.position);
 
     /* MOVE ARM TO POSE */
     move_pose_target(agent, pose);
