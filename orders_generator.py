@@ -26,7 +26,7 @@ for pair_permu in pair_permutations:
     final_permutations += output
 
 
-f = open("permu.txt", "w")
+f = open("orders.txt", "w")
 
 f.write( str(len(final_permutations)) + "\n" )
 # print(len(final_permutations))
