@@ -1336,8 +1336,8 @@ def main_exec():
         "hf3" : ("hf", sol_hmw),
         "rf4" : ("rf", sol_hmw),
     
-        "hf5" : ("hf", sol_hmw),
-        "rf6" : ("rf", sol_hmw),
+        "hf5" : ("hf", sol_tee),
+        "rf6" : ("rf", sol_tee),
 
         "hf7" : ("hf", sol_tee),
         "tt8" : ("tt", sol_tt_tee),
