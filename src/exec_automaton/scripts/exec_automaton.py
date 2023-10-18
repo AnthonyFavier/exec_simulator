@@ -129,6 +129,32 @@ def wait_prompt_button_pressed():
         time.sleep(0.05)
     g_prompt_button_pressed = False
 
+def format_txt(s):
+    MAX_CHAR = 41
+
+    words = s.split(" ")
+
+    lines = []
+
+    while words!=[]:
+        line = " "
+        while words!=[] and len(line) + len(words[0]) < MAX_CHAR:
+            w = words.pop(0)
+            if w=="\n":
+                break
+            line += w + " "
+        
+        lines.append(line)
+    
+    lines[-1] = lines[-1][:-1]
+
+    output_s = ""
+    for l in lines:
+        output_s += l + "\n"
+    output_s = output_s[:-1]
+
+    return output_s
+
 def training(begin_step: ConM.Step):
     global TIMEOUT_DELAY, g_enter_pressed, g_force_exec_stop, TRAINING_PROMPT_ONLY
 
@@ -145,16 +171,11 @@ def training(begin_step: ConM.Step):
 
     curr_step = get_first_step(begin_step)
     look_at_human()
-    prompt("training", from_training=True)
-    wait_prompt_button_pressed()
 
 ###############################################################
 
-    g_prompt_pub.publish(String( "C'est le début du tutoriel. Les zones jaunes indiquent à tous moment sont les actions que vous pouvez effectuer en cliquant dessus. (Appuyez sur Entrée)" ))
-    wait_prompt_button_pressed()
-
+    g_prompt_pub.publish(String(format_txt("Bienvenue dans ce tutoriel. \n \n Les zones jaunes indiquent à tous instant les actions que vous pouvez effecter. \n \n Cliquez sur le cube jaune central pour le prendre.")))
     send_NS_update_HAs(curr_step, VHA.NS_IDLE)
-    g_prompt_pub.publish(String( "Cliquez sur le cube jaune central pour le prendre." ))
     while not rospy.is_shutdown() and g_new_human_decision==None:
         time.sleep(0.1)
 
@@ -162,6 +183,8 @@ def training(begin_step: ConM.Step):
     RA = select_best_compliant_RA(curr_step, result_id)
     start_execute_RA(RA)
 
+    g_prompt_pub.publish(String(format_txt("Le robot a observé votre action et agit en fonction en parallèle...")))
+
     wait_step_end()
     HA = MOCK_assess_human_action()
     curr_step = get_next_step(curr_step, HA, RA)
@@ -172,17 +195,15 @@ def training(begin_step: ConM.Step):
 ###############################################################
 
 
-    g_prompt_pub.publish(String( "Le robot a observé votre action et a agit fonction en parallèle.(Entrée)" ))
-    wait_prompt_button_pressed()
-    g_prompt_pub.publish(String( "Le robot peut également agir en premier et à vous d'agir en parallèle en cliquant sur une zone affichée (Entrée)" ))
-    wait_prompt_button_pressed()
-    g_prompt_pub.publish(String( "Après avoir appuyé sur Entrée le robot va commencer à placer le cube rouge, placez le cube jaune en même temps (Entrée)" ))
+    g_prompt_pub.publish(String(format_txt("Le robot peut également agir en premier et à vous d'agir en parallèle en cliquant sur une zone affichée. \n Juste après, le robot va commencer à placer le cube rouge. Placez le cube jaune en même temps \n (Suivant)")))
     wait_prompt_button_pressed()
 
     RA = select_best_RA(curr_step)
     start_execute_RA(RA)
     passive_update_HAs(curr_step, RA)
 
+    g_prompt_pub.publish(String(format_txt("Placez le cube jaune !")))
+
     wait_step_end()
     HA = MOCK_assess_human_action()
     curr_step = get_next_step(curr_step, HA, RA)
@@ -192,12 +213,11 @@ def training(begin_step: ConM.Step):
 
 ###############################################################
 
-    g_prompt_pub.publish(String( "Quand le robot ne peut rien faire il passe en 'mode passif', attendant que vous aggissiez seul.e. Placez la barre rose." ))
+    g_prompt_pub.publish(String(format_txt("Quand le robot ne peut rien faire il passe en 'mode passif' en rectractant son bras et attend que vous agissiez seul.e. \n \n Placez la barre rose pour progresser.")))
     send_NS_update_HAs(curr_step, VHA.NS_IDLE)
     look_at_human()
     go_idle_pose_once()
     RA = select_valid_passive(curr_step)
-
 
     while not rospy.is_shutdown() and g_new_human_decision==None:
         time.sleep(0.1)
@@ -224,17 +244,15 @@ def training(begin_step: ConM.Step):
 
 ###############################################################
 
-    g_prompt_pub.publish(String( "Vous pouvez aussi décider de ne pas agir, laissant le robot agir seul. Vous avez 2 manières d'être passif (Entrée)" ))
+    g_prompt_pub.publish(String(format_txt("Vous pouvez aussi quand vous le souhaitez décider d'être passif et de ne pas agir, laissant le robot agir seul. \n \n Vous avez 2 manières d'être passif \n (Suivant)")))
     wait_prompt_button_pressed()
-    g_prompt_pub.publish(String( "D'abord vous pouvez faire un signe de la main pour annoncer explicitement que vous n'allez rien faire. (Entrée)" ))
-    wait_prompt_button_pressed()
-    g_prompt_pub.publish(String( "Alors que vous pouvez prendre le cube blanc ou bleu, soyez passif en cliquant sur la main." ))
+    g_prompt_pub.publish(String(format_txt("D'abord vous pouvez faire un signe de la main pour annoncer explicitement que vous n'allez rien faire. \n \n Alors que vous pouvez prendre le cube blanc ou bleu, soyez passif en cliquant sur la main.")))
 
     send_NS_update_HAs(curr_step, VHA.NS)
     while not rospy.is_shutdown() and g_new_human_decision==None:
         time.sleep(0.1)
 
-    g_prompt_pub.publish(String( "Le robot voit votre signal et décide d'agir seul." ))
+    g_prompt_pub.publish(String(format_txt("Le robot voit votre signal et décide d'agir seul. \n \n Notez la zone sur le cube bleu.")))
 
 
     RA = select_best_RA_H_passive(curr_step)
@@ -250,13 +268,9 @@ def training(begin_step: ConM.Step):
 
 ###############################################################
 
-    g_prompt_pub.publish(String( "Avez vous remarqué que même après votre signe de la main certaines actions sont disponibles (cube bleu) (Entrée)" ))
+    g_prompt_pub.publish(String(format_txt("Même après votre signe de la main certaines actions compatibles avec celle du robot sont disponibles (comme prendre cube bleu). \n \n Ainsi, vous pouvez volontairement laisser le robot commencer puis agir en parallèle. (Suivant)" )))
     wait_prompt_button_pressed()
-    g_prompt_pub.publish(String( "Ainsi, vous pouvez volontairement laisser le robot commencer puis agir en parallèle. (Entrée)" ))
-    wait_prompt_button_pressed()
-    g_prompt_pub.publish(String( "Pour être passif vous pouvez aussi ne rien faire, à la fin du timer affiché par la robot il vous considérera comme 'passif' (Entrée)" ))
-    wait_prompt_button_pressed()
-    g_prompt_pub.publish(String( "Cette fois, soyez passif en attendant la fin du timer puis attrapez le cube bleu (Entrée)" ))
+    g_prompt_pub.publish(String(format_txt("Pour être passif vous pouvez aussi ne rien faire. Le robot affichera un timer et vous considérera comme 'passif' à la fin de celui-ci. \n \n Cette fois, soyez passif en attendant la fin du timer, puis attrapez le cube bleu (Suivant)" )))
     wait_prompt_button_pressed()
 
     send_NS_update_HAs(curr_step, VHA.NS)
@@ -267,8 +281,7 @@ def training(begin_step: ConM.Step):
     start_waiting_time = time.time()
     while not rospy.is_shutdown() and time.time()-start_waiting_time<TIMEOUT_DELAY:
         str_bar.goto(time.time()-start_waiting_time)
-        # prompt("wait_human_decision", f"\n{str_bar.get_str()}", from_training=True)
-        g_prompt_pub.publish(String("blablabla" + f"\n{str_bar.get_str()}"))
+        g_prompt_pub.publish(String(format_txt("Attendez la fin du timer et préparez vous à prendre le cube bleu...") + f"\n{str_bar.get_str()}"))
         time.sleep(0.1)
 
     # Check if timeout reached
@@ -279,7 +292,7 @@ def training(begin_step: ConM.Step):
             timeout_reached = True
     
     if timeout_reached:
-        prompt("wait_h_decision_timeout", from_training=True)
+        g_prompt_pub.publish(String(format_txt("Parfait, attrapez maintenant le cube bleu !" )))
         sgl = Signal()
         sgl.type = Signal.TO
         robot_visual_signal_pub.publish(sgl)
@@ -298,7 +311,7 @@ def training(begin_step: ConM.Step):
 
 ###############################################################
 
-    g_prompt_pub.publish(String( "Maintenant, placez le cube sur la tour pour terminer la tâche." ))
+    g_prompt_pub.publish(String(format_txt("Il ne vous reste plus qu'à placez le cube sur la tour pour terminer la tâche." )))
     send_NS_update_HAs(curr_step, VHA.NS_IDLE)
     while not rospy.is_shutdown() and g_new_human_decision==None:
             time.sleep(0.1)
@@ -313,7 +326,7 @@ def training(begin_step: ConM.Step):
 
 ###############################################################
 
-    g_prompt_pub.publish(String( "bien joué" ))
+    g_prompt_pub.publish(String(format_txt("La tâche est terminée ainsi que ce tutoriel. \n \n Merci de votre coopération !" )))
 
     TRAINING_PROMPT_ONLY = False
     TIMEOUT_DELAY = back_TIMEOUT_DELAY
@@ -1369,8 +1382,8 @@ g_prompt_messages = {
         "FR":  "\t* Prêt à démarrer *",
         },
     "start_press_enter":{
-        "ENG": "Press Enter",
-        "FR":  "Cliquez ici puis appuyez sur 'Entrée'",
+        "ENG": "Click on the yellow button",
+        "FR":  "Cliquez sur le button jaune",
         },
     "force_stop":{
         "ENG": "Force Stop",
@@ -1420,7 +1433,7 @@ def main_exec():
     ASSESS_DELAY                = 0.2
     TT_R_PASSIVE_DELAY          = 1.0
     START_SIMU_DELAY            = 2.0
-    INCREMENTAL_BAR_STR_WIDTH   = 26
+    INCREMENTAL_BAR_STR_WIDTH   = 33
     #   Proba
     P_SUCCESS_ID_PHASE          = 1.0
 
