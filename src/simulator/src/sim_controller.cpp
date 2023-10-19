@@ -1756,7 +1756,6 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 // ************************* LOW LEVEL ACTIONS **************************** //
 void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool human_home /* = false */)
 {
-    ROS_INFO("\t\t%s MOVE_POSE_TARGET START", get_agent_str(agent).c_str());
     ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << " MOVE_POSE_TARGET START (" << std::setprecision(4) << pose_target.position.x << ", " << pose_target.position.y << ", " << pose_target.position.z << ")");
     sim_msgs::MoveArm srv;
     srv.request.pose_target = pose_target;
@@ -1767,7 +1766,7 @@ void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool 
 
     if (!move_arm_pose_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service move_arm_pose_target failed...");
-    ROS_INFO("\t\t%s MOVE_POSE_TARGET END", get_agent_str(agent).c_str());
+    ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << " MOVE_POSE_TARGET END (" << std::setprecision(4) << pose_target.position.x << ", " << pose_target.position.y << ", " << pose_target.position.z << ")");
 }
 
 void move_location_target(AGENT agent, const std::string &loc_name)
@@ -1800,12 +1799,12 @@ void move_home(AGENT agent)
 
 void move_named_target(AGENT agent, const std::string &named_target)
 {
-    ROS_INFO("\t\t%s MOVE_NAMED_TARGET START", get_agent_str(agent).c_str());
+    ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << " MOVE_NAMED_TARGET START (" << named_target << ")");
     sim_msgs::MoveArm srv;
     srv.request.named_target = named_target;
     if (!move_arm_named_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service move_arm_named_target failed...");
-    ROS_INFO("\t\t%s MOVE_NAMED_TARGET END", get_agent_str(agent).c_str());
+    ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << " MOVE_NAMED_TARGET END (" << named_target << ")");
 }
 
 void grab_obj(AGENT agent, const std::string &object)
@@ -2059,20 +2058,26 @@ void send_visual_signal_action_over(AGENT agent, sim_msgs::Action action)
 
 bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 {
+    ROS_INFO("Start reset...");
+
     // Reset g_cubes
+    ROS_INFO("\tReset cubes");
     for (unsigned int i = 0; i < g_cubes.size(); i++)
         g_cubes[i].setOnTable(true);
 
     // Reset Drop zones
+    ROS_INFO("\tReset drop zones");
     for (auto it = g_center_drop_zones.begin(); it != g_center_drop_zones.end(); it++)
         (*it).setOccupied(false);
 
     // Get world models
+    ROS_INFO("\tGet world models");
     gazebo_msgs::GetWorldProperties srv;
     if (!get_world_properties.call(srv) || !srv.response.success)
         throw ros::Exception("Calling get_world_properties failed...");
 
     // Detach and reset pose of world models
+    ROS_INFO("\tDetach and reset world pose of models");
     gazebo_ros_link_attacher::Attach srv_attach;
     gazebo_msgs::SetModelState srv_set;
     for (std::vector<std::string>::iterator it = srv.response.model_names.begin(); it != srv.response.model_names.end(); it++)
@@ -2099,11 +2104,13 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     }
 
     // Reset robot head
+    ROS_INFO("\tReset robot head");
     sim_msgs::HeadCmd head_cmd;
     head_cmd.type = sim_msgs::HeadCmd::RESET;
     head_cmd_pub.publish(head_cmd);
 
     // Home agents
+    ROS_INFO("\tHome agent");
     home_agents();
     action_received[AGENT::ROBOT] = false;
     action_received[AGENT::HUMAN] = false;
@@ -2111,6 +2118,7 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     action_done[AGENT::HUMAN] = false;
 
     // Reset prompt
+    ROS_INFO("\tReset prompt");
     std_msgs::String prompt_msg;
     prompt_pub.publish(prompt_msg);
 
