@@ -1538,17 +1538,18 @@ def main_exec():
         bar = IncrementalBar(max = START_SIMU_DELAY)
         str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
         start_time = time.time()
+        prompt("start_simu_delay")
         while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
             elapsed = time.time() - start_time
             bar.goto(elapsed)
             str_bar.goto(elapsed)
-            prompt("start_simu_delay", f"\n{str_bar.get_str()}")
-            time.sleep(0.05)
+            g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
+            time.sleep(0.01)
         bar.goto(bar.max)
         str_bar.goto(str_bar.max)
         bar.finish()
         str_bar.finish()
-        prompt("start_simu_delay", f"\n{str_bar.get_str()}")
+        g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
 
         # Starting execution
         if exec_regime == "training":
@@ -1603,6 +1604,7 @@ if __name__ == "__main__":
     g_best_human_action_pub = rospy.Publisher('/mock_best_human_action', Int32, queue_size=1)
     g_event_log_pub = rospy.Publisher('/event_log', EventLog, queue_size=10)
     g_prompt_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
+    g_prompt_progress_bar = rospy.Publisher("/prompt_update_progress_bar", String, queue_size=1)
     g_head_cmd_pub = rospy.Publisher("/tiago_head_cmd", HeadCmd, queue_size=10)
 
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
@@ -1626,6 +1628,7 @@ if __name__ == "__main__":
     g_show_prompt_button_client = rospy.ServiceProxy("show_prompt_button", EmptyS)
     g_hide_prompt_button_client = rospy.ServiceProxy("hide_prompt_button", EmptyS)
     prompt_button_pressed_sub = rospy.Subscriber('/prompt_button_pressed', EmptyM, prompt_button_pressed_cb)
+
 
     ###
     
