@@ -23,6 +23,7 @@ from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Pose, Twist, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+import time
 
 DOMAIN_NAME = "stack_empiler_2"
 
@@ -160,9 +161,10 @@ def isInZone(pose: Point, zone: Zone):
 def hide_all_zones(req = None):
     srv = SetModelStateRequest()
     for z in g_zones.values():
+        z.current_action_id = -10
+    for z in g_zones.values():
         srv.model_state.model_name = f"z{z.id}"
         srv.model_state.pose = g_far_zone_pose
-        z.current_action_id = -10
         srv.model_state.reference_frame = "world" 
         g_set_model_state_client(srv)
     return EmptyResponse()
@@ -204,7 +206,8 @@ def hide_prompt_button(req = None):
 #########
 def incoming_vha_cb(msg: VHA):
     global g_vha, g_vha_received
-    print("vha received")
+    print("\n")
+    rospy.loginfo("vha received")
     print(msg)
     g_vha = msg
     g_vha_received = True
@@ -235,9 +238,16 @@ def incoming_vha_cb(msg: VHA):
             srv.model_state.pose = g_far_zone_pose
             z.current_action_id = -10
         g_set_model_state_client(srv)
-        
+
+    if msg.timeout!=0.0:
+        rospy.loginfo("With timeout....")
+        time.sleep(msg.timeout)
+        rospy.loginfo("start hiding zones")
+        hide_all_zones()
+        rospy.loginfo("done hiding zones")
+
 def mouse_pressed_cb(msg: Point):
-    if isInZone(msg, g_prompt_button_zone) and g_prompt_button_shown:
+    if g_prompt_button_shown and isInZone(msg, g_prompt_button_zone):
         print("prompt button pressed !")
         g_prompt_button_pressed_pub.publish(EmptyM())
         hide_prompt_button()

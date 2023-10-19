@@ -343,6 +343,7 @@ def execution_HF(begin_step: ConM.Step):
     curr_step = get_first_step(begin_step)
     while not exec_over(curr_step) and not rospy.is_shutdown() and not g_force_exec_stop:
 
+        print("\n")
         rospy.loginfo(f"Step {curr_step.id} begins.")
         
 
@@ -366,7 +367,7 @@ def execution_HF(begin_step: ConM.Step):
             else:
                 reset_permanent_prompt_line()
 
-            send_NS_update_HAs(curr_step, VHA.NS)
+            send_NS_update_HAs(curr_step, VHA.NS, timeout=TIMEOUT_DELAY)
             look_at_human()
             wait_human_decision(curr_step)
 
@@ -455,7 +456,7 @@ def execution_RF(begin_step: ConM.Step):
             elif RA.is_passive():
                 look_at_human()
                 send_NS(VHA.NS)
-                passive_update_HAs(curr_step, RA)
+                passive_update_HAs(curr_step, RA, TIMEOUT_DELAY)
                 start_waiting_time = time.time()
                 str_bar = IncrementalBarStr(max = TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
                 log_event("R_S_RF_WAIT_H")
@@ -581,7 +582,7 @@ def execution_TT(begin_step: ConM.Step):
                     time.sleep(TT_R_PASSIVE_DELAY)
                 else:
                     g_possible_human_actions = [ho.human_action for ho in curr_step.human_options]
-                    send_vha(g_possible_human_actions, VHA.NS)
+                    send_vha(g_possible_human_actions, VHA.NS, timeout=TIMEOUT_DELAY)
                     wait_human_decision(curr_step)
 
             if human_active():
@@ -631,14 +632,14 @@ def execution_TT(begin_step: ConM.Step):
 ## MOCK Human behavior ##
 #########################
 g_possible_human_actions = []
-def send_NS_update_HAs(step: ConM.Step, type):
+def send_NS_update_HAs(step: ConM.Step, type, timeout=0.0):
     global g_possible_human_actions
 
     
     send_NS(type)
 
     g_possible_human_actions = [ho.human_action for ho in step.human_options]
-    send_vha(g_possible_human_actions, type)
+    send_vha(g_possible_human_actions, type, timeout=timeout)
 
     # Find best human action id, sent to hmi mock
     # best_ha = Int32()
@@ -669,14 +670,14 @@ def send_NS(type, turn=None):
     robot_visual_signal_pub.publish(sgl)
     time.sleep(0.001)
 
-def passive_update_HAs(step: ConM.step, RA: CM.Action):
+def passive_update_HAs(step: ConM.step, RA: CM.Action, timeout=0.0):
     global g_possible_human_actions
 
     if not human_active():
         # find compliant human actions and send VHA
         compliant_pairs = find_compliant_pairs_with_RA(step, RA)
         g_possible_human_actions = [p.human_action for p in compliant_pairs]
-        send_vha(g_possible_human_actions, VHA.CONCURRENT)
+        send_vha(g_possible_human_actions, VHA.CONCURRENT, timeout=timeout)
 
         # find best human action in compliant actions
         ## find best pair
@@ -831,46 +832,58 @@ def wait_human_decision(step: ConM.Step):
     bar = IncrementalBar('Waiting human choice', max=TIMEOUT_DELAY)
     str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
 
-    start_waiting_time = time.time()
-    while not rospy.is_shutdown() and not step.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY and g_new_human_decision==None:
-        elapsed = time.time()-start_waiting_time
+    if not step.isHInactive():
+        start_waiting_time = time.time()
+        prompt("wait_human_decision")
+        while not rospy.is_shutdown() and not step.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY and g_new_human_decision==None:
+            elapsed = time.time()-start_waiting_time
 
-        # Update progress bars
-        bar.goto(elapsed)
-        str_bar.goto(elapsed)
-        prompt("wait_human_decision", f"\n{str_bar.get_str()}")
+            # Update progress bars
+            bar.goto(elapsed)
+            str_bar.goto(elapsed)
+            g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
 
-        # Loop rate
-        time.sleep(0.1)
+            # Loop rate
+            time.sleep(0.01)
 
-    # Check if timeout reached
-    timeout_reached = False 
-    if not step.isHInactive() and g_new_human_decision==None:
-        time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
+        # Check if timeout reached
         if g_new_human_decision==None:
-            timeout_reached = True
+            bar.goto(bar.max)
+            bar.finish()
+            str_bar.goto(str_bar.max)
+            str_bar.finish()
+            g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
+            rospy.loginfo("end loop")
+            rospy.loginfo("start wait reaction time")
+            start_time = time.time()
+            while not rospy.is_shutdown():
+                if not g_h_decision_received and time.time()-start_time>1.0:
+                    break
+                elif g_h_decision_received and g_new_human_decision:
+                    break
+                else:
+                    time.sleep(0.01)
+            rospy.loginfo("end wait reaction time")
+        else:
+            rospy.loginfo("end loop")
     
     # If Timeout Reached
-    if timeout_reached:
-        rospy.loginfo("Timeout reached, human not acting...")
+    if g_new_human_decision==None:
+        rospy.loginfo("Timeout reached, human seems passive...")
         prompt("wait_h_decision_timeout")
         sgl = Signal()
         sgl.type = Signal.TO
         robot_visual_signal_pub.publish(sgl)
         g_hmi_timeout_reached_pub.publish(EmptyM())
-        human_acting = False
     # Visual signal received, either PASS or Start Action
     else:
-        rospy.loginfo("Step start detected!")
+        rospy.loginfo("Human decision detected!")
         if g_new_human_decision.is_pass():
-            rospy.loginfo("Human not acting...")
-            human_acting = False
+            rospy.loginfo("PASS, Human is passive...")
         else:
             rospy.loginfo(f"Human is active")
-            human_acting = True
 
     log_event("R_E_WAIT_HC")
-    return human_acting
 
 def wait_step_end():
     log_event("R_S_WAIT_STEP_END")
@@ -947,15 +960,16 @@ def convert_rank_to_score(rank, nb):
     return rank
 
 def reset():
-    global g_possible_human_actions, step_over, g_previous_elapsed, g_new_human_decision, g_robot_acting
+    global g_possible_human_actions, g_new_human_decision, g_h_decision_received, step_over, g_previous_elapsed, g_robot_acting
     g_possible_human_actions = []
     g_new_human_decision = None
+    g_h_decision_received = False
     step_over = False
     g_previous_elapsed = -1
     g_robot_acting = False
 
 def full_reset():
-    global g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_enter_pressed
+    global g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_enter_pressed, g_prompt_button_pressed
     reset()
     reset_permanent_prompt_line()
     g_force_exec_stop = False
@@ -1166,9 +1180,10 @@ def compute_msg_action(a):
 #########
 ## ROS ##
 #########
-def send_vha(valid_human_actions: list[CM.Action], type):
+def send_vha(valid_human_actions: list[CM.Action], type, timeout=0.0):
     msg = VHA()
     msg.type = type
+    msg.timeout = timeout
 
     # Remove passive actions
     for ha in valid_human_actions:
@@ -1237,10 +1252,12 @@ def start_human_action_server(req: IntRequest):
     return IntResponse()
 
 g_new_human_decision = None # type: CM.Action | None
+g_h_decision_received = False
 def human_visual_signal_cb(msg: Signal):
-    global g_new_human_decision
+    global g_new_human_decision, g_h_decision_received
 
-    print(f"\nCB human visual signal: id: {msg.id} type: {msg.type}")
+    g_h_decision_received = True
+    rospy.loginfo(f"CB human visual signal: id: {msg.id} type: {msg.type}")
 
     time.sleep(ESTIMATED_R_REACTION_TIME)
 
@@ -1256,7 +1273,7 @@ def human_visual_signal_cb(msg: Signal):
             # double skip, should repeat 
             pass_ha = default_human_passive_action
         g_new_human_decision = pass_ha
-        rospy.loginfo(f"\nHuman visual : PASS")
+        rospy.loginfo(f"Human visual : PASS")
 
     # Regular action
     elif msg.type == Signal.S_HA:
