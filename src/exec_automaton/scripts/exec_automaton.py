@@ -1481,22 +1481,22 @@ def main_exec():
     if g_domain_name!=DOMAIN_NAME:
         raise Exception("Missmatching domain names CONSTANT and loaded")
     robots = {
-        "training" : ("training", sol_tee),
+        "t" : ("training", sol_tee),
 
-        "hf1" : ("hf", sol_tee),
-        "rf2" : ("rf", sol_tee),
+        "1" : ("hf", sol_tee),
+        "2" : ("rf", sol_tee),
 
-        "hf3" : ("hf", sol_hmw),
-        "rf4" : ("rf", sol_hmw),
+        "3" : ("hf", sol_hmw),
+        "4" : ("rf", sol_hmw),
     
-        "hf5" : ("hf", sol_tee),
-        "rf6" : ("rf", sol_tee),
+        "5" : ("hf", sol_tee),
+        "6" : ("rf", sol_tee),
 
-        "hf7" : ("hf", sol_tee),
-        "tt8" : ("tt", sol_tt_tee),
+        "7" : ("hf", sol_tee),
+        "8" : ("tt", sol_tt_tee),
 
-        "hf9" : ("hf", sol_hmw),
-        "tt10": ("tt", sol_tt_hmw),
+        "9" : ("hf", sol_hmw),
+        "10": ("tt", sol_tt_hmw),
     }
 
     rospy.loginfo("Wait for hmi to be started...")
