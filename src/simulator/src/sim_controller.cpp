@@ -2241,7 +2241,7 @@ int main(int argc, char **argv)
     ros::service::waitForService(h_move_pose_srv_name);
     ros::service::waitForService(r_head_cmd_ready_name);
 
-    home_agents();
+    // home_agents();
 
     ROS_INFO("Controllers Ready!");
 
