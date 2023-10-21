@@ -511,13 +511,13 @@ if __name__ == "__main__":
             exit(1)
 
         # Dumping
-        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events.p", "wb"))
+        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events/events.p", "wb"))
         str_date = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
         dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events/"+str_date+"_events.p", "wb"))
         print("events dumped")
     else:
         # Loading
-        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open("/home/afavier/new_exec_sim_ws/events.p", "rb"))
+        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open("/home/afavier/new_exec_sim_ws/events/events.p", "rb"))
         print("events loaded")
 
     e_t = time.time()
