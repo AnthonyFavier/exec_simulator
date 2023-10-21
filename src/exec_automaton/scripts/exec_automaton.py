@@ -174,7 +174,7 @@ def training(begin_step: ConM.Step):
 
 ###############################################################
 
-    g_prompt_pub.publish(String(format_txt("Bienvenue dans ce tutoriel. \n \n Les zones jaunes indiquent à tous instant les actions que vous pouvez effecter. \n \n Cliquez sur le cube jaune central pour le prendre.")))
+    g_prompt_pub.publish(String(format_txt("Bienvenue dans ce tutoriel. \n \n Les zones jaunes indiquent à tous instant les actions que vous pouvez effectuer. \n \n Cliquez sur le cube jaune central pour le prendre.")))
     send_NS_update_HAs(curr_step, VHA.NS_IDLE)
     while not rospy.is_shutdown() and g_new_human_decision==None:
         time.sleep(0.1)
@@ -244,9 +244,9 @@ def training(begin_step: ConM.Step):
 
 ###############################################################
 
-    g_prompt_pub.publish(String(format_txt("Vous pouvez aussi quand vous le souhaitez décider d'être passif et de ne pas agir, laissant le robot agir seul. \n \n Vous avez 2 manières d'être passif \n (Suivant)")))
+    g_prompt_pub.publish(String(format_txt("Quand vous le souhaitez, vous pouvez aussi décider d'être passif et de ne pas agir, laissant le robot agir seul. \n \n Vous avez 2 manières d'être passif \n (Suivant)")))
     wait_prompt_button_pressed()
-    g_prompt_pub.publish(String(format_txt("D'abord vous pouvez faire un signe de la main pour annoncer explicitement que vous n'allez rien faire. \n \n Alors que vous pouvez prendre le cube blanc ou bleu, soyez passif en cliquant sur la main.")))
+    g_prompt_pub.publish(String(format_txt("D'abord vous pouvez faire un signe de la main pour annoncer explicitement que vous n'allez rien faire. \n \n Alors que vous pouvez prendre le cube blanc ou bleu, indiquez au robot que vous voulez être passif en cliquant sur la main.")))
 
     send_NS_update_HAs(curr_step, VHA.NS)
     while not rospy.is_shutdown() and g_new_human_decision==None:
@@ -270,7 +270,7 @@ def training(begin_step: ConM.Step):
 
     g_prompt_pub.publish(String(format_txt("Même après votre signe de la main certaines actions compatibles avec celle du robot sont disponibles (comme prendre cube bleu). \n \n Ainsi, vous pouvez volontairement laisser le robot commencer puis agir en parallèle. (Suivant)" )))
     wait_prompt_button_pressed()
-    g_prompt_pub.publish(String(format_txt("Pour être passif vous pouvez aussi ne rien faire. Le robot affichera un timer et vous considérera comme 'passif' à la fin de celui-ci. \n \n Cette fois, soyez passif en attendant la fin du timer, puis attrapez le cube bleu (Suivant)" )))
+    g_prompt_pub.publish(String(format_txt("Pour être passif vous pouvez aussi ne rien faire. Le robot affichera un timer et vous considérera comme 'passif' à la fin de ce dernier. \n \n Cette fois, soyez passif en attendant la fin du timer, puis attrapez le cube bleu (Suivant)" )))
     wait_prompt_button_pressed()
 
     send_NS_update_HAs(curr_step, VHA.NS)
@@ -1401,7 +1401,7 @@ g_prompt_messages = {
         },
     "start_press_enter":{
         "ENG": "Click on the yellow button",
-        "FR":  "Cliquez sur le button jaune",
+        "FR":  "Cliquez sur le bouton jaune",
         },
     "force_stop":{
         "ENG": "Force Stop",
@@ -1476,9 +1476,9 @@ def main_exec():
     sol_tt_tee =    None
     sol_tt_hmw =    None
     sol_tee =       load("sol_stack_empiler_2_tee.p")
-    sol_hmw =       load("sol_stack_empiler_2_hmw.p")
-    sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
-    sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
+    # sol_hmw =       load("sol_stack_empiler_2_hmw.p")
+    # sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
+    # sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
     if g_domain_name!=DOMAIN_NAME:
         raise Exception("Missmatching domain names CONSTANT and loaded")
     robots = {
