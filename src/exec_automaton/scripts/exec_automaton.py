@@ -279,10 +279,16 @@ def training(begin_step: ConM.Step):
     str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
 
     start_waiting_time = time.time()
+    g_prompt_pub.publish(String(format_txt("Attendez la fin du timer et préparez vous à prendre le cube bleu...")))
     while not rospy.is_shutdown() and time.time()-start_waiting_time<TIMEOUT_DELAY:
         str_bar.goto(time.time()-start_waiting_time)
-        g_prompt_pub.publish(String(format_txt("Attendez la fin du timer et préparez vous à prendre le cube bleu...") + f"\n{str_bar.get_str()}"))
-        time.sleep(0.1)
+        g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
+        time.sleep(0.01)
+
+    str_bar.goto(str_bar.max)
+    str_bar.finish()
+    g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
+    time.sleep(0.01)
 
     # Check if timeout reached
     timeout_reached = False 
@@ -331,10 +337,11 @@ def training(begin_step: ConM.Step):
     TRAINING_PROMPT_ONLY = False
     TIMEOUT_DELAY = back_TIMEOUT_DELAY
 
+    log_event("OVER")
     g_force_exec_stop = True
     reset_head()
     g_go_init_pose_client.call()
-    return -1, -1
+    return -2, -2
 
 def execution_HF(begin_step: ConM.Step):
     """
@@ -1369,7 +1376,7 @@ g_prompt_messages = {
         },
     "reset_world":{
         "ENG": "Resetting the world...",
-        "FR":  "Reinitialisation...",
+        "FR":  "Réinitialisation...",
         },
     "h_done":{
         "ENG": "You are done.",
@@ -1449,15 +1456,14 @@ def asking_robot(robots):
 
     return robot_name
 
-
-
-def wait_start_signal(robot_name, robots):
+def wait_start_signal(robot_name, robots, i):
     # Wait for Start Signal from Prompt Window
     rospy.loginfo("READY TO START, waiting for start signal...")
     set_permanent_prompt_line("start_ready")
     prompt("start_press_enter")
     # g_prompt_pub.publish(String( format_txt(f"\t* Prêt à démarrer * \n Robot n°{robot_name} Type: {robots[robot_name][0]} \n Cliquez sur le bouton jaune") ))
-    g_prompt_pub.publish(String( f"           * Prêt à démarrer * \n\n        Robot n°{robot_name} Type: {robots[robot_name][0]} \n\n\n Cliquez sur le bouton jaune     ⬇") )
+    g_prompt_pub.publish(String( f"           * Prêt à démarrer * \n\n       Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})\n\n\n Cliquez sur le bouton jaune     ⬇") )
+    rospy.loginfo(f"Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})")
     wait_prompt_button_pressed()
     reset_permanent_prompt_line()
 
@@ -1573,6 +1579,10 @@ def main_exec():
     rospy.wait_for_service("reset_world")
     rospy.loginfo("reset_world service started")
 
+    rospy.loginfo("Waiting prompt to be started...")
+    rospy.wait_for_service("prompt_started")
+    rospy.loginfo("prompt started")
+
     exec_regime = None
     begin_step = None 
 
@@ -1581,6 +1591,7 @@ def main_exec():
 
     # given order
     order = [1,2,3,4,5,6,7,8,9,10]
+    i = 0
 
     if order!=[]:
         order = ["t"] + [str(o) for o in order]
@@ -1589,6 +1600,7 @@ def main_exec():
 
     while order!=[]:
         
+        print("Order = ", order)
         robot_name = order.pop(0)
         exec_regime, begin_step = robots[robot_name]
 
@@ -1597,7 +1609,7 @@ def main_exec():
         g_reset_world_client()
 
         # Wait for Start Signal from Prompt Window
-        wait_start_signal(robot_name, robots)
+        wait_start_signal(robot_name, robots, i)
         
         # Start delay before beginning
         start_delay()
@@ -1613,19 +1625,26 @@ def main_exec():
             id,r_rank = execution_TT(begin_step)
         else:
             raise Exception("unknown exec_regime.")
-        if id!=-1 and r_rank!=-1:
+        
+        # loop
+        if id==-1 and r_rank==-1: # force stop
+            order = []
+        elif id==-2 and r_rank==-2: # training
+            pass
+        else: # nominal
             nb_sol = len(begin_step.get_final_leaves())
             r_score = convert_rank_to_score(r_rank,nb_sol)
             print(f"END: id={id}, r_score=%.3f" % r_score)
-        else:
-            order = []
 
-        # Repeat loop
         if order==[]:
             robot_name = repeat_loop(robot_name, robots)
             if robot_name!=None:
                 order.append(robot_name)
+        else:
+            g_prompt_pub.publish(String( format_txt("Tâche terminée \n \n Cliquez sur le bouton pour continuer")))
+            wait_prompt_button_pressed()
         full_reset()
+        i+=1
 
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)

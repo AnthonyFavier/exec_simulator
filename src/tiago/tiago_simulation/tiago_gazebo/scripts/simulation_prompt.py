@@ -3,6 +3,8 @@
 import rospy
 from std_msgs.msg import String 
 from std_msgs.msg import Empty as EmptyM
+from std_srvs.srv import Empty as EmptyS
+from std_srvs.srv import EmptyResponse
 import sys
 from termios import tcflush, TCIFLUSH
 
@@ -33,5 +35,9 @@ if __name__ == "__main__":
 
 
   print('\033[2J')
+
+  started_service = rospy.Service("prompt_started", EmptyS, lambda req: EmptyResponse())
+
+
   rospy.spin()
 

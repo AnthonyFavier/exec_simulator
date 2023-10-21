@@ -489,9 +489,10 @@ if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
     # sys.argv.append("load")
-    if len(sys.argv)<2:
-        raise Exception("Missing argument... ['load', 'record']")
+    # sys.argv.append("events.p")
     record = sys.argv[1] == "record"
+
+    path = "/home/afavier/new_exec_sim_ws/events/"
 
     # ROS Startup
     rospy.init_node('timelog')
@@ -501,168 +502,174 @@ if __name__ == "__main__":
     log_r_sgl_sub = rospy.Subscriber('/robot_visual_signals', Signal, r_sgl_cb)
     log_h_sgl_sub = rospy.Subscriber('/human_visual_signals', Signal, h_sgl_cb)
 
-    s_t = time.time()
-
     if record:
-        print("Listening events... (type 'q' and return to abort)")
-        t = input()
-        if t=="q":
-            print("Record aborted")
-            exit(1)
+        while not rospy.is_shutdown():
+            print("\nStart recording")
 
-        # Dumping
-        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events/events.p", "wb"))
-        str_date = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open("/home/afavier/new_exec_sim_ws/events/"+str_date+"_events.p", "wb"))
-        print("events dumped")
+            # wait start
+            while len(g_events)==0 or g_events[-1].name=="OVER":
+                time.sleep(0.1)
+
+            # wait over
+            while g_events[-1].name!="OVER":
+                time.sleep(0.1)
+            
+            # Dumping
+            dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + "events.p", "wb"))
+            str_date = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+            dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + str_date + "_events.p", "wb"))
+            print("events dumped")
+
+            # Clearing
+            g_events.clear()
+            g_r_signals.clear()
+            g_h_signals.clear()
+            g_to_signals.clear()
+
     else:
+        file = sys.argv[2]
+
         # Loading
-        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open("/home/afavier/new_exec_sim_ws/events/events.p", "rb"))
+        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open(path + file, "rb"))
         print("events loaded")
 
-    e_t = time.time()
-
-    print(s_t)
-    print(e_t)
-    print(f"Elapsed t : {e_t-s_t}")
-
-    # TREAT EVENTS
-    reset_times()
-    print("\nEVENTS:")
-    show_events(g_events)
-    
-    # TREAT ACTIVITIES
-    r_extract_activities()
-    print("\nROBOT ACTIVITIES:")
-    show_activities(g_r_activities)
-    h_extract_activities()
-    print("\nHUMAN ACTIVITIES:")
-    show_activities(g_h_activities)
-
-    # TREAT SIGNALS
-    print("\nR SIGNALS:")
-    show_signals(g_r_signals)
-    print("\nH SIGNALS:")
-    show_signals(g_h_signals)
-    print("\nTO SIGNALS:")
-    show_signals(g_to_signals)
-
-    MIN_DURATION = 0.15
-    activities_zorder = 1
-    ns_lines_zorder = 2
-    signal_arrow_zorder = 3
-    signal_text_zorder = 10
-    signal_width_text = 1.5
-    signal_style="Simple, head_width=8, head_length=4, tail_width=4"
-
-########################
-    WITH_TIMEOUT = True
-########################
-
-
-    plt.rcParams.update({'font.size': 13})
-
-    fig, ax = plt.subplots(figsize=(18, 5))
-    ax.invert_yaxis()
-    
-    ax.set_axisbelow(True)
-    ax.grid(color='lightgrey', linestyle='dashed', axis='x')
-    tick_spacing = 1
-    horizontal_space = 0.2
-    max_x = g_events[-1].stamp
-    ax.set_xlim((-horizontal_space,max_x+horizontal_space))
-    x_ticks = np.arange(0, max_x, tick_spacing )
-    ax.set_xticks(x_ticks)
-    ax.set_xticklabels(["" for x in x_ticks], rotation=90)
-    ax.set_yticks([0.25, 1.0, 2.0, 3.0])
-    ax.set_yticklabels(['TO', 'R', 'Sgls', 'H'], rotation=90)
-    ax.set_ylim(3.5, 0.0)
-    if not WITH_TIMEOUT:
-        ax.set_ylim(3.5, 0.5)
-
-    ax2 = ax.twiny()
-    ax2.set_xticks( ax.get_xticks() )
-    ax2.set_xbound(ax.get_xbound())
-    x_tickslabels = []
-    for i,t in enumerate(x_ticks):
-        if i%2==0:
-            x_tickslabels.append(t)
-        else:
-            x_tickslabels.append("")
-    ax2.set_xticklabels(x_tickslabels, rotation=90)
-    ax2.set_xlabel("Time (s)", rotation=0)
-    ax2.format_coord = lambda x, y: 't={:g} s'.format(x)
+        # TREAT EVENTS
+        reset_times()
+        print("\nEVENTS:")
+        show_events(g_events)
         
-    # TIMEOUTS #
-    rec = ax.barh( ['TO'], [signal_width_text], left=[0.0], height=1.0, color=(0,0,0,0))
-    for sig in g_to_signals:
-        # if int(sig.stamp)==77:
-        #     continue
-        rec = ax.barh( ['TO'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=0.5, color=(0,0,0,0))
-        ax.bar_label(rec, labels=["TO     "], label_type='center', rotation=90, zorder=signal_text_zorder)
-        arrow = mpatches.FancyArrowPatch((sig.stamp, 0.25), (sig.stamp , 0.5), color="black", arrowstyle=signal_style, zorder=signal_arrow_zorder)
-        ax.add_patch(arrow)
+        # TREAT ACTIVITIES
+        r_extract_activities()
+        print("\nROBOT ACTIVITIES:")
+        show_activities(g_r_activities)
+        h_extract_activities()
+        print("\nHUMAN ACTIVITIES:")
+        show_activities(g_h_activities)
 
-    # ROBOT ACTIVITES #
-    for act in g_r_activities:
-        if act.dur() < MIN_DURATION:
-            continue
+        # TREAT SIGNALS
+        print("\nR SIGNALS:")
+        show_signals(g_r_signals)
+        print("\nH SIGNALS:")
+        show_signals(g_h_signals)
+        print("\nTO SIGNALS:")
+        show_signals(g_to_signals)
 
-        text = act.name
-        color = 'lightskyblue'
-        text_color = 'black'
-        if act.name in g_r_activities_names:
-            text = g_r_activities_names[act.name][0]
-            color = g_r_activities_names[act.name][1]
-            text_color = g_r_activities_names[act.name][2]
+        MIN_DURATION = 0.15
+        activities_zorder = 1
+        ns_lines_zorder = 2
+        signal_arrow_zorder = 3
+        signal_text_zorder = 10
+        signal_width_text = 1.5
+        signal_style="Simple, head_width=8, head_length=4, tail_width=4"
+
+    ########################
+        WITH_TIMEOUT = True
+    ########################
+
+
+        plt.rcParams.update({'font.size': 13})
+
+        fig, ax = plt.subplots(figsize=(18, 5))
+        ax.invert_yaxis()
         
-        rec = ax.barh( ['R'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
-        ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
+        ax.set_axisbelow(True)
+        ax.grid(color='lightgrey', linestyle='dashed', axis='x')
+        tick_spacing = 1
+        horizontal_space = 0.2
+        max_x = g_events[-1].stamp
+        ax.set_xlim((-horizontal_space,max_x+horizontal_space))
+        x_ticks = np.arange(0, max_x, tick_spacing )
+        ax.set_xticks(x_ticks)
+        ax.set_xticklabels(["" for x in x_ticks], rotation=90)
+        ax.set_yticks([0.25, 1.0, 2.0, 3.0])
+        ax.set_yticklabels(['TO', 'R', 'Sgls', 'H'], rotation=90)
+        ax.set_ylim(3.5, 0.0)
+        if not WITH_TIMEOUT:
+            ax.set_ylim(3.5, 0.5)
+
+        ax2 = ax.twiny()
+        ax2.set_xticks( ax.get_xticks() )
+        ax2.set_xbound(ax.get_xbound())
+        x_tickslabels = []
+        for i,t in enumerate(x_ticks):
+            if i%2==0:
+                x_tickslabels.append(t)
+            else:
+                x_tickslabels.append("")
+        ax2.set_xticklabels(x_tickslabels, rotation=90)
+        ax2.set_xlabel("Time (s)", rotation=0)
+        ax2.format_coord = lambda x, y: 't={:g} s'.format(x)
+            
+        # TIMEOUTS #
+        rec = ax.barh( ['TO'], [signal_width_text], left=[0.0], height=1.0, color=(0,0,0,0))
+        for sig in g_to_signals:
+            # if int(sig.stamp)==77:
+            #     continue
+            rec = ax.barh( ['TO'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=0.5, color=(0,0,0,0))
+            ax.bar_label(rec, labels=["TO     "], label_type='center', rotation=90, zorder=signal_text_zorder)
+            arrow = mpatches.FancyArrowPatch((sig.stamp, 0.25), (sig.stamp , 0.5), color="black", arrowstyle=signal_style, zorder=signal_arrow_zorder)
+            ax.add_patch(arrow)
+
+        # ROBOT ACTIVITES #
+        for act in g_r_activities:
+            if act.dur() < MIN_DURATION:
+                continue
+
+            text = act.name
+            color = 'lightskyblue'
+            text_color = 'black'
+            if act.name in g_r_activities_names:
+                text = g_r_activities_names[act.name][0]
+                color = g_r_activities_names[act.name][1]
+                text_color = g_r_activities_names[act.name][2]
+            
+            rec = ax.barh( ['R'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
+            ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
+            
+
+        # SIGNALS #
+        # R Signals #
+        for sig in g_r_signals:
+            rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
+            ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
+            arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 2.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
+            ax.add_patch(arrow)
+            # bar step separations
+            if sig.name[:2]=="NS":
+                line = mpatches.FancyArrowPatch((sig.stamp, -1.0), (sig.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
+                ax.add_patch(line)
+        # H Signals #
+        for sig in g_h_signals:
+            rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
+            ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
+            arrow = mpatches.FancyArrowPatch((sig.stamp, 2.5), (sig.stamp , 1.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
+            ax.add_patch(arrow)
         
+            
 
-    # SIGNALS #
-    # R Signals #
-    for sig in g_r_signals:
-        rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
-        ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
-        arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 2.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
-        ax.add_patch(arrow)
-        # bar step separations
-        if sig.name[:2]=="NS":
-            line = mpatches.FancyArrowPatch((sig.stamp, -1.0), (sig.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
-            ax.add_patch(line)
-    # H Signals #
-    for sig in g_h_signals:
-        rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
-        ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
-        arrow = mpatches.FancyArrowPatch((sig.stamp, 2.5), (sig.stamp , 1.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
-        ax.add_patch(arrow)
-    
+        # HUMAN ACTIVITES #
+        for act in g_h_activities:
+            if act.dur() < MIN_DURATION:
+                continue
+
+            text = act.name
+            color = 'wheat'
+            text_color = 'black'
+            if act.name in g_h_activities_names:
+                text = g_h_activities_names[act.name][0]
+                color = g_h_activities_names[act.name][1]
+                text_color = g_h_activities_names[act.name][2]
+
+            rec = ax.barh( ['H'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
+            ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
+
         
-
-    # HUMAN ACTIVITES #
-    for act in g_h_activities:
-        if act.dur() < MIN_DURATION:
-            continue
-
-        text = act.name
-        color = 'wheat'
-        text_color = 'black'
-        if act.name in g_h_activities_names:
-            text = g_h_activities_names[act.name][0]
-            color = g_h_activities_names[act.name][1]
-            text_color = g_h_activities_names[act.name][2]
-
-        rec = ax.barh( ['H'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
-        ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
-
-    
-    # OVER bar
-    over_event = g_events[-1]
-    line = mpatches.FancyArrowPatch((over_event.stamp, -1.0), (over_event.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
-    ax.add_patch(line)
+        # OVER bar
+        over_event = g_events[-1]
+        line = mpatches.FancyArrowPatch((over_event.stamp, -1.0), (over_event.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
+        ax.add_patch(line)
 
 
-    plt.tight_layout()
+        plt.tight_layout()
 
-    plt.show()
+        plt.show()

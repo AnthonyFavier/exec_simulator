@@ -1,5 +1,7 @@
 <launch>
+    
+    <arg name="file" default="events.p"/>
 
-    <node name="timelog" pkg="timelog" type="timelog.py" args="load" respawn="false" output="screen"/>
+    <node name="timelog" pkg="timelog" type="timelog.py" args="load $(arg file)" respawn="false" output="screen"/>
 
 </launch>
