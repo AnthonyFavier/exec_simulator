@@ -153,7 +153,7 @@ for l in f:
     id,x1,y1,x2,y2 = [int(i) for i in l]
     g_zones[id].setPixelCoords(x1,y1,x2,y2)
 
-print(g_zones)
+# print(g_zones)
 
 def isInZone(pose: Point, zone: Zone):
     return pose.x>=zone.x1 and pose.x<=zone.x2 and pose.y>=zone.y1 and pose.y<=zone.y2
@@ -205,7 +205,8 @@ def hide_prompt_button(req = None):
 ## ROS ##
 #########
 def incoming_vha_cb(msg: VHA):
-    global g_vha, g_vha_received
+    global g_vha, g_vha_received, decision_sent
+    decision_sent = False
     print("\n")
     rospy.loginfo("vha received")
     print(msg)
@@ -241,14 +242,21 @@ def incoming_vha_cb(msg: VHA):
 
     if msg.timeout!=0.0:
         rospy.loginfo("With timeout....")
-        time.sleep(msg.timeout)
-        rospy.loginfo("start hiding zones")
-        hide_all_zones()
-        rospy.loginfo("done hiding zones")
 
+        s_t = time.time()
+        while not rospy.is_shutdown() and not decision_sent and time.time()-s_t<msg.timeout:
+            time.sleep(0.01)
+        
+        if not decision_sent:
+            rospy.loginfo("start hiding zones")
+            hide_all_zones()
+            rospy.loginfo("done hiding zones")
+
+decision_sent = False
 def mouse_pressed_cb(msg: Point):
+    global decision_sent
     if g_prompt_button_shown and isInZone(msg, g_prompt_button_zone):
-        print("prompt button pressed !")
+        rospy.loginfo("prompt button pressed !")
         g_prompt_button_pressed_pub.publish(EmptyM())
         hide_prompt_button()
 
@@ -258,12 +266,13 @@ def mouse_pressed_cb(msg: Point):
             if z.current_action_id!=-10 and isInZone(msg, z):
                 zone_clicked = z
                 break
-        print(f"zone clicked: {zone_clicked}")
+        rospy.loginfo(f"zone clicked: {zone_clicked}")
 
         if zone_clicked!=None:
+            decision_sent = True
             g_start_human_action_prox(zone_clicked.current_action_id)
             hide_all_zones()
-            print("human decision sent")
+            rospy.loginfo("human decision sent")
 
 def TO_reached_cb(msg: EmptyM):
     hide_all_zones()

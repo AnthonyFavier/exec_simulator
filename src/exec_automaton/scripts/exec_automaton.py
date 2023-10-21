@@ -835,6 +835,7 @@ def wait_human_decision(step: ConM.Step):
     if not step.isHInactive():
         start_waiting_time = time.time()
         prompt("wait_human_decision")
+        time.sleep(0.01)
         while not rospy.is_shutdown() and not step.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY and g_new_human_decision==None:
             elapsed = time.time()-start_waiting_time
 
@@ -1539,6 +1540,7 @@ def main_exec():
         str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
         start_time = time.time()
         prompt("start_simu_delay")
+        time.sleep(0.01)
         while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
             elapsed = time.time() - start_time
             bar.goto(elapsed)
