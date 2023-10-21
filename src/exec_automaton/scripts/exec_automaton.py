@@ -1479,6 +1479,7 @@ def start_delay():
     bar.finish()
     str_bar.finish()
     g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
+    time.sleep(0.01)
 
 def repeat_loop(robot_name, robots):
     while True:
