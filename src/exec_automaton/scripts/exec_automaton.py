@@ -1433,11 +1433,74 @@ def find_r_rank_of_id(steps, id):
         if s.id == id:
             return s.get_f_leaf().branch_rank_r
 
+def asking_robot(robots):
+    # Asking which robot to use?
+    while True:
+        robot_name = input("Which robot (or training)? ")
+        if robot_name in robots:
+            # Load correct policy and exec_regime
+            exec_regime, begin_step = robots[robot_name]
+            if begin_step!=None:
+                break
+            else:
+                print("Solution empty...")
+        else:
+            print("robot name unknown...")
+
+    return robot_name
+
+
+
+def wait_start_signal(robot_name, robots):
+    # Wait for Start Signal from Prompt Window
+    rospy.loginfo("READY TO START, waiting for start signal...")
+    set_permanent_prompt_line("start_ready")
+    prompt("start_press_enter")
+    # g_prompt_pub.publish(String( format_txt(f"\t* Prêt à démarrer * \n Robot n°{robot_name} Type: {robots[robot_name][0]} \n Cliquez sur le bouton jaune") ))
+    g_prompt_pub.publish(String( f"           * Prêt à démarrer * \n\n        Robot n°{robot_name} Type: {robots[robot_name][0]} \n\n\n Cliquez sur le bouton jaune     ⬇") )
+    wait_prompt_button_pressed()
+    reset_permanent_prompt_line()
+
+def start_delay():
+    # Start delay before beginning
+    bar = IncrementalBar(max = START_SIMU_DELAY)
+    str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
+    start_time = time.time()
+    prompt("start_simu_delay")
+    time.sleep(0.01)
+    while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
+        elapsed = time.time() - start_time
+        bar.goto(elapsed)
+        str_bar.goto(elapsed)
+        g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
+        time.sleep(0.01)
+    bar.goto(bar.max)
+    str_bar.goto(str_bar.max)
+    bar.finish()
+    str_bar.finish()
+    g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
+
+def repeat_loop(robot_name, robots):
+    while True:
+        in_choice = input("\nChoices:\n\t1- Repeat last\n\t2- Change Robot\n\t3- Training\n\t4- Stop\nAnswer: ")
+        
+        if in_choice=="1":
+            return robot_name
+        elif in_choice=="2":
+            return asking_robot(robots)
+        elif in_choice=="3":
+            return "t"
+        elif in_choice=="4":
+            return None
+        else:
+            print("Unrecognized input, please answer again.")
+
 def main_exec():
     global TIMEOUT_DELAY, ESTIMATED_R_REACTION_TIME, P_SUCCESS_ID_PHASE, ID_DELAY, ASSESS_DELAY, TT_R_PASSIVE_DELAY, TRAINING_TIMEOUT_DELAY
     global default_human_passive_action, default_robot_passive_action
     global INCREMENTAL_BAR_STR_WIDTH
     global TRAINING_PROMPT_ONLY
+    global START_SIMU_DELAY
     global g_domain_name
     global g_enter_pressed
     global g_force_exec_stop
@@ -1476,91 +1539,76 @@ def main_exec():
     sol_tt_tee =    None
     sol_tt_hmw =    None
     sol_tee =       load("sol_stack_empiler_2_tee.p")
-    # sol_hmw =       load("sol_stack_empiler_2_hmw.p")
-    # sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
-    # sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
+    sol_hmw =       load("sol_stack_empiler_2_hmw.p")
+    sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
+    sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
     if g_domain_name!=DOMAIN_NAME:
         raise Exception("Missmatching domain names CONSTANT and loaded")
     robots = {
         "t" : ("training", sol_tee),
 
-        "1" : ("hf", sol_tee),
-        "2" : ("rf", sol_tee),
+        "1" : ("Human-First", sol_tee),
+        "2" : ("Robot-First", sol_tee),
 
-        "3" : ("hf", sol_tee),
-        "4" : ("rf", sol_tee),
+        "3" : ("Human-First", sol_tee),
+        "4" : ("Robot-First", sol_tee),
     
-        "5" : ("hf", sol_hmw),
-        "6" : ("rf", sol_hmw),
+        "5" : ("Human-First", sol_hmw),
+        "6" : ("Robot-First", sol_hmw),
 
-        "7" : ("hf", sol_tee),
-        "8" : ("tt", sol_tt_tee),
+        "7" : ("Human-First", sol_tee),
+        "8" : ("Turn-Taking", sol_tt_tee),
 
-        "9" : ("hf", sol_hmw),
-        "10": ("tt", sol_tt_hmw),
+        "9" : ("Human-First", sol_hmw),
+        "10": ("Turn-Taking", sol_tt_hmw),
     }
 
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
+    rospy.loginfo("hmi started!")
     g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
 
-    robot_name = ""
+    rospy.loginfo("Waiting for reset_world service to be started...")
+    rospy.wait_for_service("reset_world")
+    rospy.loginfo("reset_world service started")
+
     exec_regime = None
     begin_step = None 
-    ask_robot = True
-    continuer = True
-    while continuer:
-        # Asking which robot to use?
-        if ask_robot:
-            while True:
-                robot_name = input("Which robot (or training)? ")
-                if robot_name in robots:
-                    # Load correct policy and exec_regime
-                    exec_regime, begin_step = robots[robot_name]
-                    if begin_step!=None:
-                        break
-                    else:
-                        print("Solution empty...")
-                else:
-                    print("robot name unknown...")
+
+
+    order = [] # type: list[str]
+
+    # given order
+    order = [1,2,3,4,5,6,7,8,9,10]
+
+    if order!=[]:
+        order = ["t"] + [str(o) for o in order]
+    else:
+        order.append(asking_robot(robots))
+
+    while order!=[]:
+        
+        robot_name = order.pop(0)
+        exec_regime, begin_step = robots[robot_name]
 
         # Reset world
         prompt("reset_world")
         g_reset_world_client()
 
         # Wait for Start Signal from Prompt Window
-        rospy.loginfo("READY TO START, waiting for start signal...")
-        set_permanent_prompt_line("start_ready")
-        prompt("start_press_enter")
-        wait_prompt_button_pressed()
-        reset_permanent_prompt_line()
+        wait_start_signal(robot_name, robots)
         
         # Start delay before beginning
-        bar = IncrementalBar(max = START_SIMU_DELAY)
-        str_bar = IncrementalBarStr(max = START_SIMU_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
-        start_time = time.time()
-        prompt("start_simu_delay")
-        time.sleep(0.01)
-        while not rospy.is_shutdown() and time.time()-start_time<START_SIMU_DELAY:
-            elapsed = time.time() - start_time
-            bar.goto(elapsed)
-            str_bar.goto(elapsed)
-            g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
-            time.sleep(0.01)
-        bar.goto(bar.max)
-        str_bar.goto(str_bar.max)
-        bar.finish()
-        str_bar.finish()
-        g_prompt_progress_bar.publish(String(f"{str_bar.get_str()}"))
+        start_delay()
 
         # Starting execution
         if exec_regime == "training":
             id,r_rank = training(begin_step)
-        elif exec_regime == "hf":
+        elif exec_regime == "Human-First":
             id,r_rank = execution_HF(begin_step)
-        elif exec_regime == "rf":
+        elif exec_regime == "Robot-First":
             id,r_rank = execution_RF(begin_step)
-        elif exec_regime == "tt":
+        elif exec_regime == "Turn-Taking":
             id,r_rank = execution_TT(begin_step)
         else:
             raise Exception("unknown exec_regime.")
@@ -1568,27 +1616,14 @@ def main_exec():
             nb_sol = len(begin_step.get_final_leaves())
             r_score = convert_rank_to_score(r_rank,nb_sol)
             print(f"END: id={id}, r_score=%.3f" % r_score)
+        else:
+            order = []
 
         # Repeat loop
-        while True:
-            in_choice = input("\nChoices:\n\t1- Repeat\n\t2- Change Robot\n\t3- Training\n\t4- Stop\nAnswer: ")
-            
-            if in_choice=="1":
-                ask_robot = False
-                break
-            elif in_choice=="2":
-                ask_robot = True
-                break
-            elif in_choice=="3":
-                ask_robot = False
-                exec_regime, begin_step = robots["training"]
-                break
-            elif in_choice=="4":
-                continuer = False
-                break
-            else:
-                print("Unrecognized input, please answer again.")
-
+        if order==[]:
+            robot_name = repeat_loop(robot_name, robots)
+            if robot_name!=None:
+                order.append(robot_name)
         full_reset()
 
 if __name__ == "__main__":
@@ -1619,7 +1654,7 @@ if __name__ == "__main__":
 
     force_exec_stop_sub = rospy.Subscriber('/force_exec_stop', EmptyM, force_exec_stop_cb)
     
-    g_reset_world_client = rospy.ServiceProxy("/reset_world", EmptyS)
+    g_reset_world_client = rospy.ServiceProxy("reset_world", EmptyS)
     g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
     g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)
     g_go_idle_pose_client = rospy.ServiceProxy("go_idle_pose", EmptyS)
