@@ -1554,8 +1554,8 @@ def main_exec():
     robots = {
         "t" : ("training", sol_tee),
 
-        "1" : ("Human-First", sol_tee),
-        "2" : ("Robot-First", sol_tee),
+        "1" : ("Human-First", sol_hmw),
+        "2" : ("Robot-First", sol_hmw),
 
         "3" : ("Human-First", sol_tee),
         "4" : ("Robot-First", sol_tee),
