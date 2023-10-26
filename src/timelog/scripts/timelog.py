@@ -32,6 +32,8 @@ import matplotlib.patches as mpatches
 
 from sim_msgs.msg import EventLog
 from datetime import datetime
+import tkinter as tk
+from tkinter import filedialog
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
@@ -498,8 +500,7 @@ def show_activities(activities):
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
-    # sys.argv.append("load")
-    # sys.argv.append("events.p")
+    sys.argv.append("load")
     record = sys.argv[1] == "record"
 
     path = "/home/afavier/new_exec_sim_ws/events/"
@@ -527,7 +528,7 @@ if __name__ == "__main__":
             # Dumping
             dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + "events.p", "wb"))
             str_date = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-            dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + str_date + "_events.p", "wb"))
+            dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + str_date + g_events[0].name + "_events.p", "wb"))
             print("events dumped")
 
             # Clearing
@@ -537,27 +538,43 @@ if __name__ == "__main__":
             g_to_signals.clear()
 
     else:
-        file = sys.argv[2]
+        root = tk.Tk()
+        root.withdraw()
+        file_path = filedialog.askopenfilename(initialdir=path, filetypes=(("dumped files","*.p"),) )
+
+        ################################
+########## LOADING EVENTS AND SIGNALS ##
+        ################################
 
         # Loading
-        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open(path + file, "rb"))
+        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open(file_path, "rb"))
+        if g_events[0].name[-len("training"):]=="training":
+            raise Exception("Cannot show the timelog of the training task!")
         print("events loaded")
 
-        # TREAT EVENTS
+
+        ########################
+########## EXTRACT ACTIVITIES ##
+        ########################
+
+        # Reset time of event w.r.t. first NS signal
         reset_times()
 
+        # Show Events
         print("\nEVENTS:")
         show_events(g_events)
         
-        # TREAT ACTIVITIES
+        # Extract and Show Robot Activities
         r_extract_activities()
         print("\nROBOT ACTIVITIES:")
         show_activities(g_r_activities)
+
+        # Extract and Show Human Activities
         h_extract_activities()
         print("\nHUMAN ACTIVITIES:")
         show_activities(g_h_activities)
 
-        # TREAT SIGNALS
+        # Show SIGNALS
         print("\nR SIGNALS:")
         show_signals(g_r_signals)
         print("\nH SIGNALS:")
@@ -565,8 +582,13 @@ if __name__ == "__main__":
         print("\nTO SIGNALS:")
         show_signals(g_to_signals)
 
+        # Show run informations (Robot type, id)
         print("\nRUN:")
         print(g_events[0].name)
+
+        ##################
+########## SHOW TIMELOG ##
+        ##################
 
         MIN_DURATION = 0.15
         activities_zorder = 1
@@ -576,9 +598,9 @@ if __name__ == "__main__":
         signal_width_text = 1.5
         signal_style="Simple, head_width=8, head_length=4, tail_width=4"
 
-    ########################
+        ####################
         WITH_TIMEOUT = True
-    ########################
+        ####################
 
 
         plt.rcParams.update({'font.size': 13})
