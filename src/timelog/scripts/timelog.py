@@ -76,13 +76,23 @@ g_to_signals = [] #type: List[LogSignal]
 def reset_times():
     global g_events, g_h_signals, g_r_signals, g_to_signals
 
-    g_events.sort(key=getStamp)
+    print("start reset times")
 
-    if len(g_events)!=0:
-        min_time = g_events[0].stamp
-    else:
+    if len(g_events)==0:
         raise Exception("Events empty...")
 
+    g_events.sort(key=getStamp)
+
+    # look for first NS event
+    i = 0
+    while g_events[i].name[:len("SGL_NS")] != "SGL_NS":
+        print("i=", i)
+        i+=1
+
+    # save first time
+    min_time = g_events[i].stamp
+
+    # update all other events
     for x in g_events + g_r_signals + g_h_signals + g_to_signals:
         x.stamp -= min_time
 
@@ -535,6 +545,7 @@ if __name__ == "__main__":
 
         # TREAT EVENTS
         reset_times()
+
         print("\nEVENTS:")
         show_events(g_events)
         
@@ -553,6 +564,9 @@ if __name__ == "__main__":
         show_signals(g_h_signals)
         print("\nTO SIGNALS:")
         show_signals(g_to_signals)
+
+        print("\nRUN:")
+        print(g_events[0].name)
 
         MIN_DURATION = 0.15
         activities_zorder = 1

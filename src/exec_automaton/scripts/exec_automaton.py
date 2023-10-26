@@ -1603,6 +1603,7 @@ def main_exec():
         print("Order = ", order)
         robot_name = order.pop(0)
         exec_regime, begin_step = robots[robot_name]
+        log_event(f"ROBOT_N_{i}_{robot_name}_{exec_regime}")
 
         # Reset world
         prompt("reset_world")
