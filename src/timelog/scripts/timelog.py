@@ -212,7 +212,7 @@ def r_extract_activities():
                 elif e.name[:4]=="S_RA":
                     t5 = e.stamp
                     j_split = e.name.find("(")
-                    action_name = e.name[:j_split] + "\n" + e.name[j_split:]
+                    action_name = e.name[5:j_split] + "\n" + e.name[j_split:]
 
                     while e.name!="SGL_S_RA":
                         i+=1
@@ -319,7 +319,7 @@ def r_extract_activities():
                 if e.name[:4]=="S_RA":
                     t7 = e.stamp
                     j_split = e.name.find("(")
-                    action_name = e.name[:j_split] + "\n" + e.name[j_split:]
+                    action_name = e.name[5:j_split] + "\n" + e.name[j_split:]
                     
                     while e.name!="SGL_S_RA":
                         i+=1
@@ -363,7 +363,7 @@ def r_extract_activities():
                 i+=1
                 e = g_events[i]
             t1 = e.stamp
-            g_r_activities.append( Activity("GRNS", t2, t1) )
+            g_r_activities.append( Activity("grns", t2, t1) )
 
             if e.name == "OVER":
                 break
@@ -403,7 +403,7 @@ def h_extract_activities():
                     t3 = e.stamp
                     last_act_name = "wait_ns"
                     j_split = e.name.find("(")
-                    action_name = e.name[:j_split] + "\n" + e.name[j_split:]
+                    action_name = e.name[5:j_split] + "\n" + e.name[j_split:]
                     g_h_activities.append( Activity("start_delay", t2, t3) )
 
                     while e.name!="SGL_E_HA":
@@ -459,12 +459,14 @@ def h_extract_activities():
                     while e.name[:4]!="S_HA" and e.name[:6]!="SGL_NS" and e.name!="OVER":
                         i+=1
                         e = g_events[i]
+                    last_act_name = "pass"
+                    
 
             if e.name[:4]=="S_HA":
                 last_act_name = "wait_ns"
                 t3 = e.stamp
                 j_split = e.name.find("(")
-                action_name = e.name[:j_split] + "\n" + e.name[j_split:]
+                action_name = e.name[5:j_split] + "\n" + e.name[j_split:]
                 g_h_activities.append( Activity(before_s_ha_name, t2, t3))
 
                 while e.name!="SGL_E_HA":
