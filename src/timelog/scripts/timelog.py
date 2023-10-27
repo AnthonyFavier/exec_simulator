@@ -495,6 +495,68 @@ def show_activities(activities):
     for a in activities:
         print(f"{a.name} - {a.t_s:.2f} > {a.t_e:.2f}")
 
+
+def extract_metrics():
+    metrics = {}
+
+    # task completion time
+    metrics["task_completion_time"] = g_events[-1].stamp
+
+    # decision time - total + average
+    metrics["total_decision_time"] = 0.0
+    n = 0
+    for a in g_h_activities:
+        if a.name == "start_delay":
+            n+=1
+            metrics["total_decision_time"] += a.dur()
+    metrics["average_decision_time"] = 0 if n==0 else metrics["total_decision_time"]/n
+
+    # wait ns - total + average
+    metrics["total_wait_ns"] = 0.0
+    n=0
+    for a in g_h_activities:
+        if a.name == "wait_ns":
+            n+=1
+            metrics["total_wait_ns"] += a.dur()
+    metrics["average_wait_ns"] = 0 if n==0 else metrics["total_wait_ns"]/n
+
+    # wait turn - total + average
+    metrics["total_wait_turn"] = 0.0
+    n=0
+    for a in g_h_activities:
+        if a.name == "wait_turn":
+            n+=1
+            metrics["total_wait_turn"] += a.dur()
+    metrics["average_wait_turn"] = 0 if n==0 else metrics["total_wait_turn"]/n
+
+    # h action time - total + average
+    metrics["total_h_action_time"] = 0.0
+    n=0
+    for a in g_h_activities:
+        if a.name not in g_h_activities_names:
+            n+=1
+            metrics["total_h_action_time"] += a.dur()
+    metrics["average_h_action_time"] = 0 if n==0 else metrics["total_h_action_time"]/n
+    metrics["nb_h_action"] = n
+
+    # r action time - total + average
+    metrics["total_r_action_time"] = 0.0
+    n=0
+    for a in g_r_activities:
+        if a.name not in g_r_activities_names:
+            n+=1
+            metrics["total_r_action_time"] += a.dur()
+    metrics["average_r_action_time"] = 0 if n==0 else metrics["total_r_action_time"]/n
+    metrics["nb_r_action"] = n
+
+
+    return metrics
+
+def show_metrics(metrics):
+    print("Metrics:")
+    for k in metrics:
+        print(f"\t-{k}: {metrics[k]:.2f}")
+
 ##########
 ## MAIN ##
 ##########
@@ -587,6 +649,13 @@ if __name__ == "__main__":
         # Show run informations (Robot type, id)
         print("\nRUN:")
         print(g_events[0].name)
+
+        #####################
+########## COMPUTE METRICS ##
+        #####################
+
+        metrics = extract_metrics()
+        show_metrics(metrics)
 
         ##################
 ########## SHOW TIMELOG ##
