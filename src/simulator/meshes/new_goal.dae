@@ -5,22 +5,22 @@
       <author>Blender User</author>
       <authoring_tool>Blender 3.6.5 commit date:2023-10-16, commit time:14:30, hash:cf1e1ed46b7e</authoring_tool>
     </contributor>
-    <created>2023-10-21T14:28:55</created>
-    <modified>2023-10-21T14:28:55</modified>
+    <created>2023-10-27T14:23:50</created>
+    <modified>2023-10-27T14:23:50</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
   <library_effects>
     <effect id="Material_001-effect">
       <profile_COMMON>
-        <newparam sid="tasks_user_study-TASK_1_png_001-surface">
+        <newparam sid="new_png-surface">
           <surface type="2D">
-            <init_from>tasks_user_study-TASK_1_png_001</init_from>
+            <init_from>new_png</init_from>
           </surface>
         </newparam>
-        <newparam sid="tasks_user_study-TASK_1_png_001-sampler">
+        <newparam sid="new_png-sampler">
           <sampler2D>
-            <source>tasks_user_study-TASK_1_png_001-surface</source>
+            <source>new_png-surface</source>
           </sampler2D>
         </newparam>
         <technique sid="common">
@@ -29,7 +29,7 @@
               <color sid="emission">0.01 0.01 0.01 1</color>
             </emission>
             <diffuse>
-              <texture texture="tasks_user_study-TASK_1_png_001-sampler" texcoord="UVMap"/>
+              <texture texture="new_png-sampler" texcoord="UVMap"/>
             </diffuse>
             <index_of_refraction>
               <float sid="ior">1.45</float>
@@ -40,8 +40,8 @@
     </effect>
   </library_effects>
   <library_images>
-    <image id="tasks_user_study-TASK_1_png_001" name="tasks_user_study-TASK_1_png_001">
-      <init_from>tasks_user_study-TASK%201.png.001.png</init_from>
+    <image id="new_png" name="new_png">
+      <init_from>new.png</init_from>
     </image>
   </library_images>
   <library_materials>
