@@ -216,29 +216,29 @@ def incoming_vha_cb(msg: VHA):
     # update zones
     for z in g_zones.values():
         if z.is_pass and g_vha.type==VHA.NS: # PASS
-            show = True
+            active = True
             z.current_action_id = -1
         else:
-            show = False
+            active = False
             for i,ha in enumerate(g_vha.valid_human_actions):
                 for z_a in z.valid_actions:
-                    if z_a == ha[:len(z_a)]:
-                    # if z_a in ha:
-                        show = True
+                    if z_a == ha[:len(z_a)]: # ha starts with z_a
+                        active = True
                         z.current_action_id = i+1
                         break
-                if show:
+                if active:
                     break
 
         srv = SetModelStateRequest()
         srv.model_state.model_name = f"z{z.id}"
         srv.model_state.reference_frame = "world"
-        if show:
-            srv.model_state.pose = z.world_pose
+        if active:
+            # srv.model_state.pose = z.world_pose
+            pass
         else:
             srv.model_state.pose = g_far_zone_pose
             z.current_action_id = -10
-        g_set_model_state_client(srv)
+        # g_set_model_state_client(srv)
 
     if msg.timeout!=0.0:
         rospy.loginfo("With timeout....")
@@ -289,16 +289,12 @@ def main():
 
     human_vha_sub = rospy.Subscriber("hmi_vha", VHA, incoming_vha_cb, queue_size=1)
     click_sub = rospy.Subscriber("/mouse_pressed_pose", Point, mouse_pressed_cb, queue_size=1)
-
-    
-    TO_reached = rospy.Subscriber("/hmi_timeout_reached", EmptyM, TO_reached_cb, queue_size=1)
+    TO_reached_sub = rospy.Subscriber("/hmi_timeout_reached", EmptyM, TO_reached_cb, queue_size=1)
 
     timeout_max_service = rospy.Service("hmi_timeout_max", Int, lambda req: IntResponse())
     r_idle_service = rospy.Service("hmi_r_idle", SetBool, lambda req: SetBoolResponse())
-
     show_zones_service = rospy.Service("show_zones", EmptyS, show_all_zones)
     hide_zones_service = rospy.Service("hide_zones", EmptyS, hide_all_zones)
-
     show_prompt_button_service = rospy.Service("show_prompt_button", EmptyS, show_prompt_button)
     hide_prompt_button_service = rospy.Service("hide_prompt_button", EmptyS, hide_prompt_button)
 
