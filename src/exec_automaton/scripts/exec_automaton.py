@@ -430,7 +430,7 @@ def execution_HF(begin_step: ConM.Step):
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
+    return int(curr_step.id), curr_step.get_f_leaf().getBestRank()
 
 def execution_RF(begin_step: ConM.Step):
     """
@@ -509,7 +509,7 @@ def execution_RF(begin_step: ConM.Step):
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
+    return int(curr_step.id), curr_step.get_f_leaf().getBestRank()
 
 def execution_TT(begin_step: ConM.Step):
     global g_possible_human_actions
@@ -632,7 +632,7 @@ def execution_TT(begin_step: ConM.Step):
     lg.info(f"END => {curr_step}")
     print(f"END => {curr_step}")
     g_hmi_finish_pub.publish(EmptyM())
-    return int(curr_step.id), curr_step.get_f_leaf().branch_rank_r
+    return int(curr_step.id), curr_step.get_f_leaf().getBestRank()
 
 
 #########################
@@ -743,8 +743,8 @@ def MOCK_save_best_reachable_solution_for_human_after_robot_choice(step: ConM.St
 def MOCK_robot_has_degraded_human_best_solution():
     if not HUMAN_UPDATING:
         return False
-    rank_before = g_best_reachable_human_solution.get_f_leaf().branch_rank_h
-    rank_after = g_best_reachable_human_solution_after_robot_choice.get_f_leaf().branch_rank_h
+    rank_before = g_best_reachable_human_solution.get_f_leaf().getBestRank()
+    rank_after = g_best_reachable_human_solution_after_robot_choice.get_f_leaf().getBestRank()
 
     lg.debug(f"#{rank_before} -> #{rank_after}")
 
@@ -922,9 +922,9 @@ def human_active():
     return g_new_human_decision!=None and not g_new_human_decision.is_passive()
 
 def ID_needed(step: ConM.Step):
-    best_ra = step.human_options[0].best_robot_pair.robot_action
+    best_ra = step.human_options[0].getBestPair().robot_action
     for ho in step.human_options[1:]:
-        if not CM.Action.are_similar( best_ra, ho.best_robot_pair.robot_action ):
+        if not CM.Action.are_similar( best_ra, ho.getBestPair().robot_action ):
             rospy.loginfo("ID Needed")
             return True
     rospy.loginfo("ID NOT Needed")
@@ -1039,8 +1039,8 @@ def check_if_human_is_done(step):
 ## Select Robot Action ##
 #########################
 def select_best_RA(curr_step: ConM.Step) -> CM.Action:
-    if curr_step.best_robot_pair.robot_action != None:
-        return curr_step.best_robot_pair.robot_action
+    if curr_step.getBestPair().robot_action != None:
+        return curr_step.getBestPair().robot_action
     else:
         return default_robot_passive_action
 
@@ -1049,13 +1049,13 @@ def select_best_RA_H_passive(curr_step: ConM.Step) -> CM.Action:
         if not ho.human_action.is_passive():
             continue
         else:
-            return ho.best_robot_pair.robot_action
+            return ho.getBestPair().robot_action
     return default_robot_passive_action
 
 def select_best_compliant_RA(step: ConM.Step, human_action: CM.Action) -> CM.Action:
     for ho in step.human_options:
         if ho.human_action==human_action:
-            return ho.best_robot_pair.robot_action
+            return ho.getBestPair().robot_action
     raise Exception("No best robot action defined...")
 
 def select_valid_passive(step: ConM.Step) -> CM.Action:
@@ -1438,7 +1438,7 @@ g_prompt_messages = {
 def find_r_rank_of_id(steps, id):
     for s in steps:
         if s.id == id:
-            return s.get_f_leaf().branch_rank_r
+            return s.get_f_leaf().getBestRank()
 
 def asking_robot(robots):
     # Asking which robot to use?
@@ -1446,7 +1446,7 @@ def asking_robot(robots):
         robot_name = input("Which robot (or training)? ")
         if robot_name in robots:
             # Load correct policy and exec_regime
-            exec_regime, begin_step = robots[robot_name]
+            exec_regime, policy_name, begin_step = robots[robot_name]
             if begin_step!=None:
                 break
             else:
@@ -1461,7 +1461,6 @@ def wait_start_signal(robot_name, robots, i):
     rospy.loginfo("READY TO START, waiting for start signal...")
     set_permanent_prompt_line("start_ready")
     prompt("start_press_enter")
-    # g_prompt_pub.publish(String( format_txt(f"\t* Prêt à démarrer * \n Robot n°{robot_name} Type: {robots[robot_name][0]} \n Cliquez sur le bouton jaune") ))
     g_prompt_pub.publish(String( f"           * Prêt à démarrer * \n\n       Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})\n\n\n Cliquez sur le bouton jaune     ⬇") )
     rospy.loginfo(f"Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})")
     wait_prompt_button_pressed()
@@ -1545,29 +1544,27 @@ def main_exec():
     sol_hmw =       None
     sol_tt_tee =    None
     sol_tt_hmw =    None
-    sol_tee =       load("sol_stack_empiler_2_tee.p")
-    sol_hmw =       load("sol_stack_empiler_2_hmw.p")
-    sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
-    sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
+    # sol_tee =       load("sol_stack_empiler_2_tee.p")
+    # sol_hmw =       load("sol_stack_empiler_2_hmw.p")
+    # sol_tt_tee =    load("sol_stack_empiler_2_tt_tee.p")
+    # sol_tt_hmw =    load("sol_stack_empiler_2_tt_hmw.p")
+
+    sol =    None
+    sol = load("new_sol_stack_empiler_2_with_choices.p")
+
     if g_domain_name!=DOMAIN_NAME:
         raise Exception("Missmatching domain names CONSTANT and loaded")
     robots = {
-        "t" : ("training", sol_tee),
+        "t" : ("training", "task_end_early", sol),
 
-        "1" : ("Human-First", sol_hmw),
-        "2" : ("Robot-First", sol_hmw),
+        "1" : ("Human-First", "human_min_work", sol),
+        "2" : ("Robot-First", "human_min_work", sol),
 
-        "3" : ("Human-First", sol_tee),
-        "4" : ("Robot-First", sol_tee),
+        "3" : ("Human-First", "task_end_early", sol),
+        "4" : ("Robot-First", "task_end_early", sol),
     
-        "5" : ("Human-First", sol_hmw),
-        "6" : ("Robot-First", sol_hmw),
-
-        "7" : ("Human-First", sol_tee),
-        "8" : ("Turn-Taking", sol_tt_tee),
-
-        "9" : ("Human-First", sol_hmw),
-        "10": ("Turn-Taking", sol_tt_hmw),
+        "5" : ("Human-First", "human_min_work", sol),
+        "6" : ("Robot-First", "human_min_work", sol),
     }
 
     rospy.loginfo("Wait for hmi to be started...")
@@ -1586,23 +1583,21 @@ def main_exec():
     exec_regime = None
     begin_step = None 
 
-
-    order = [] # type: list[str]
-
-    # given order
-    order = [1,2,3,4,5,6,7,8,9,10]
     i = 0
 
+    # given order
+    order = []
+    # order = ["t",1,2,5,6,10,9,7,8,2,1]
     if order!=[]:
-        order = ["t"] + [str(o) for o in order]
+        order = [str(o) for o in order]
     else:
         order.append(asking_robot(robots))
-
     while order!=[]:
         
         print("Order = ", order)
         robot_name = order.pop(0)
-        exec_regime, begin_step = robots[robot_name]
+        exec_regime, policy_name, begin_step = robots[robot_name]
+        ConM.setPolicyName(policy_name)
         log_event(f"ROBOT_N_{i}_{robot_name}_{exec_regime}")
 
         # Reset world
