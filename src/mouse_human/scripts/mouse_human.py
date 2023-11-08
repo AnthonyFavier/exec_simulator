@@ -58,8 +58,21 @@ class Zone:
         self.x2 = x2
         self.y2 = y2
 
+    def clickIn(self, click):
+        if click==None:
+            return False
+        return click.pose.x>=self.x1 and click.pose.x<=self.x2 and click.pose.y>=self.y1 and click.pose.y<=self.y2
+
+    def isActive(self):
+        return self.current_action_id!=-10
+
     def __repr__(self) -> str:
         return f"{self.id}-({self.x1},{self.y1})-({self.x2},{self.y2})"
+    
+class Click:
+    def __init__(self, pose, time):
+        self.pose = pose #type: Point
+        self.time = time #type: float
 
 g_vha = VHA()
 g_vha_received = False
@@ -154,14 +167,12 @@ for l in f:
     g_zones[id].setPixelCoords(x1,y1,x2,y2)
 
 # print(g_zones)
-
-def isInZone(pose: Point, zone: Zone):
-    return pose.x>=zone.x1 and pose.x<=zone.x2 and pose.y>=zone.y1 and pose.y<=zone.y2
-
 def hide_all_zones(req = None):
     srv = SetModelStateRequest()
+    # first disable zone fast
     for z in g_zones.values():
         z.current_action_id = -10
+    # Then move them away
     for z in g_zones.values():
         srv.model_state.model_name = f"z{z.id}"
         srv.model_state.pose = g_far_zone_pose
@@ -190,6 +201,9 @@ def show_prompt_button(req = None):
     srv.model_state.pose = g_prompt_button_pose
     srv.model_state.reference_frame = "world"
     g_set_model_state_client(srv)
+
+    reset_last_click()
+    
     return EmptyResponse()
 def hide_prompt_button(req = None):
     global g_prompt_button_shown
@@ -253,26 +267,13 @@ def incoming_vha_cb(msg: VHA):
             rospy.loginfo("done hiding zones")
 
 decision_sent = False
+g_last_click = None # type: None | Click
 def mouse_pressed_cb(msg: Point):
-    global decision_sent
-    if g_prompt_button_shown and isInZone(msg, g_prompt_button_zone):
-        rospy.loginfo("prompt button pressed !")
-        g_prompt_button_pressed_pub.publish(EmptyM())
-        hide_prompt_button()
-
-    else:
-        zone_clicked = None
-        for z in g_zones.values():
-            if z.current_action_id!=-10 and isInZone(msg, z):
-                zone_clicked = z
-                break
-        rospy.loginfo(f"zone clicked: {zone_clicked}")
-
-        if zone_clicked!=None:
-            decision_sent = True
-            g_start_human_action_prox(zone_clicked.current_action_id)
-            hide_all_zones()
-            rospy.loginfo("human decision sent")
+    global g_last_click
+    g_last_click = Click(msg, time.time())
+def reset_last_click():
+    global g_last_click
+    g_last_click = None
 
 def TO_reached_cb(msg: EmptyM):
     hide_all_zones()
@@ -284,6 +285,7 @@ def TO_reached_cb(msg: EmptyM):
 def main():
     global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_human_choice_pub, g_set_model_state_client, g_start_human_action_prox
     global g_prompt_button_pressed_pub
+    global decision_sent
 
     rospy.init_node('mouse_human', log_level=rospy.INFO)
 
@@ -330,8 +332,28 @@ def main():
     rospy.wait_for_service("start_human_action")
     g_start_human_action_prox = rospy.ServiceProxy("start_human_action", Int)
 
-    rospy.spin()
+    while not rospy.is_shutdown():
 
+        if g_prompt_button_shown:
+            if g_prompt_button_zone.clickIn(g_last_click):
+                rospy.loginfo("prompt button pressed !")
+                g_prompt_button_pressed_pub.publish(EmptyM())
+                hide_prompt_button()
+                reset_last_click()
+
+        else:
+            for z in g_zones.values():
+                if z.isActive() and z.clickIn(g_last_click):
+                    decision_sent = True
+                    rospy.loginfo(f"zone clicked: {z}")
+                    g_start_human_action_prox(z.current_action_id)
+                    hide_all_zones()
+                    rospy.loginfo("human decision sent")
+                    reset_last_click()
+                    break
+
+        time.sleep(0.01)
+            
 if __name__ == "__main__":
     main()
 
