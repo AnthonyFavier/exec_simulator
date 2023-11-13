@@ -640,12 +640,25 @@ def execution_TT(begin_step: ConM.Step):
 #########################
 g_possible_human_actions = []
 def send_NS_update_HAs(step: ConM.Step, type, timeout=0.0):
+    """
+    Send NextStep (NS) signal
+    Update g_possible_human_actions
+    Call send_vha
+    """
     global g_possible_human_actions
 
     
     send_NS(type)
 
-    g_possible_human_actions = [ho.human_action for ho in step.human_options]
+    # update g_possible_human_actions with passive action always at last index
+    poss_ha = []
+    for ho in step.human_options:
+        if ho.human_action.is_passive():
+            poss_ha = poss_ha + [ho.human_action]
+        else:
+           poss_ha = [ho.human_action] + poss_ha
+    g_possible_human_actions = poss_ha
+
     send_vha(g_possible_human_actions, type, timeout=timeout)
 
     # Find best human action id, sent to hmi mock
@@ -1189,6 +1202,11 @@ def compute_msg_action(a):
 ## ROS ##
 #########
 def send_vha(valid_human_actions: list[CM.Action], type, timeout=0.0):
+    """
+    Send vha to hmi 
+    Input is basically g_possible_human_actions
+    Filter passive actions and send 
+    """
     msg = VHA()
     msg.type = type
     msg.timeout = timeout
@@ -1237,7 +1255,9 @@ def start_human_action_server(req: IntRequest):
     # input()
     
     # Convert Int id 2 Action
-    if req.data==-1:
+    if req.data==-10:
+        raise Exception("action id = -10, should be impossible")
+    elif req.data==-1:
         # Human is passive
         # find passive action
         pass_ha = None
