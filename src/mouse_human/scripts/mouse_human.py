@@ -86,6 +86,7 @@ q_all = Quaternion(*quaternion_from_euler(0, 1.0, 0))
 q_0 = Quaternion(*quaternion_from_euler(0, 0, 0))
 g_far_zone_pose = Pose(Point(0,0,-2), q_0)
 g_prompt_button_pose = Pose(Point(1.2, 0.75, 1.22), q_all)
+g_can_click_indicator_pose = Pose(Point(1.87, 0.0, 1.44), q_all)
 
 # Create zones
 g_zones = {}
@@ -215,6 +216,27 @@ def hide_prompt_button(req = None):
     g_set_model_state_client(srv)
     return EmptyResponse()
 
+g_can_click_indicator_shown = False
+def hide_can_click_indicator(req = None):
+    global g_can_click_indicator_shown
+    g_can_click_indicator_shown = False
+    srv = SetModelStateRequest()
+    srv.model_state.model_name = "can_click_indicator"
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+def show_can_click_indicator(req = None):
+    global g_can_click_shown
+    g_can_click_shown = True
+    srv = SetModelStateRequest()
+    srv.model_state.model_name = "can_click_indicator"
+    srv.model_state.pose = g_can_click_indicator_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+
+
 #########
 ## ROS ##
 #########
@@ -254,20 +276,26 @@ def incoming_vha_cb(msg: VHA):
             z.current_action_id = -10
         # g_set_model_state_client(srv)
 
-    if g_vha.valid_human_actions!=[] and msg.timeout!=0.0:
-        rospy.loginfo("Start timeout....")
+    if g_vha.valid_human_actions==[]:
+        # hide_can_click_indicator()
+        pass
+    else:
+        # show_can_click_indicator()
+        if msg.timeout!=0.0:
+            rospy.loginfo("Start timeout....")
 
-        s_t = time.time()
-        while not rospy.is_shutdown() and not decision_sent and time.time()-s_t<msg.timeout:
-            time.sleep(0.01)
-        
-        if not decision_sent:
-            rospy.loginfo("timeout reached")
-            rospy.loginfo("start hiding zones")
-            hide_all_zones()
-            rospy.loginfo("done hiding zones")
-        else:
-            rospy.loginfo("timeout canceled")
+            s_t = time.time()
+            while not rospy.is_shutdown() and not decision_sent and time.time()-s_t<msg.timeout:
+                time.sleep(0.01)
+            
+            if not decision_sent:
+                rospy.loginfo("timeout reached")
+                rospy.loginfo("start hiding zones")
+                hide_all_zones()
+                # hide_can_click_indicator()
+                rospy.loginfo("done hiding zones")
+            else:
+                rospy.loginfo("timeout canceled")
 
 decision_sent = False
 g_last_click = None # type: None | Click
@@ -282,6 +310,7 @@ def reset_last_click():
 
 def TO_reached_cb(msg: EmptyM):
     hide_all_zones()
+    # hide_can_click_indicator()
 
 ##########
 ## MAIN ##
@@ -304,6 +333,8 @@ def main():
     hide_zones_service = rospy.Service("hide_zones", EmptyS, hide_all_zones)
     show_prompt_button_service = rospy.Service("show_prompt_button", EmptyS, show_prompt_button)
     hide_prompt_button_service = rospy.Service("hide_prompt_button", EmptyS, hide_prompt_button)
+    # show_can_click_indicator_service = rospy.Service("show_can_click_indicator", EmptyS, show_can_click_indicator)
+    # hide_can_click_indicator_service = rospy.Service("hide_can_click_indicator", EmptyS, hide_can_click_indicator)
 
     g_prompt_button_pressed_pub = rospy.Publisher('/prompt_button_pressed', EmptyM, queue_size=1)
 
@@ -329,7 +360,15 @@ def main():
     f.close()
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"prompt_button", sdff, "", g_far_zone_pose, "world")
-    print(f"prompt button spawned")
+    print(f"prompt_button spawned")
+
+    # spawn can_click_indicator
+    # f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/can_click_indicator_new.sdf','r')
+    # sdff = f.read()
+    # f.close()
+    # spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    # spawn_model_prox(f"can_click_indicator", sdff, "", g_far_zone_pose, "world")
+    # print(f"can_click_indicator spawned")
 
 
     started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())
@@ -353,6 +392,7 @@ def main():
                     rospy.loginfo(f"zone clicked: {z}")
                     g_start_human_action_prox(z.current_action_id)
                     hide_all_zones()
+                    # hide_can_click_indicator()
                     rospy.loginfo("human decision sent")
                     reset_last_click()
                     break
