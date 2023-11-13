@@ -67,7 +67,7 @@ class Zone:
         return self.current_action_id!=-10
 
     def __repr__(self) -> str:
-        return f"{self.id}-({self.x1},{self.y1})-({self.x2},{self.y2})"
+        return f"{self.id}-({self.x1},{self.y1})-({self.x2},{self.y2})-{self.valid_actions}"
     
 class Click:
     def __init__(self, pose, time):
@@ -254,26 +254,31 @@ def incoming_vha_cb(msg: VHA):
             z.current_action_id = -10
         # g_set_model_state_client(srv)
 
-    if msg.timeout!=0.0:
-        rospy.loginfo("With timeout....")
+    if g_vha.valid_human_actions!=[] and msg.timeout!=0.0:
+        rospy.loginfo("Start timeout....")
 
         s_t = time.time()
         while not rospy.is_shutdown() and not decision_sent and time.time()-s_t<msg.timeout:
             time.sleep(0.01)
         
         if not decision_sent:
+            rospy.loginfo("timeout reached")
             rospy.loginfo("start hiding zones")
             hide_all_zones()
             rospy.loginfo("done hiding zones")
+        else:
+            rospy.loginfo("timeout canceled")
 
 decision_sent = False
 g_last_click = None # type: None | Click
 def mouse_pressed_cb(msg: Point):
     global g_last_click
     g_last_click = Click(msg, time.time())
+    rospy.loginfo(f"click: {msg.x},{msg.y}")
 def reset_last_click():
     global g_last_click
     g_last_click = None
+    rospy.loginfo("click reset")
 
 def TO_reached_cb(msg: EmptyM):
     hide_all_zones()
