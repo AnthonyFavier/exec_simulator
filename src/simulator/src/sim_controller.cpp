@@ -1332,21 +1332,27 @@ std::map<std::string, geometry_msgs::Pose> locations =
         {"l3",  make_pose(make_point(0.86, 0.34, 0.85), make_quaternion())},
         {"l4",  make_pose(make_point(0.86, 0.24, 0.95), make_quaternion())},
         {"l5",  make_pose(make_point(0.86, 0.44, 0.95), make_quaternion())},
+        {"l6",  make_pose(make_point(0.86, 0.24, 1.10), make_quaternion())},
+        {"l7",  make_pose(make_point(0.86, 0.44, 1.10), make_quaternion())},
 };
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
         {"scene",           make_pose(make_point(0.0, 0.0, 0.0),            make_quaternion())},
-        // {"goal",            make_pose(make_point(0.19, -1.35, 4.1),         make_quaternion_RPY(0, -0.55, 0))},
         {"new_goal",        make_pose(make_point(1.0, -0.73, 1.49),         make_quaternion_RPY(0, -0.55, 0))},
         {"table_slot",      make_pose(make_point(0.86, 0.24, 0.7),          make_quaternion())},
         {"table_slot_0",    make_pose(make_point(0.86, 0.44, 0.7),          make_quaternion())},
-        {"g1",              make_pose(make_point(0.5, -0.65, 0.95),         make_quaternion())},
-        {"r1",              make_pose(make_point(0.5, -0.50, 0.75),         make_quaternion())},
-        {"b1",              make_pose(make_point(0.5, -0.65, 0.75),         make_quaternion())},
-        {"o1",              make_pose(make_point(0.5, -0.65, 0.85),         make_quaternion())},
-        {"y1",              make_pose(make_point(0.5, -0.35, 0.75),         make_quaternion())},
+        
+        {"o1",              make_pose(make_point(0.5, -0.65, 0.75),         make_quaternion())},
+        {"b1",              make_pose(make_point(0.5, -0.50, 0.75),         make_quaternion())},
+        {"g1",              make_pose(make_point(0.5, -0.50, 0.85),         make_quaternion())},
+        {"r1",              make_pose(make_point(0.5, -0.35, 0.75),         make_quaternion())},
+        {"s1",              make_pose(make_point(0.5, -0.20, 0.75),         make_quaternion())},
+        {"y1",              make_pose(make_point(0.5, -0.05, 0.75),         make_quaternion())},
+        
+        {"y2",              make_pose(make_point(0.86, -0.30, 0.75),        make_quaternion())},
+        {"o2",              make_pose(make_point(0.86, -0.15, 0.75),        make_quaternion())},
         {"w1",              make_pose(make_point(0.86, 0.0, 0.75),          make_quaternion())},
-        {"y2",              make_pose(make_point(0.86, -0.15, 0.75),        make_quaternion())},
+        
         {"b2",              make_pose(make_point(1.21, -0.50, 0.75),        make_quaternion())},
         {"p1",              make_pose(make_point(1.21, -0.25, 0.75),        make_quaternion())},
 };
@@ -1418,13 +1424,15 @@ private:
 std::vector<Cube> g_cubes;
 void init_cubes()
 {
+    g_cubes.push_back(Cube("o1"));
+    g_cubes.push_back(Cube("b1"));
     g_cubes.push_back(Cube("g1"));
     g_cubes.push_back(Cube("r1"));
-    g_cubes.push_back(Cube("b1"));
-    g_cubes.push_back(Cube("o1"));
+    g_cubes.push_back(Cube("s1"));
     g_cubes.push_back(Cube("y1"));
-    g_cubes.push_back(Cube("w1"));
     g_cubes.push_back(Cube("y2"));
+    g_cubes.push_back(Cube("o2"));
+    g_cubes.push_back(Cube("w1"));
     g_cubes.push_back(Cube("b2"));
     g_cubes.push_back(Cube("p1"));
 }
