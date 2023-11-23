@@ -74,7 +74,7 @@
       <direction>0 0 -1</direction>
       <attenuation>
         <range>1.0</range>
-        <constant>0.5</constant>
+        <constant>0.2</constant>
         <linear>0.01</linear>
         <quadratic>0.001</quadratic>
       </attenuation>
@@ -450,7 +450,7 @@
             <shader type='pixel'>
               <normal_map>__default__</normal_map>
             </shader>
-            <ambient>1 0.6 0 1</ambient>
+            <ambient>1 0.5 0 1</ambient>
             <diffuse>0.8 0.8 0.8 1</diffuse>
             <specular>0.1 0.1 0.1 1</specular>
             <emissive>0 0 0 1</emissive>
@@ -496,7 +496,7 @@
             <shader type='pixel'>
               <normal_map>__default__</normal_map>
             </shader>
-            <ambient>0.6 0.6 0.6 1</ambient>
+            <ambient>0.4 0.4 0.4 1</ambient>
             <diffuse>0.8 0.8 0.8 1</diffuse>
             <specular>0.1 0.1 0.1 1</specular>
             <emissive>0 0 0 1</emissive>
@@ -688,7 +688,7 @@
             <shader type='pixel'>
               <normal_map>__default__</normal_map>
             </shader>
-            <ambient>1 0.6 0 1</ambient>
+            <ambient>1 0.5 0 1</ambient>
             <diffuse>0.8 0.8 0.8 1</diffuse>
             <specular>0.1 0.1 0.1 1</specular>
             <emissive>0 0 0 1</emissive>
@@ -1068,7 +1068,7 @@
     </model> -->
 
     <!-- New goal -->
-    <model name='new_goal'>
+    <!-- <model name='new_goal'>
       <link name='link'>
         <inertial>
           <mass>0.209047</mass>
@@ -1091,7 +1091,6 @@
           <geometry>
             <mesh>
               <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/new_goal.dae</uri>
-              <!-- <uri>/home/afavier/blender/goal_new.dae</uri> -->
               <scale>0.1 0.1 0.1</scale>
             </mesh>
           </geometry>
@@ -1103,6 +1102,43 @@
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>1.0 -0.73 1.49 0 -0.55 0</pose>
+    </model> -->
+
+    <!-- Longer goal -->
+    <model name='longer_goal'>
+      <link name='link'>
+        <inertial>
+          <mass>0.209047</mass>
+          <inertia>
+            <ixx>0.0194914</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.0084732</iyy>
+            <iyz>0</iyz>
+            <izz>0.0238229</izz>
+          </inertia>
+          <pose>0 0 0 0 -0 0</pose>
+        </inertial>
+        <pose>0 0 0 0 -0 0</pose>
+        <gravity>0</gravity>
+        <self_collide>0</self_collide>
+        <kinematic>0</kinematic>
+        <enable_wind>0</enable_wind>
+        <visual name='visual'>
+          <geometry>
+            <mesh>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/longer_goal.dae</uri>
+              <scale>0.1 0.1 0.1</scale>
+            </mesh>
+          </geometry>
+          <pose>0 0 0 0 -0 0</pose>
+          <transparency>0</transparency>
+          <cast_shadows>0</cast_shadows>
+        </visual>
+      </link>
+      <static>0</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose>1.2 -0.725 1.50 0 -0.55 0</pose>
     </model>
 
 
