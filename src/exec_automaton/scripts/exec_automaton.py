@@ -23,6 +23,7 @@ from sim_msgs.msg import EventLog
 from sim_msgs.srv import Int, IntResponse, IntRequest
 from sim_msgs.msg import Signal
 from sim_msgs.msg import HeadCmd
+import simpleaudio as sa
 
 class IdResult(Enum):
     NOT_NEEDED=0
@@ -672,6 +673,7 @@ def send_NS_update_HAs(step: ConM.Step, type, timeout=0.0):
     #             break
     # g_best_human_action_pub.publish(best_ha)
 
+sound_ns = sa.WaveObject.from_wave_file("/home/afavier/new_exec_sim_ws/src/exec_automaton/scripts/sound.wav")
 def send_NS(type, turn=None):
     sgl = Signal()
     if type==VHA.NS:
@@ -690,7 +692,8 @@ def send_NS(type, turn=None):
     robot_visual_signal_pub.publish(sgl)
     time.sleep(0.001)
 
-def passive_update_HAs(step: ConM.step, RA: CM.Action, timeout=0.0):
+    sound_ns.play()
+
     global g_possible_human_actions
 
     if not human_active():
