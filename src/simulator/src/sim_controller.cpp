@@ -1332,8 +1332,8 @@ std::map<std::string, geometry_msgs::Pose> locations =
         {"l3",  make_pose(make_point(0.86, 0.34, 0.85), make_quaternion())},
         {"l4",  make_pose(make_point(0.86, 0.24, 0.95), make_quaternion())},
         {"l5",  make_pose(make_point(0.86, 0.44, 0.95), make_quaternion())},
-        {"l6",  make_pose(make_point(0.86, 0.24, 1.10), make_quaternion())},
-        {"l7",  make_pose(make_point(0.86, 0.44, 1.10), make_quaternion())},
+        {"l6",  make_pose(make_point(0.86, 0.24, 1.05), make_quaternion())},
+        {"l7",  make_pose(make_point(0.86, 0.44, 1.05), make_quaternion())},
 };
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {

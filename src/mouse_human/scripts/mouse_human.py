@@ -37,13 +37,13 @@ logging.config.fileConfig(path + 'log.conf')
 class Zone:
     def __init__(self, id, pose, valid_actions) -> None:
         self.id = id
+    
         # Right-Upper corner (x1,y1)
         self.x1 = -1
         self.y1 = -1
         # Left-Lower corner (x2,y2)
         self.x2 = -1
         self.y2 = -1
-
         self.world_pose = pose
 
         self.valid_actions = valid_actions
@@ -90,105 +90,50 @@ g_can_click_indicator_pose = Pose(Point(1.87, 0.0, 1.44), q_all)
 
 # Create zones
 g_zones = {}
-def create_zone(id, x, y, z, list_actions):
+def create_zone(id, x, y, w, h, list_actions):
     global g_zones
-    # list_actions: [act1, act2]
-    g_zones[id] = Zone(id, Pose(Point(x, y, z), q_all), list_actions)
+    g_zones[id] = Zone(id, None, list_actions)
+    g_zones[id].setPixelCoords(x, y, x+w, y+h)
 
-if DOMAIN_NAME=="stack_empiler":
-    create_zone(0, 1.12, 0.30,  1.03, ["place"])
-    create_zone(1, 1.11, -0.09, 0.93, ["pick('w1',)"])
-    create_zone(2, 1.10, -0.40, 0.94, ["drop"])
-    create_zone(3, 1.41, -0.44, 0.93, ["pick('b2',)"])
-    create_zone(5, 1.55, 0.46,  0.95, ["PASS"])
-
-elif DOMAIN_NAME=="stack_empiler_1":
-    create_zone(0,  2.0, 0.084, 1.57,       ["place('l1"])
-    create_zone(1,  2.0, 0.152, 1.57,       ["place('l2"])
-    create_zone(6,  2.05, 0.11, 1.635,      ["place('l3"])
-    create_zone(2,  2.0, 0.084, 1.64,       ["place('l4"])
-    create_zone(3,  2.0, 0.152, 1.64,       ["place('l5"])
-    create_zone(4,  2.0, -0.035, 1.57,      ["pick('w1',)"])
-    create_zone(5,  2.0, -0.15, 1.57,       ["drop"])
-    create_zone(7,  2.1, -0.235, 1.55,      ["pick('g2',)"])
-    create_zone(8,  2.1, -0.18, 1.55,       ["pick('b2',)"])
-    create_zone(13, 2.15, -0.083, 1.595,    ["pick('p1',)"])
-    create_zone(9,  2.3, 0.13, 1.7,         ["PASS"])
-
-
-elif DOMAIN_NAME=="stack_empiler_2":
-    create_zone(0,  2.0, 0.084, 1.57,       ["place('l1"])
-    create_zone(1,  2.0, 0.152, 1.57,       ["place('l2"])
-    create_zone(6,  2.05, 0.11, 1.635,      ["place('l3"])
-    create_zone(2,  2.0, 0.084, 1.64,       ["place('l4"])
-    create_zone(3,  2.0, 0.152, 1.64,       ["place('l5"])
-    create_zone(4,  2.0, 0.0, 1.57,         ["pick('w1',)"])
-    create_zone(5,  2.0, -0.15, 1.57,       ["drop"])
-    create_zone(7,  2.0, -0.053, 1.57,      ["pick('y2',)"])
-    create_zone(8,  2.1, -0.18, 1.55,       ["pick('b2',)"])
-    create_zone(13, 2.15, -0.083, 1.595,    ["pick('p1',)"])
-    create_zone(9,  2.3, 0.13, 1.7,         ["PASS"])
-
-elif DOMAIN_NAME=="classic":
-    create_zone(0, 1.12, 0.30, 1.03,    ["place"])
-    create_zone(1, 1.11, -0.33, 0.93,   ["pick('y', 'C')", "drop('y',)"])
-    create_zone(2, 1.42, -0.59, 0.94,   ["pick('r', 'H')", "drop('r',)"])
-    create_zone(3, 1.41, -0.44, 0.93,   ["pick('b', 'H')", "drop('b',)"])
-    create_zone(4, 1.41, -0.17, 0.92,   ["pick('p', 'H')", "drop('p',)"])
-    create_zone(5, 1.55, 0.46, 0.95,    ["PASS"])
-
-elif DOMAIN_NAME=="stack_box":
-    create_zone(0,  2.0, 0.084, 1.57,       ["place('l1"])
-    create_zone(1,  2.0, 0.152, 1.57,       ["place('l2"])
-    create_zone(6,  2.05, 0.11, 1.635,      ["place('l3"])
-    create_zone(2,  2.0, 0.084, 1.64,       ["place('l4"])
-    create_zone(3,  2.0, 0.152, 1.64,       ["place('l5"])
-    create_zone(4,  2.0, 0.0, 1.57,         ["pick('y1',)"])
-    create_zone(5,  2.0, -0.15, 1.57,       ["drop"])
-    create_zone(8,  2.1, -0.163, 1.55,       ["pick('b2',)"])
-    create_zone(10,  2.1, -0.218, 1.55,       ["pick('r2',)"])
-    create_zone(13, 2.15, -0.063, 1.595,    ["pick('p1',)"])
-    create_zone(9,  2.3, 0.13, 1.7,         ["PASS"])
-
+if DOMAIN_NAME=="stack_empiler_2":
+    create_zone(0,      1063,352,348,374,   ["place"])
+    create_zone(1,      356,483,666,453,    ["drop"])
+    create_zone(2,      912,585,98,120,     ["pick('w1',)"])
+    create_zone(3,      794,585,96,120,     ["pick('o2',)"])
+    create_zone(4,      674,585,101,120,    ["pick('y2',)"])
+    create_zone(5,      441,762,131,137,    ["pick('b2',)"])
+    create_zone(6,      582,759,296,138,    ["pick('p1',)"])
+    create_zone(7,      1371,820,228,217,   ["PASS"])
 else:
     raise Exception("Domain_name unknown...")
 
+# Detect PASS zone
 for z in g_zones.values():
     if z.valid_actions==["PASS"]:
         z.is_pass = True
         break
-# Get and set zones pixels 
-f = open('/home/afavier/new_exec_sim_ws/src/gazebo_plugin/zones_'+DOMAIN_NAME+'_coords.txt', 'r')
-for l in f:
-    l = l[:-1]
-    if l=="":
-        continue
-    l = l.split(',')
-    id,x1,y1,x2,y2 = [int(i) for i in l]
-    g_zones[id].setPixelCoords(x1,y1,x2,y2)
 
-# print(g_zones)
 def hide_all_zones(req = None):
-    srv = SetModelStateRequest()
+    # srv = SetModelStateRequest()
     # first disable zone fast
     for z in g_zones.values():
         z.current_action_id = -10
     # Then move them away
-    for z in g_zones.values():
-        srv.model_state.model_name = f"z{z.id}"
-        srv.model_state.pose = g_far_zone_pose
-        srv.model_state.reference_frame = "world" 
-        g_set_model_state_client(srv)
+    # for z in g_zones.values():
+    #     srv.model_state.model_name = f"z{z.id}"
+    #     srv.model_state.pose = g_far_zone_pose
+    #     srv.model_state.reference_frame = "world" 
+    #     g_set_model_state_client(srv)
     return EmptyResponse()
 
 def show_all_zones(req = None):
-    print("showing zones")
-    srv = SetModelStateRequest()
-    for z in g_zones.values():
-        srv.model_state.model_name = f"z{z.id}"
-        srv.model_state.pose = z.world_pose
-        srv.model_state.reference_frame = "world" 
-        g_set_model_state_client(srv)
+    # print("showing zones")
+    # srv = SetModelStateRequest()
+    # for z in g_zones.values():
+    #     srv.model_state.model_name = f"z{z.id}"
+    #     srv.model_state.pose = z.world_pose
+    #     srv.model_state.reference_frame = "world" 
+    #     g_set_model_state_client(srv)
     return EmptyResponse()
 
 g_prompt_button_shown = False
@@ -265,14 +210,14 @@ def incoming_vha_cb(msg: VHA):
                 if active:
                     break
 
-        srv = SetModelStateRequest()
-        srv.model_state.model_name = f"z{z.id}"
-        srv.model_state.reference_frame = "world"
+        # srv = SetModelStateRequest()
+        # srv.model_state.model_name = f"z{z.id}"
+        # srv.model_state.reference_frame = "world"
         if active:
             # srv.model_state.pose = z.world_pose
             pass
         else:
-            srv.model_state.pose = g_far_zone_pose
+            # srv.model_state.pose = g_far_zone_pose
             z.current_action_id = -10
         # g_set_model_state_client(srv)
 
@@ -343,16 +288,18 @@ def main():
     g_set_model_state_client = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
 
 
-    # Spawn zones
+    # SPAWNING #
     rospy.wait_for_service('gazebo/spawn_sdf_model')
-    nb_zones = 13
-    for i in range(nb_zones+1):
-        f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/z{i}.sdf','r')
-        sdff = f.read()
-        f.close()
-        spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
-        spawn_model_prox(f"z{i}", sdff, "", g_far_zone_pose, "world")
-        print(f"z{i} spawned")
+
+    # Spawn zones
+    # nb_zones = 13
+    # for i in range(nb_zones+1):
+    #     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/z{i}.sdf','r')
+    #     sdff = f.read()
+    #     f.close()
+    #     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    #     spawn_model_prox(f"z{i}", sdff, "", g_far_zone_pose, "world")
+    #     print(f"z{i} spawned")
     
     # spawn prompt button
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/prompt_button.sdf','r')
