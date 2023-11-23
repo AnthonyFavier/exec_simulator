@@ -319,6 +319,7 @@ def main():
 
 
     started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())
+    rospy.loginfo("HMI ready")
 
     rospy.wait_for_service("start_human_action")
     g_start_human_action_prox = rospy.ServiceProxy("start_human_action", Int)
