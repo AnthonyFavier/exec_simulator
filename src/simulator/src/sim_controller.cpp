@@ -1339,7 +1339,7 @@ std::map<std::string, geometry_msgs::Pose> locations =
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
         {"scene",           make_pose(make_point(0.0, 0.0, 0.0),            make_quaternion())},
-        {"longer_goal",     make_pose(make_point(1.2, -0.725, 1.47),         make_quaternion_RPY(0, -0.55, 0))},
+        {"longer_goal",     make_pose(make_point(1.2, -0.725, 1.47),        make_quaternion_RPY(0, -0.55, 0))},
         {"table_slot",      make_pose(make_point(0.86, 0.24, 0.7),          make_quaternion())},
         {"table_slot_0",    make_pose(make_point(0.86, 0.44, 0.7),          make_quaternion())},
         
@@ -1584,21 +1584,17 @@ void DropCube(AGENT agent)
 {
     std::string obj_name = g_holding[agent];
 
-    // Find zone to drop
+    // New Find zone to drop
     geometry_msgs::Pose drop_pose;
-    for(auto it = g_center_drop_zones.begin(); it != g_center_drop_zones.end() ; it++)
+    if(obj_name=="p2" || obj_name=="o1" || obj_name=="b1" || obj_name=="r1" || obj_name=="s1" || obj_name=="y1" // R
+    || obj_name=="y2" || obj_name=="o2" || obj_name=="w1" // C
+    || obj_name=="b2" || obj_name=="p1") // H
     {
-        ROS_INFO_STREAM("Checking drop zone : " << (*it).getPose().position.x << "," << (*it).getPose().position.y << "," << (*it).getPose().position.z);
-        if( (*it).isOccupied() == false )
-        {
-            ROS_INFO("drop zone found!");
-            drop_pose = (*it).getPose();
-            (*it).setOccupied(true);
-            break;
-        }
-        else
-            ROS_INFO("Zone occupied...");
+        drop_pose = init_poses[obj_name];
     }
+    if(obj_name=="g1")
+        drop_pose = init_poses["r1"];
+
     ROS_INFO("Drop pose = %f %f %f", drop_pose.position.x, drop_pose.position.y, drop_pose.position.z);
 
     robot_head_follow_pose(agent, drop_pose.position);
@@ -1821,6 +1817,10 @@ void move_named_target(AGENT agent, const std::string &named_target)
 
 void grab_obj(AGENT agent, const std::string &object)
 {
+    /*
+    Attach object to agent end effector
+    */
+
     ROS_INFO("\t\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
 
 
@@ -1846,6 +1846,10 @@ void grab_obj(AGENT agent, const std::string &object)
 
 void drop(AGENT agent, const std::string &object)
 {
+    /* 
+    Detach object from agent's end effector
+    */
+
     ROS_INFO("\t\t%s DROP START", get_agent_str(agent).c_str());
 
 
@@ -1866,8 +1870,6 @@ void drop(AGENT agent, const std::string &object)
     std::cout << agent << " " << srv.request.model_name_1 << " " << srv.request.link_name_1 << " " << srv.request.model_name_2 << " " << srv.request.link_name_2 << std::endl;
     if (!detach_plg_client[agent].call(srv) || !srv.response.ok)
         throw ros::Exception("Calling service detach_plg_client failed...");
-
-    // set_obj_rpy(agent, object, 0, 0, 0);
 
     ROS_INFO("\t\t%s DROP END", get_agent_str(agent).c_str());
 }
