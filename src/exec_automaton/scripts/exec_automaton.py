@@ -24,6 +24,7 @@ from sim_msgs.srv import Int, IntResponse, IntRequest
 from sim_msgs.msg import Signal
 from sim_msgs.msg import HeadCmd
 import simpleaudio as sa
+import numpy as np
 
 class IdResult(Enum):
     NOT_NEEDED=0
@@ -420,13 +421,17 @@ def execution_RF():
 
             if not RA.is_passive():
                 send_NS(VHA.NS)
-                start_execute_RA(RA, rf=True)
+                compliant_pairs = find_compliant_pairs_with_RA(curr_pstate, RA)
+                human_can_act_concurrently = False
+                for p in compliant_pairs:
+                    if not p.human_action.is_passive():
+                        human_can_act_concurrently = True
+                start_execute_RA(RA, rf=True, h_inactive=(not human_can_act_concurrently))
                 passive_update_HAs(curr_pstate, RA)
 
             elif RA.is_passive():
                 look_at_human()
-                send_NS(VHA.NS)
-                passive_update_HAs(curr_pstate, RA, TIMEOUT_DELAY)
+                send_NS_update_HAs(curr_pstate, VHA.NS, timeout=TIMEOUT_DELAY)
                 start_waiting_time = time.time()
                 str_bar = IncrementalBarStr(max = TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
                 log_event("R_S_RF_WAIT_H")
@@ -436,12 +441,21 @@ def execution_RF():
                     prompt("rf_r_passif", f"\n{str_bar.get_str()}")
                     time.sleep(0.05)
                 g_hmi_timeout_reached_pub.publish(EmptyM())
-                if g_new_human_decision==None:
+                if g_new_human_decision.is_passive():
+                    RA = select_best_active_RA(curr_pstate)
+                elif g_new_human_decision==None:
                     time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
-                    if g_new_human_decision==None:
+                    if g_new_human_decision==None or g_new_human_decision.is_passive():
                         RA = select_best_active_RA(curr_pstate)
+                
+                passive_update_HAs(curr_pstate, RA)
+                compliant_pairs = find_compliant_pairs_with_RA(curr_pstate, RA)
+                human_can_act_concurrently = False
+                for p in compliant_pairs:
+                    if not p.human_action.is_passive():
+                        human_can_act_concurrently = True
                 log_event("R_E_RF_WAIT_H")
-                start_execute_RA(RA, rf=True)
+                start_execute_RA(RA, rf=True, h_inactive=(not human_can_act_concurrently))
 
                   
         wait_step_end()
@@ -902,14 +916,12 @@ def select_valid_passive(ps: CM.PState) -> CM.Action:
             return c.robot_action
     raise Exception("select_valid_passive: Couldn't find a passive robot action")
 
-def select_best_active_RA(step: ConM.Step) -> CM.Action:
-    best_rank_r = None
-    best_ra = None
-    for p in step.get_pairs():
-        if not p.robot_action.is_passive() and (best_rank_r==None or p.best_rank_r < best_rank_r):
-            best_rank_r = p.best_rank_r
-            best_ra = p.robot_action
-    return best_ra
+def select_best_active_RA(ps: CM.PState) -> CM.Action:
+    sorted_pairs = list(np.sort( np.array( ps.children ) ))
+    for p in sorted_pairs:
+        if not p.robot_action.is_passive():
+            return p.robot_action
+    raise Exception("select_best_active_RA: best active RA not found...")
 
 
 ############################
@@ -1042,7 +1054,7 @@ def send_vha(valid_human_actions: list[CM.Action], type, timeout=0.0):
     g_update_VHA_pub.publish(msg)
 
 g_robot_acting = False
-def start_execute_RA(RA: CM.Action, rf=False):
+def start_execute_RA(RA: CM.Action, rf=False, h_inactive=False):
     global g_robot_acting
     rospy.loginfo(f"Execute Robot Action {RA}")
 
@@ -1052,7 +1064,10 @@ def start_execute_RA(RA: CM.Action, rf=False):
     else:
         g_robot_acting = True
         if rf:
-            prompt("rf_robot_acting")
+            if h_inactive:
+                prompt("rf_robot_acting_h_inactive")
+            else:
+                prompt("rf_robot_acting")
         else:
             prompt("robot_is_acting")
 
@@ -1264,6 +1279,10 @@ g_prompt_messages = {
         "ENG": "I prefer you to act\n" + g_prompt_start_extra + "but I can act myself.",
         "FR":  "Je prefère que vous agissiez\n" + g_prompt_start_extra + "mais je peux agir moi même.",
         },
+    "rf_robot_acting_h_inactive":{
+        "ENG": "I'm performing an action\n" + g_prompt_start_extra + "You can act in parallel.",
+        "FR":  "J'agis...",
+        },
     "rf_robot_acting":{
         "ENG": "I'm performing an action\n" + g_prompt_start_extra + "You can act in parallel.",
         "FR":  "J'agis...\n" + g_prompt_start_extra + "Vous pouvez agir en même temps.",
@@ -1277,19 +1296,14 @@ g_prompt_messages = {
 ##########
 ## MAIN ##
 ##########
-def find_r_rank_of_id(steps, id):
-    for s in steps:
-        if s.id == id:
-            return s.get_f_leaf().getBestRank()
-
 def asking_robot(robots):
     # Asking which robot to use?
     while True:
         robot_name = input("Which robot (or training)? ")
         if robot_name in robots:
             # Load correct policy and exec_regime
-            exec_regime, policy_name, begin_step = robots[robot_name]
-            if begin_step!=None:
+            exec_regime, policy_name, sol = robots[robot_name]
+            if sol!=None:
                 break
             else:
                 print("Solution empty...")
