@@ -248,10 +248,11 @@ def mouse_pressed_cb(msg: Point):
     global g_last_click
     g_last_click = Click(msg, time.time())
     rospy.loginfo(f"click: {msg.x},{msg.y}")
-def reset_last_click():
+def reset_last_click(req = None):
     global g_last_click
     g_last_click = None
     rospy.loginfo("click reset")
+    return EmptyResponse()
 
 def TO_reached_cb(msg: EmptyM):
     hide_all_zones()
@@ -280,6 +281,8 @@ def main():
     hide_prompt_button_service = rospy.Service("hide_prompt_button", EmptyS, hide_prompt_button)
     # show_can_click_indicator_service = rospy.Service("show_can_click_indicator", EmptyS, show_can_click_indicator)
     # hide_can_click_indicator_service = rospy.Service("hide_can_click_indicator", EmptyS, hide_can_click_indicator)
+
+    reset_last_click_service = rospy.Service("reset_last_click", EmptyS, reset_last_click)
 
     g_prompt_button_pressed_pub = rospy.Publisher('/prompt_button_pressed', EmptyM, queue_size=1)
 

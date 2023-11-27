@@ -430,6 +430,7 @@ def execution_RF():
                 passive_update_HAs(curr_pstate, RA)
 
             elif RA.is_passive():
+                g_reset_last_click_client()
                 look_at_human()
                 send_NS_update_HAs(curr_pstate, VHA.NS, timeout=TIMEOUT_DELAY)
                 start_waiting_time = time.time()
@@ -1432,7 +1433,7 @@ def main_exec():
 
     # given order
     order = []
-    # order = [1,2,3,4]
+    order = [3,4]
     if order!=[]:
         order = [str(o) for o in order]
     else:
@@ -1523,6 +1524,7 @@ if __name__ == "__main__":
     g_go_init_pose_client = rospy.ServiceProxy("go_init_pose", EmptyS)
     start_human_action_service = rospy.Service("start_human_action", Int, start_human_action_server)
 
+    g_reset_last_click_client = rospy.ServiceProxy("reset_last_click", EmptyS)
     g_show_prompt_button_client = rospy.ServiceProxy("show_prompt_button", EmptyS)
     g_hide_prompt_button_client = rospy.ServiceProxy("hide_prompt_button", EmptyS)
     prompt_button_pressed_sub = rospy.Subscriber('/prompt_button_pressed', EmptyM, prompt_button_pressed_cb)
