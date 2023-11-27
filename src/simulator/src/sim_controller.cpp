@@ -1334,11 +1334,12 @@ std::map<std::string, geometry_msgs::Pose> locations =
         {"l5",  make_pose(make_point(0.86, 0.44, 0.95), make_quaternion())},
         {"l6",  make_pose(make_point(0.86, 0.24, 1.05), make_quaternion())},
         {"l7",  make_pose(make_point(0.86, 0.44, 1.05), make_quaternion())},
+        {"l8",  make_pose(make_point(0.86, 0.34, 1.15), make_quaternion())},
 };
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
         {"scene",           make_pose(make_point(0.0, 0.0, 0.0),            make_quaternion())},
-        {"new_goal",        make_pose(make_point(1.0, -0.73, 1.49),         make_quaternion_RPY(0, -0.55, 0))},
+        {"longer_goal",     make_pose(make_point(1.2, -0.725, 1.47),         make_quaternion_RPY(0, -0.55, 0))},
         {"table_slot",      make_pose(make_point(0.86, 0.24, 0.7),          make_quaternion())},
         {"table_slot_0",    make_pose(make_point(0.86, 0.44, 0.7),          make_quaternion())},
         
@@ -1348,6 +1349,7 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"r1",              make_pose(make_point(0.5, -0.35, 0.75),         make_quaternion())},
         {"s1",              make_pose(make_point(0.5, -0.20, 0.75),         make_quaternion())},
         {"y1",              make_pose(make_point(0.5, -0.05, 0.75),         make_quaternion())},
+        {"p2",              make_pose(make_point(0.5,  0.20, 0.75),         make_quaternion())},
         
         {"y2",              make_pose(make_point(0.86, -0.30, 0.75),        make_quaternion())},
         {"o2",              make_pose(make_point(0.86, -0.15, 0.75),        make_quaternion())},
@@ -1435,6 +1437,7 @@ void init_cubes()
     g_cubes.push_back(Cube("w1"));
     g_cubes.push_back(Cube("b2"));
     g_cubes.push_back(Cube("p1"));
+    g_cubes.push_back(Cube("p2"));
 }
 
 //  HIGH LEVEL ACTIONS  //

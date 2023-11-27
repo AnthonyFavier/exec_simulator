@@ -345,6 +345,8 @@ def main():
                     reset_last_click()
                     break
 
+        # TODO: Sound click was ineffective
+
         time.sleep(0.01)
             
 if __name__ == "__main__":

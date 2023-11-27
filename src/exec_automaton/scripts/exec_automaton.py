@@ -1128,7 +1128,7 @@ def human_visual_signal_cb(msg: Signal):
     # Regular action
     elif msg.type == Signal.S_HA:
         g_new_human_decision = g_possible_human_actions[msg.id-1]
-        rospy.loginfo(f"\nHuman visual S_HA")
+        rospy.loginfo(f"Human visual : S_HA")
 
 def robot_visual_signal_cb(msg: Signal):
     global g_robot_acting
@@ -1355,7 +1355,7 @@ def main_exec():
 
     # CONSTANTS #
     #   Delays 
-    TIMEOUT_DELAY               = 4.0
+    TIMEOUT_DELAY               = 3.0
     TRAINING_TIMEOUT_DELAY      = 4.0
     ESTIMATED_R_REACTION_TIME   = 0.3
     ID_DELAY                    = 0.5
@@ -1384,7 +1384,7 @@ def main_exec():
     ## LOADING ## # pstates
     policy_tee = load("policy_task_end_early.p")
     policy_hmw = load("policy_human_min_work.p")
-    policy_hfe = load("policy_human_free_early.p")
+    # policy_hfe = load("policy_human_free_early.p")
 
 
     if g_domain_name!=DOMAIN_NAME:
@@ -1392,14 +1392,11 @@ def main_exec():
     robots = {
         "t" : ("training", "task_end_early", policy_tee),
 
-        "1" : ("Human-First", "human_min_work", policy_hmw),
-        "2" : ("Robot-First", "human_min_work", policy_hmw),
+        "1" : ("Human-First", "task_end_early", policy_tee),
+        "2" : ("Robot-First", "task_end_early", policy_tee),
 
-        "3" : ("Human-First", "task_end_early", policy_tee),
-        "4" : ("Robot-First", "task_end_early", policy_tee),
-    
-        "5" : ("Human-First", "human_min_work", policy_hmw),
-        "6" : ("Robot-First", "human_min_work", policy_hmw),
+        "3" : ("Human-First", "human_min_work", policy_hmw),
+        "4" : ("Robot-First", "human_min_work", policy_hmw),
     }
 
     rospy.loginfo("Wait for hmi to be started...")
@@ -1421,7 +1418,7 @@ def main_exec():
 
     # given order
     order = []
-    # order = ["t",1,2,5,6,10,9,7,8,2,1]
+    # order = [1,2,3,4]
     if order!=[]:
         order = [str(o) for o in order]
     else:
