@@ -592,7 +592,7 @@ if __name__ == "__main__":
             # Dumping
             dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + "events.p", "wb"))
             str_date = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-            dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + str_date + g_events[0].name + "_events.p", "wb"))
+            dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + str_date + "_" + g_events[0].name + "_events.p", "wb"))
             print("events dumped")
 
             # Clearing
