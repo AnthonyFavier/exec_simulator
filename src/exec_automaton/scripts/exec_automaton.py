@@ -546,7 +546,12 @@ def passive_update_HAs(ps: CM.PState, RA: CM.Action, timeout=0.0):
     if not human_active():
         # find compliant human actions and send VHA
         compliant_pairs = find_compliant_pairs_with_RA(ps, RA)
-        g_possible_human_actions = [p.human_action for p in compliant_pairs]
+        g_possible_human_actions = []
+        for p in compliant_pairs:
+            if p.human_action.is_passive():
+                g_possible_human_actions = g_possible_human_actions + [p.human_action]
+            else:
+                g_possible_human_actions = [p.human_action] + g_possible_human_actions
         send_vha(g_possible_human_actions, VHA.CONCURRENT, timeout=timeout)
 
 def find_compliant_pairs_with_RA(ps: CM.PState, RA):
