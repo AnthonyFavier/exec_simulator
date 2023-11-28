@@ -347,7 +347,7 @@ def execution_HF():
 
             ## 1 & 2 & 3 ##
             if human_active(): 
-                reset_permanent_prompt_line()
+                # reset_permanent_prompt_line()
                 ## 1 & 2 ##
                 if ID_needed(curr_pstate): 
                     result_id = MOCK_run_id_phase()
@@ -416,6 +416,15 @@ def execution_RF():
 
         else:
             go_home_pose_once()
+            
+            if check_if_human_is_done(curr_pstate):
+                set_permanent_prompt_line("h_done")
+                rospy.loginfo("You are done.")
+            elif check_if_human_can_leave(curr_pstate):
+                set_permanent_prompt_line("h_can_leave")
+                rospy.loginfo("You can leave.")
+            else:
+                reset_permanent_prompt_line()
             
             RA = select_best_RA(curr_pstate)
 
@@ -1176,7 +1185,7 @@ g_permanent_prompt = ""
 g_prompt_start_extra = "  "
 def set_permanent_prompt_line(msg_id):
     global g_permanent_prompt
-    g_permanent_prompt = g_prompt_start_extra + g_prompt_messages[msg_id][LANG] + "\n"
+    g_permanent_prompt = g_prompt_start_extra + g_prompt_messages[msg_id][LANG] + "\n\n"
 def reset_permanent_prompt_line():
     global g_permanent_prompt
     g_permanent_prompt = ""
