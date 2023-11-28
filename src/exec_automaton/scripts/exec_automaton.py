@@ -1379,7 +1379,7 @@ def main_exec():
 
     # CONSTANTS #
     #   Delays 
-    TIMEOUT_DELAY               = 3.0
+    TIMEOUT_DELAY               = 2.0
     TRAINING_TIMEOUT_DELAY      = 4.0
     ESTIMATED_R_REACTION_TIME   = 0.3
     ID_DELAY                    = 0.5
