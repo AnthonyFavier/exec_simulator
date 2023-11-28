@@ -85,7 +85,7 @@ g_best_human_action = 0
 q_all = Quaternion(*quaternion_from_euler(0, 1.0, 0))
 q_0 = Quaternion(*quaternion_from_euler(0, 0, 0))
 g_far_zone_pose = Pose(Point(0,0,-2), q_0)
-g_prompt_button_pose = Pose(Point(1.2, 0.75, 1.22), q_all)
+g_prompt_button_pose = Pose(Point(1.3, 0.71, 1.37), q_all)
 g_can_click_indicator_pose = Pose(Point(1.87, 0.0, 1.44), q_all)
 
 # Create zones
@@ -99,8 +99,8 @@ if DOMAIN_NAME=="stack_empiler_2":
     create_zone(0,      1063,352,348,374,   ["place"])
     create_zone(1,      356,483,666,453,    ["drop"])
     create_zone(2,      912,585,98,120,     ["pick('w1',)"])
-    create_zone(3,      794,585,96,120,     ["pick('o2',)"])
-    create_zone(4,      674,585,101,120,    ["pick('y2',)"])
+    create_zone(3,      794,585,96,120,     ["pick('o1',)"])
+    create_zone(4,      674,585,101,120,    ["pick('y1',)"])
     create_zone(5,      441,762,131,137,    ["pick('b2',)"])
     create_zone(6,      582,759,296,138,    ["pick('p1',)"])
     create_zone(7,      1371,820,228,217,   ["PASS"])
@@ -138,7 +138,7 @@ def show_all_zones(req = None):
 
 g_prompt_button_shown = False
 g_prompt_button_zone = Zone(-20, g_prompt_button_pose, None)
-g_prompt_button_zone.setPixelCoords(1634, 401, 1843, 506)
+g_prompt_button_zone.setPixelCoords(1664, 299, 1899, 417)
 def show_prompt_button(req = None):
     global g_prompt_button_shown
     g_prompt_button_shown = True

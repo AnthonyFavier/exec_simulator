@@ -1,2 +1,2 @@
 #!/bin/bash
-terminator -b -p simulation_prompt --geometry '770x250+1130+0'
+terminator -b -p simulation_prompt --geometry '710x250+1210+0'

@@ -1318,7 +1318,7 @@ def wait_start_signal(robot_name, robots, i):
     rospy.loginfo("READY TO START, waiting for start signal...")
     set_permanent_prompt_line("start_ready")
     prompt("start_press_enter")
-    g_prompt_pub.publish(String( f"           * Prêt à démarrer * \n\n       Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})\n\n\n Cliquez sur le bouton jaune     ⬇") )
+    g_prompt_pub.publish(String( f"    Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})\n\n\n Cliquez sur le bouton jaune   ⬇") )
     rospy.loginfo(f"Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})")
     wait_prompt_button_pressed()
     reset_permanent_prompt_line()
@@ -1377,7 +1377,7 @@ def main_exec():
     ASSESS_DELAY                = 0.2
     TT_R_PASSIVE_DELAY          = 1.0
     START_SIMU_DELAY            = 2.0
-    INCREMENTAL_BAR_STR_WIDTH   = 33
+    INCREMENTAL_BAR_STR_WIDTH   = 31
     #   Proba
     P_SUCCESS_ID_PHASE          = 1.0
 

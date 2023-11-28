@@ -1343,16 +1343,14 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"table_slot",      make_pose(make_point(0.86, 0.24, 0.7),          make_quaternion())},
         {"table_slot_0",    make_pose(make_point(0.86, 0.44, 0.7),          make_quaternion())},
         
-        {"o1",              make_pose(make_point(0.5, -0.65, 0.75),         make_quaternion())},
         {"b1",              make_pose(make_point(0.5, -0.50, 0.75),         make_quaternion())},
         {"g1",              make_pose(make_point(0.5, -0.50, 0.85),         make_quaternion())},
         {"r1",              make_pose(make_point(0.5, -0.35, 0.75),         make_quaternion())},
         {"s1",              make_pose(make_point(0.5, -0.20, 0.75),         make_quaternion())},
-        {"y1",              make_pose(make_point(0.5, -0.05, 0.75),         make_quaternion())},
-        {"p2",              make_pose(make_point(0.5,  0.20, 0.75),         make_quaternion())},
+        {"p2",              make_pose(make_point(0.5,  0.05, 0.75),         make_quaternion())},
         
-        {"y2",              make_pose(make_point(0.86, -0.30, 0.75),        make_quaternion())},
-        {"o2",              make_pose(make_point(0.86, -0.15, 0.75),        make_quaternion())},
+        {"y1",              make_pose(make_point(0.86, -0.30, 0.75),        make_quaternion())},
+        {"o1",              make_pose(make_point(0.86, -0.15, 0.75),        make_quaternion())},
         {"w1",              make_pose(make_point(0.86, 0.0, 0.75),          make_quaternion())},
         
         {"b2",              make_pose(make_point(1.21, -0.50, 0.75),        make_quaternion())},
