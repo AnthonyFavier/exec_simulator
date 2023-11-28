@@ -1410,7 +1410,7 @@ def main_exec():
     ## LOADING ## # pstates
     policy_tee = load("policy_task_end_early.p")
     policy_hmw = load("policy_human_min_work.p")
-    # policy_hfe = load("policy_human_free_early.p")
+    policy_hfe = load("policy_human_free_early.p")
 
 
     if g_domain_name!=DOMAIN_NAME:
@@ -1423,6 +1423,9 @@ def main_exec():
 
         "3" : ("Human-First", "human_min_work", policy_hmw),
         "4" : ("Robot-First", "human_min_work", policy_hmw),
+
+        "5" : ("Human-First", "human_free_early", policy_hfe),
+        "6" : ("Robot-First", "human_free_early", policy_hfe),
     }
 
     rospy.loginfo("Wait for hmi to be started...")
@@ -1444,7 +1447,7 @@ def main_exec():
 
     # given order
     order = []
-    order = [3,4]
+    order = [1,2,3,4,5,6]
     if order!=[]:
         order = [str(o) for o in order]
     else:
