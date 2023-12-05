@@ -10,10 +10,13 @@ from termios import tcflush, TCIFLUSH
 
 def prompt_print(str):
   print('\033[2J')
-  print(str)
+  print(str, end='', flush=True)
 
 def show_progress_bar_cb(s):
   print("\r" + s.data, end='')
+
+def start_prompt_bar_cb(msg):
+  print("\n", end="", flush=True)
 
 def msg_cb(msg):
   prompt_print(msg.data)
@@ -29,6 +32,7 @@ if __name__ == "__main__":
 
   msg_sub = rospy.Subscriber("/simu_prompt", String, msg_cb, queue_size=1)
   update_progress_bar_sub = rospy.Subscriber('/prompt_update_progress_bar', String, show_progress_bar_cb, queue_size=1)
+  start_prompt_bar_sub = rospy.Subscriber('/start_prompt_bar', EmptyM, start_prompt_bar_cb, queue_size=1)
 
   wait_start_signal_sub = rospy.Subscriber("/wait_press_enter", EmptyM, wait_press_enter_cb, queue_size=1)
   g_enter_pressed_pub = rospy.Publisher('/enter_pressed', EmptyM, queue_size=1)
