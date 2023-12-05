@@ -97,7 +97,7 @@ def create_zone(id, x, y, w, h, list_actions):
 
 if DOMAIN_NAME=="stack_empiler_2":
     create_zone(0,      1063,352,348,374,   ["place"])
-    create_zone(1,      356,483,666,453,    ["drop"])
+    create_zone(1,      251,479,837,466,    ["drop"])
     create_zone(2,      912,585,98,120,     ["pick('o1',)"])
     create_zone(3,      794,585,96,120,     ["pick('w1',)"])
     create_zone(4,      674,585,101,120,    ["pick('y1',)"])
