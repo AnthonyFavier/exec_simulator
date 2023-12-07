@@ -136,8 +136,6 @@ def training():
     global TIMEOUT_DELAY, g_enter_pressed, g_force_exec_stop, TRAINING_PROMPT_ONLY, step_over
 
 
-
-
     # capabilities : pick, place cubes, drop, pass/TO
     # notion of steps: synchronized in step (sound), you and the robot can both perform one action or be passive. Either you or the robot act alone, or you act in parallel. Each step begins with a sound. You can perform only one action per step, so you have to wait the next step/sound before acting/clicking again. 
     # To be passive during a step you can either do nothing and wait for the robot to act, or click on the hand to indicate the robot you will be passive. Note that even if you're "passive", you can perform any valid action while the robot is acting. 
@@ -251,7 +249,7 @@ def training():
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "En réalité, au début d'une étape le robot pourra lancer un chrono. Sans action ni signe de votre part avant la fin, vous serai également considéré comme passif. (Suivant)"
+    "Au début d'une étape, le robot pourra lancer un chrono pour attendre votre décision. Sans action ni signe de votre part, vous serai considéré comme passif. (Suivant)"
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
@@ -347,8 +345,13 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Remarquez ici que le robot est capable de placer le cube bleu mais il doit d'abord enlever le cube vert. \n Attrapez le cube blanc pour insiter le robot à agir de la sorte."
+    "Remarquez ici que le robot est capable de placer le cube bleu mais il doit d'abord enlever le cube vert. \n (Suivant)"
     )))
+    wait_prompt_button_pressed()
+    g_prompt_pub.publish(String(format_txt(
+    "L'étape commence. \n \n Attrapez le cube blanc pour insiter le robot à prendre le cube vert."
+    )))
+
 
     expected_ha = build_expected_ha("pick", ("w1",))
     send_NS_update_HAs(curr_pstate, VHA.NS_IDLE, only_has=[expected_ha])
@@ -438,7 +441,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Si jamais comme maintenant vous ne pouvez plus placer votre cube vous pouvez le reposer sur la table en cliquant sur la partie gauche de cette dernière."
+    "Si jamais comme maintenant vous ne pouvez plus placer votre cube, vous pouvez le reposer sur la table en cliquant sur la partie gauche de cette dernière."
     )))
 
     go_idle_pose_once()
@@ -1617,14 +1620,14 @@ def main_exec():
     robots = {
         "t" : ("training", "task_end_early", policy_tee),
 
-        "1" : ("Human-First", "task_end_early", policy_tee),
-        "2" : ("Robot-First", "task_end_early", policy_tee),
+        "1" : ("Human-First", "task_end_early", policy_tee), # Finish task early
+        "2" : ("Robot-First", "task_end_early", policy_tee), # Finish task early
 
-        "3" : ("Human-First", "human_min_work", policy_hmw),
-        "4" : ("Robot-First", "human_min_work", policy_hmw),
+        "3" : ("Human-First", "human_min_work", policy_hmw), # Finish task early
+        "4" : ("Robot-First", "human_min_work", policy_hmw), # Finish task early
 
-        "5" : ("Human-First", "human_free_early", policy_hfe),
-        "6" : ("Robot-First", "human_free_early", policy_hfe),
+        "5" : ("Human-First", "human_free_early", policy_hfe), # Be free early
+        "6" : ("Robot-First", "human_free_early", policy_hfe), # Be free early
     }
 
     rospy.loginfo("Wait for hmi to be started...")
