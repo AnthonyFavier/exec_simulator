@@ -151,11 +151,29 @@ def training():
 ###############################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Merci et bienvenue dans ce tutoriel. \n Pour commencer, il vous faut comprendre la notion d'étape. \n \n (Suivant) Cliquez sur le bouton  ⬇"
+    "Merci et bienvenue dans ce tutoriel ! \n En collaboration avec le robot, vous allez devoir réaliser la pile de cube montrée en haut à gauche de l'écran.  (Suivant) Cliquez sur le bouton  ⬇ "
     )))
     wait_prompt_button_pressed()
+
     g_prompt_pub.publish(String(format_txt(
-    "Le début d'une étape sera marqué par un signal sonore émi par le robot. \n Vous ne pouvez effectuer qu'une action maximum par étape. De même pour le robot. (Suivant)"
+    "La table comporte différentes zones. A droite se trouve la zone d'empilement. \n A gauche se trouve les cubes disposés dans trois zones dinstinctes. (Suivant)" 
+    )))
+    g_show_tuto_zones_client()
+    wait_prompt_button_pressed()
+
+    g_prompt_pub.publish(String(format_txt(
+    "Vous pouvez attraper les cubes disposés devant vous et ceux présent au milieu. \n De même, le robot peut attraper les cubes devant lui et ceux au milieu. (Suivant)" 
+    )))
+    wait_prompt_button_pressed()
+    g_hide_tuto_zones_client()
+
+    g_prompt_pub.publish(String(format_txt(
+    "Notez également que seul les cubes pouvant être placés immédiatement peuvent être attrapés. \n Ainsi, il n'est pas possible d'attraper un cube à l'avance. (Suivant)" 
+    )))
+    wait_prompt_button_pressed()
+
+    g_prompt_pub.publish(String(format_txt(
+    "Il vous faut maintenant comprendre la notion d'étape. Le début d'une étape sera marqué par un signal sonore émis par le robot. Vous et le robot ne pouvez effectuer qu'une action maximum par étape. (Suivant)"
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
@@ -249,7 +267,7 @@ def training():
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "Au début d'une étape, le robot pourra lancer un chrono pour attendre votre décision. Sans action ni signe de votre part, vous serai considéré comme passif. (Suivant)"
+    "Au début d'une étape, le robot pourra lancer un chrono pour attendre votre décision. Sans action ni signe de votre part, vous serez considéré comme passif. (Suivant)"
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
@@ -349,7 +367,7 @@ def training():
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "L'étape commence. \n \n Attrapez le cube blanc pour insiter le robot à prendre le cube vert."
+    "L'étape commence. \n \n Attrapez le cube blanc pour inciter le robot à prendre le cube vert."
     )))
 
 
@@ -441,7 +459,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Si jamais comme maintenant vous ne pouvez plus placer votre cube, vous pouvez le reposer sur la table en cliquant sur la partie gauche de cette dernière."
+    "Si jamais, comme maintenant, vous ne pouvez plus placer votre cube, vous pouvez le reposer sur la table en cliquant sur la partie gauche de cette dernière."
     )))
 
     go_idle_pose_once()
@@ -1557,7 +1575,7 @@ def wait_start_signal(robot_name, robots, i, h_instru):
     rospy.loginfo("READY TO START, waiting for start signal...")
 
     if robot_name=="t":
-        g_prompt_pub.publish(String( f"           *** Tutoriel ***\n\n\n Cliquez sur le bouton jaune   ⬇") )
+        g_prompt_pub.publish(String( f"           *** Tutoriel ***\n\n\n Cliquez sur le bouton jaune   ⬇ ") )
     else:
         g_prompt_pub.publish(String( f"    Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})\n\n{g_prompt_messages[h_instru][LANG]}\n\n Cliquez sur le bouton jaune   ⬇ ") )
     rospy.loginfo(f"Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})")
@@ -1774,9 +1792,13 @@ if __name__ == "__main__":
     g_hide_prompt_button_client = rospy.ServiceProxy("hide_prompt_button", EmptyS)
     prompt_button_pressed_sub = rospy.Subscriber('/prompt_button_pressed', EmptyM, prompt_button_pressed_cb)
 
+    g_show_tuto_zones_client = rospy.ServiceProxy("show_tuto_zones", EmptyS)
+    g_hide_tuto_zones_client = rospy.ServiceProxy("hide_tuto_zones", EmptyS)
+
+    # Wait for publisher init
+    time.sleep(0.1)
 
     ###
     
-
     # Execution simulation
     main_exec()
