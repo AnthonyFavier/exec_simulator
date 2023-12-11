@@ -181,6 +181,45 @@ def show_can_click_indicator(req = None):
     g_set_model_state_client(srv)
     return EmptyResponse()
 
+def show_tuto_zones(req = None):
+    srv = SetModelStateRequest()
+    srv.model_state.model_name="t1"
+    srv.model_state.pose = Pose(Point(1.8, 0.17, 1.5), q_all)
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="t2"
+    srv.model_state.pose = Pose(Point(2.0, -0.057, 1.655), q_all)
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="t3"
+    srv.model_state.pose = Pose(Point(2.0, -0.055, 1.57), q_all)
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="t4"
+    srv.model_state.pose = Pose(Point(2.15, -0.108, 1.595), q_all)
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+def hide_tuto_zones(req = None):
+    srv = SetModelStateRequest()
+    srv.model_state.model_name="t1"
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="t2"
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="t3"
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="t4"
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+
 
 #########
 ## ROS ##
@@ -281,6 +320,8 @@ def main():
     hide_prompt_button_service = rospy.Service("hide_prompt_button", EmptyS, hide_prompt_button)
     # show_can_click_indicator_service = rospy.Service("show_can_click_indicator", EmptyS, show_can_click_indicator)
     # hide_can_click_indicator_service = rospy.Service("hide_can_click_indicator", EmptyS, hide_can_click_indicator)
+    show_tuto_zones_service = rospy.Service("show_tuto_zones", EmptyS, show_tuto_zones)
+    hide_tuto_zones_service = rospy.Service("hide_tuto_zones", EmptyS, hide_tuto_zones)
 
     reset_last_click_service = rospy.Service("reset_last_click", EmptyS, reset_last_click)
 
@@ -311,6 +352,29 @@ def main():
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"prompt_button", sdff, "", g_far_zone_pose, "world")
     print(f"prompt_button spawned")
+
+    # spawn tuto zones
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t1.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    spawn_model_prox(f"t1", sdff, "", g_far_zone_pose, "world")
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t2.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    spawn_model_prox(f"t2", sdff, "", g_far_zone_pose, "world")
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t3.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    spawn_model_prox(f"t3", sdff, "", g_far_zone_pose, "world")
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t4.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    spawn_model_prox(f"t4", sdff, "", g_far_zone_pose, "world")
+
 
     # spawn can_click_indicator
     # f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/can_click_indicator_new.sdf','r')
