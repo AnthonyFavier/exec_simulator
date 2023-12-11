@@ -104,8 +104,7 @@ def getStamp(event):
 # Events Callback
 def log_cb(msg):
     global g_events
-    print(msg)
-    # g_events.append( Event(msg.name, msg.timestamp) )
+    print(f"EVENT {msg.timestamp:.3f} {msg.name}")
     g_events.append( Event(msg.name, time.time()) )
 
 # Signals Callbacks (Robot, Human, Timeouts)
@@ -129,14 +128,13 @@ g_h_signals_names = { # sgl_types : [display_name, shape_color, text_color]
 def r_sgl_cb(sgl: Signal):
     global g_r_signals, g_to_signals
 
-    print(sgl)
-
     if sgl.type == Signal.TO:
-        # t = rospy.get_time()
         t = time.time()
         TO_name = "TIMEOUT" 
         g_to_signals.append( LogSignal(TO_name, t, sgl.type, None, None) )
         g_events.append( Event("SGL_"+TO_name, t) )
+        
+        print(f"SGL_R {t:.3f} {TO_name} type={sgl.type}")
 
     elif sgl.type in g_r_signals_names:
         # t = rospy.get_time()
@@ -148,16 +146,18 @@ def r_sgl_cb(sgl: Signal):
         elif sgl.turn == Signal.HUMAN_TURN:
             event_name += "_HUMAN_TURN"
         g_events.append( Event("SGL_"+event_name, t) )
+
+        print(f"SGL_R {t:.3f} {g_r_signals_names[sgl.type][0]} type={sgl.type} id={sgl.id}")
+
 def h_sgl_cb(sgl: Signal):
     global g_h_signals
 
-    print(sgl)
-    
     if sgl.type in g_h_signals_names:
-        # t = rospy.get_time()
         t = time.time()
         g_h_signals.append( LogSignal(g_h_signals_names[sgl.type][0], t, sgl.type, g_h_signals_names[sgl.type][1], g_h_signals_names[sgl.type][2]) )
         g_events.append( Event("SGL_"+g_h_signals_names[sgl.type][0], t) )
+
+        print(f"SGL_H {t:.3f} {g_h_signals_names[sgl.type][0]} type={sgl.type} id={sgl.id}")
 
 # Activities Extraction
 g_r_activities_names = { 
