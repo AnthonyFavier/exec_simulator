@@ -646,19 +646,36 @@ def execution_RF():
                 start_waiting_time = time.time()
                 str_bar = IncrementalBarStr(max = TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
                 log_event("R_S_RF_WAIT_H")
+                prompt("rf_r_passif")
+                time.sleep(0.01)
+                start_prompt_bar_pub.publish(EmptyM())
+                time.sleep(0.01)
                 while not rospy.is_shutdown() and time.time()-start_waiting_time<str_bar.max and g_new_human_decision==None:
                     elapsed = time.time() - start_waiting_time
                     str_bar.goto(elapsed)
-                    prompt("rf_r_passif", f"\n{str_bar.get_str()}")
-                    time.sleep(0.05)
-                g_hmi_timeout_reached_pub.publish(EmptyM())
-                if g_new_human_decision.is_passive():
-                    RA = select_best_active_RA(curr_pstate)
-                elif g_new_human_decision==None:
-                    time.sleep(ESTIMATED_R_REACTION_TIME*1.1)
+                    g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
+                    time.sleep(0.01)
+
+
+                if g_new_human_decision==None:
+                    str_bar.goto(str_bar.max)
+                    str_bar.finish()
+                    g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
+                    g_hmi_timeout_reached_pub.publish(EmptyM())
+                    rospy.loginfo("start wait reaction time")
+                    start_time = time.time()
+                    while not rospy.is_shutdown():
+                        if not g_h_decision_received and time.time()-start_time>1.0:
+                            break
+                        elif g_h_decision_received and g_new_human_decision:
+                            break
+                        else:
+                            time.sleep(0.01)
                     if g_new_human_decision==None or g_new_human_decision.is_passive():
                         RA = select_best_active_RA(curr_pstate)
-                
+                elif g_new_human_decision.is_passive():
+                    RA = select_best_active_RA(curr_pstate)
+
                 passive_update_HAs(curr_pstate, RA)
                 compliant_pairs = find_compliant_pairs_with_RA(curr_pstate, RA)
                 human_can_act_concurrently = False
