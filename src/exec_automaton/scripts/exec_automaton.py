@@ -418,7 +418,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Indiquez au robot que vous allez finalement être passif."
+    "Finalement, indiquez au robot que vous allez être passif."
     )))
 
     send_NS_update_HAs(curr_pstate, VHA.NS, only_has=[])
