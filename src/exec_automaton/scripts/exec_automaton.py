@@ -376,7 +376,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Placez le cube blanc pendant que le robot pose le cube vert sur table."
+    "Placez le cube blanc, en parallèle, le robot posera le cube vert sur table."
     )))
 
     expected_ha = build_expected_ha("place", ("l6","w1"))
@@ -1507,6 +1507,14 @@ g_prompt_messages = {
         "ENG": "TRAINING",
         "FR":  "TRAINING",
         },
+    "h_instru_tee":{
+        "ENG":" Finish the task as fast as possible.\n",
+        "FR":" Finissez la tâche au plus vite.\n",
+        },
+    "h_instru_hfe":{
+        "ENG":" Be free as fast as possible.",
+        "FR":" Faite en sorte de pouvoir partir au\n plus vite.",
+        },
 }
 
 ##########
@@ -1528,13 +1536,15 @@ def asking_robot(robots):
 
     return robot_name
 
-def wait_start_signal(robot_name, robots, i):
-    # Wait for Start Signal from Prompt Window
+def wait_start_signal(robot_name, robots, i, h_instru):
     rospy.loginfo("READY TO START, waiting for start signal...")
-    set_permanent_prompt_line("start_ready")
-    prompt("start_press_enter")
-    g_prompt_pub.publish(String( f"    Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})\n\n\n Cliquez sur le bouton jaune   ⬇") )
+
+    if robot_name=="t":
+        g_prompt_pub.publish(String( f"           *** Tutoriel ***\n\n\n Cliquez sur le bouton jaune   ⬇") )
+    else:
+        g_prompt_pub.publish(String( f"    Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})\n\n{g_prompt_messages[h_instru][LANG]}\n\n Cliquez sur le bouton jaune   ⬇ ") )
     rospy.loginfo(f"Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})")
+    
     wait_prompt_button_pressed()
     reset_permanent_prompt_line()
 
@@ -1618,16 +1628,16 @@ def main_exec():
     if g_domain_name!=DOMAIN_NAME:
         raise Exception("Missmatching domain names CONSTANT and loaded")
     robots = {
-        "t" : ("training", "task_end_early", policy_tee),
+        "t" : ("training", "task_end_early", policy_tee, ""),
 
-        "1" : ("Human-First", "task_end_early", policy_tee), # Finish task early
-        "2" : ("Robot-First", "task_end_early", policy_tee), # Finish task early
+        "1" : ("Human-First", "task_end_early", policy_tee, "h_instru_tee"), # Finish task early
+        "2" : ("Robot-First", "task_end_early", policy_tee, "h_instru_tee"), # Finish task early
 
-        "3" : ("Human-First", "human_min_work", policy_hmw), # Finish task early
-        "4" : ("Robot-First", "human_min_work", policy_hmw), # Finish task early
+        "3" : ("Human-First", "human_min_work", policy_hmw, "h_instru_tee"), # Finish task early
+        "4" : ("Robot-First", "human_min_work", policy_hmw, "h_instru_tee"), # Finish task early
 
-        "5" : ("Human-First", "human_free_early", policy_hfe), # Be free early
-        "6" : ("Robot-First", "human_free_early", policy_hfe), # Be free early
+        "5" : ("Human-First", "human_free_early", policy_hfe, "h_instru_hfe"), # Be free early
+        "6" : ("Robot-First", "human_free_early", policy_hfe, "h_instru_hfe"), # Be free early
     }
 
     rospy.loginfo("Wait for hmi to be started...")
@@ -1658,7 +1668,7 @@ def main_exec():
         
         print("Order = ", order)
         robot_name = order.pop(0)
-        exec_regime, policy_name, policy = robots[robot_name]
+        exec_regime, policy_name, policy, h_instructions = robots[robot_name]
         CM.g_PSTATES = policy
         ConM.setPolicyName(policy_name)
         log_event(f"ROBOT_N_{i}_{robot_name}_{exec_regime}")
@@ -1668,7 +1678,7 @@ def main_exec():
         g_reset_world_client()
 
         # Wait for Start Signal from Prompt Window
-        wait_start_signal(robot_name, robots, i)
+        wait_start_signal(robot_name, robots, i, h_instructions)
         
         # Start delay before beginning
         start_delay()
@@ -1682,7 +1692,7 @@ def main_exec():
             id = execution_RF()
         else:
             raise Exception("unknown exec_regime.")
-        
+    
         # loop
         if id==-1: # force stop
             order = []
