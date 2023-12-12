@@ -164,34 +164,34 @@ def training():
 ###############################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Merci et bienvenue dans ce tutoriel ! \n En collaboration avec le robot, vous allez devoir réaliser la pile de cube montrée en haut à gauche de l'écran.  (Suivant) Cliquez sur le bouton  ⬇ "
+    g_prompt_messages["training0"][LANG]
     )))
     wait_prompt_button_pressed()
 
     g_prompt_pub.publish(String(format_txt(
-    "La table comporte différentes zones. A droite se trouve la zone d'empilement. \n A gauche se trouve les cubes disposés dans trois zones dinstinctes. (Suivant)" 
+    g_prompt_messages["training1"][LANG]
     )))
     g_show_tuto_zones_client()
     wait_prompt_button_pressed()
 
     g_prompt_pub.publish(String(format_txt(
-    "Vous pouvez attraper les cubes disposés devant vous et ceux présent au milieu. \n De même, le robot peut attraper les cubes devant lui et ceux au milieu. (Suivant)" 
+    g_prompt_messages["training2"][LANG]
     )))
     wait_prompt_button_pressed()
     g_hide_tuto_zones_client()
 
     g_prompt_pub.publish(String(format_txt(
-    "Notez également que seul les cubes pouvant être placés immédiatement peuvent être attrapés. \n Ainsi, il n'est pas possible d'attraper un cube à l'avance. (Suivant)" 
+    g_prompt_messages["training3"][LANG]
     )))
     wait_prompt_button_pressed()
 
     g_prompt_pub.publish(String(format_txt(
-    "Il vous faut maintenant comprendre la notion d'étape. Le début d'une étape sera marqué par un signal sonore émis par le robot. Vous et le robot ne pouvez effectuer qu'une action maximum par étape. (Suivant)"
+    g_prompt_messages["training4"][LANG]
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
     #####################################  + 6 Lignes
-    "La première étape commence. \n \n Pour attraper un cube il vous suffit de cliquer dessus. \n Attrapez le cube jaune central."
+    g_prompt_messages["training5"][LANG]
     )))
 
     expected_ha = build_expected_ha("pick", ("y1",))
@@ -204,7 +204,7 @@ def training():
     start_execute_RA(RA)
 
     g_prompt_pub.publish(String(format_txt(
-    "Le robot a observé votre action et agit en fonction en parallèle..."
+    g_prompt_messages["training6"][LANG]
     )))
 
     wait_step_end()
@@ -217,11 +217,11 @@ def training():
 ###############################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Votre action et celle du robot sont terminées, l'étape est donc terminée. \n La suivante est prête à démarrer. (Suivant)"
+    g_prompt_messages["training7"][LANG]
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "L'étape suivante commence. \n \n Pour placer un cube il vous suffit de cliquer à droite sur la zone d'empilement. \n Placez le cube jaune."
+    g_prompt_messages["training8"][LANG]
     )))
 
     expected_ha = build_expected_ha("place", ("l2", "y1"))
@@ -233,7 +233,7 @@ def training():
     start_execute_RA(RA)
 
     g_prompt_pub.publish(String(format_txt(
-    "Une nouvelle fois, le robot vous a observé et vous suit en agissant en parallèle."
+    g_prompt_messages["training9"][LANG]
     )))
 
     wait_step_end()
@@ -245,15 +245,15 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "A chaque étape vous pouvez choisir d'être passif et de ne pas agir. \n \n Il y a deux manières pour cela. (Suivant) "
+    g_prompt_messages["training10"][LANG]
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "D'abord, vous pouvez faire un signe de la main. \n \n Cela indique explicitement au robot que vous souhaitez être passif. (Suivant)"
+    g_prompt_messages["training11"][LANG]
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "L'étape commence. \n \n Cliquez sur la main pour faire un signe et laisser le robot commencer."
+    g_prompt_messages["training12"][LANG]
     )))
 
     send_NS_update_HAs(curr_pstate, VHA.NS, only_has=[])
@@ -264,7 +264,7 @@ def training():
     start_execute_RA(RA)
 
     g_prompt_pub.publish(String(format_txt(
-    "Le robot prend votre signal en compte et décide d'attraper sa barre rose."
+    g_prompt_messages["training13"][LANG]
     )))
 
     wait_step_end()
@@ -276,15 +276,15 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Notez que malgré votre signe de la main vous auriez pu décider de tout de même agir en parallèle du robot. (Suivant)"
+    g_prompt_messages["training14"][LANG]
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "Au début d'une étape, le robot pourra lancer un chrono pour attendre votre décision. Sans action ni signe de votre part, vous serez considéré comme passif. (Suivant)"
+    g_prompt_messages["training15"][LANG]
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "Attendez la fin du chrono pour laisser le robot agir seul."
+    g_prompt_messages["training16"][LANG]
     )))
 
     send_NS_update_HAs(curr_pstate, VHA.NS_IDLE, only_has=[])
@@ -308,7 +308,9 @@ def training():
         if g_new_human_decision==None:
             timeout_reached = True
     if timeout_reached:
-        g_prompt_pub.publish(String(format_txt("Sans indication, le robot vous a considéré comme passif et place sa barre." )))
+        g_prompt_pub.publish(String(format_txt(
+        g_prompt_messages["training17"][LANG]
+        )))
         sgl = Signal()
         sgl.type = Signal.TO
         robot_visual_signal_pub.publish(sgl)
@@ -327,7 +329,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Le robot peut également commencer, vous laissant agir en parallèle. \n A la prochaine étape le robot va directement attraper le cube gris, attrapez en parallèle le cube orange. (Suivant)"
+    g_prompt_messages["training18"][LANG]
     )))
     wait_prompt_button_pressed()
 
@@ -338,7 +340,7 @@ def training():
     send_NS_update_HAs(curr_pstate, VHA.NS_IDLE, only_has=[expected_ha])
 
     g_prompt_pub.publish(String(format_txt(
-    "Attrapez le cube orange !"
+    g_prompt_messages["training19"][LANG]
     )))
 
     while not rospy.is_shutdown() and g_new_human_decision==None:
@@ -360,7 +362,7 @@ def training():
     send_NS_update_HAs(curr_pstate, VHA.NS_IDLE, only_has=[expected_ha])
 
     g_prompt_pub.publish(String(format_txt(
-    "L'étape suivante a commencée. \n \n Placez le cube orange !"
+    g_prompt_messages["training20"][LANG]
     )))
 
     while not rospy.is_shutdown() and g_new_human_decision==None:
@@ -376,11 +378,11 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Remarquez ici que le robot est capable de placer le cube bleu mais il doit d'abord enlever le cube vert. \n (Suivant)"
+    g_prompt_messages["training21"][LANG]
     )))
     wait_prompt_button_pressed()
     g_prompt_pub.publish(String(format_txt(
-    "L'étape commence. \n \n Attrapez le cube blanc pour inciter le robot à prendre le cube vert."
+    g_prompt_messages["training22"][LANG]
     )))
 
 
@@ -395,7 +397,7 @@ def training():
     start_execute_RA(RA)
 
     g_prompt_pub.publish(String(format_txt(
-    "Le robot commence à rendre son cube bleu accessible."
+    g_prompt_messages["training23"][LANG]
     )))
 
     wait_step_end()
@@ -407,7 +409,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Placez le cube blanc, en parallèle, le robot posera le cube vert sur table."
+    g_prompt_messages["training24"][LANG]
     )))
 
     expected_ha = build_expected_ha("place", ("l6","w1"))
@@ -428,7 +430,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Attrapez maintenant le cube bleu pendant que le robot attrape le sien."
+    g_prompt_messages["training25"][LANG]
     )))
 
     RA = select_best_RA(curr_pstate)
@@ -449,7 +451,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Finalement, indiquez au robot que vous allez être passif."
+    g_prompt_messages["training26"][LANG]
     )))
 
     send_NS_update_HAs(curr_pstate, VHA.NS, only_has=[])
@@ -460,7 +462,7 @@ def training():
     start_execute_RA(RA)
 
     g_prompt_pub.publish(String(format_txt(
-    "Le robot place alors son cube."
+    g_prompt_messages["training27"][LANG]
     )))
 
     wait_step_end()
@@ -472,7 +474,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Si jamais, comme maintenant, vous ne pouvez plus placer votre cube, vous pouvez le reposer sur la table en cliquant sur la partie gauche de cette dernière."
+    g_prompt_messages["training28"][LANG]
     )))
 
     go_idle_pose_once()
@@ -492,7 +494,7 @@ def training():
 ################################################################
 
     g_prompt_pub.publish(String(format_txt(
-    "Pouvez maintenant terminer la tâche en attrapant puis en plaçant votre barre rose."
+    g_prompt_messages["training29"][LANG]
     )))
 
     RA = select_valid_passive(curr_pstate)
@@ -527,7 +529,9 @@ def training():
 
 ###############################################################
 
-    g_prompt_pub.publish(String(format_txt("La tâche est terminée ainsi que ce tutoriel. \n \n Merci de votre coopération !" )))
+    g_prompt_pub.publish(String(format_txt(
+    g_prompt_messages["training30"][LANG]
+    )))
 
     TRAINING_PROMPT_ONLY = False
     TIMEOUT_DELAY = back_TIMEOUT_DELAY
@@ -1562,6 +1566,130 @@ g_prompt_messages = {
     "h_instru_hfe":{
         "ENG":" Be free as fast as possible.",
         "FR":" Faite en sorte de pouvoir partir au\n plus vite.",
+        },
+    "training0":{
+        "ENG":"Welcome to this tutorial! \n \n In collaboration with the robot, you'll need to make the stack of cubes shown at the top left of the screen. (Next) Click on the button ⬇ ",
+        "FR":"Bienvenue dans ce tutoriel ! \n \n En collaboration avec le robot, vous allez devoir réaliser la pile de cube montrée en haut à gauche de l'écran. (Suivant) Cliquez sur le bouton ⬇ ",
+        },
+    "training1":{
+        "ENG":"The table has different zones. \n \n On the right is the stacking area. \n \n On the left are the cubes arranged in three separate zones. (Next)",
+        "FR":"La table comporte différentes zones. A droite se trouve la zone d'empilement. \n A gauche se trouve les cubes disposés dans trois zones distinctes. (Suivant)",
+        },
+    "training2":{
+        "ENG":"You can grab the cubes in front of you and those in the middle. \n Similarly, the robot can grab the cubes in front of itself and those in the middle. (Next)",
+        "FR":"Vous pouvez attraper les cubes disposés devant vous et ceux présent au milieu. \n De même, le robot peut attraper les cubes devant lui et ceux au milieu. (Suivant)",
+        },
+    "training3":{
+        "ENG":"Note also that only cubes that can be placed immediately can be picked up. \n Thus, it is not possible to grab a cube in anticipation. (Next)",
+        "FR":"Notez également que seul les cubes pouvant être placés immédiatement peuvent être attrapés. \n Ainsi, il n'est pas possible d'attraper un cube à l'avance. (Suivant)",
+        },
+    "training4":{
+        "ENG":"Now you need to understand the concept of steps. The start of a step is signaled by a beep from the robot. You and the robot can only perform a maximum of one action per step. (Next)",
+        "FR":"Il vous faut maintenant comprendre la notion d'étape. Le début d'une étape sera marqué par un signal sonore émis par le robot. Vous et le robot ne pouvez effectuer qu'une action maximum par étape. (Suivant)",
+        },
+    "training5":{
+        "ENG":"The first step begins. \n \n To grab a cube, simply click on it. \n Grab the central yellow cube.",
+        "FR":"La première étape commence. \n \n Pour attraper un cube il vous suffit de cliquer dessus. \n Attrapez le cube jaune central.",
+        },
+    "training6":{
+        "ENG":"The robot has observed your action and acts accordingly...",
+        "FR":"Le robot a observé votre action et agit en fonction en parallèle...",
+        },
+    "training7":{
+        "ENG":"Your action and that of the robot are complete, so the step is finished. \n \n The next step is ready to start. (Next)",
+        "FR":"Votre action et celle du robot sont terminées, l'étape est donc terminée. \n La suivante est prête à démarrer. (Suivant)",
+        },
+    "training8":{
+        "ENG":"The next step begins. \n \n To place a cube, simply click on the stacking area on the right. \n Place the yellow cube.",
+        "FR":"L'étape suivante commence. \n \n Pour placer un cube il vous suffit de cliquer à droite sur la zone d'empilement. \n Placez le cube jaune.",
+        },
+    "training9":{
+        "ENG":"Once again, the robot has observed you and is following you, acting in parallel.",
+        "FR":"Une nouvelle fois, le robot vous a observé et vous suit en agissant en parallèle.",
+        },
+    "training10":{
+        "ENG":"At each step you can choose to be passive and take no action. \n \n There are two ways of doing this. (Next)",
+        "FR":"A chaque étape vous pouvez choisir d'être passif et de ne pas agir. \n \n Il y a deux manières pour cela. (Suivant)",
+        },
+    "training11":{
+        "ENG":"First, you can wave your hand. \n \n This explicitly indicates to the robot that you wish to be passive. (Next)",
+        "FR":"D'abord, vous pouvez faire un signe de la main. \n \n Cela indique explicitement au robot que vous souhaitez être passif. (Suivant)",
+        },
+    "training12":{
+        "ENG":"The step begins. \n \n Click on the hand to wave and let the robot begin.",
+        "FR":"L'étape commence. \n \n Cliquez sur la main pour faire un signe et laisser le robot commencer.",
+        },
+    "training13":{
+        "ENG":"The robot takes your signal into account and decides to grab its pink bar.",
+        "FR":"Le robot prend votre signal en compte et décide d'attraper sa barre rose.",
+        },
+    "training14":{
+        "ENG":"Note that despite your hand signal, you could have decided to act in parallel with the robot. (Next)",
+        "FR":"Notez que malgré votre signe de la main vous auriez pu décider de tout de même agir en parallèle du robot. (Suivant)",
+        },
+    "training15":{
+        "ENG":"At the start of a step, the robot can start a timer to wait for your decision. Without any action or sign from you, you'll be considered passive. (Next)",
+        "FR":"Au début d'une étape, le robot pourra lancer un chrono pour attendre votre décision. Sans action ni signe de votre part, vous serez considéré comme passif. (Suivant)",
+        },
+    "training16":{
+        "ENG":"Wait for the timer to run out to let the robot act on its own.",
+        "FR":"Attendez la fin du chrono pour laisser le robot agir seul.",
+        },
+    "training17":{
+        "ENG":"Without any indication, the robot has considered you passive and places its bar.",
+        "FR":"Sans indication, le robot vous a considéré comme passif et place sa barre.",
+        },
+    "training18":{
+        "ENG":"The robot can also start, letting you act in parallel. \n In the next step, the robot will directly grab the grey cube. Meanwhile, grab the orange cube. (Next)",
+        "FR":"Le robot peut également commencer, vous laissant agir en parallèle. \n A la prochaine étape le robot va directement attraper le cube gris. Attrapez en parallèle le cube orange. (Suivant)",
+        },
+    "training19":{
+        "ENG":"Grab the orange cube!",
+        "FR":"Attrapez le cube orange !",
+        },
+    "training20":{
+        "ENG":"The next step has begun. \n \n Place the orange cube!",
+        "FR":"L'étape suivante a commencée. \n \n Placez le cube orange !",
+        },
+    "training21":{
+        "ENG":"Notice here that the robot is able to place the blue cube, but must first remove the green cube. (Next)",
+        "FR":"Remarquez ici que le robot est capable de placer le cube bleu mais il doit d'abord enlever le cube vert. (Suivant)",
+        },
+    "training22":{
+        "ENG":"The step begins. \n \n Grab the white cube to induce the robot to pick up the green cube.",
+        "FR":"L'étape commence. \n \n Attrapez le cube blanc pour inciter le robot à prendre le cube vert.",
+        },
+    "training23":{
+        "ENG":"The robot starts to make its blue cube accessible.",
+        "FR":"Le robot commence à rendre son cube bleu accessible.",
+        },
+    "training24":{
+        "ENG":"Place the white cube. Concurrently, the robot will place the green cube on the table.",
+        "FR":"Placez le cube blanc. En parallèle, le robot posera le cube vert sur table.",
+        },
+    "training25":{
+        "ENG":"Now grab the blue cube while the robot grabs its own.",
+        "FR":"Attrapez maintenant le cube bleu pendant que le robot attrape le sien.",
+        },
+    "training26":{
+        "ENG":"Finally, tell the robot that you're going to be passive.",
+        "FR":"Finalement, indiquez au robot que vous allez être passif.",
+        },
+    "training27":{
+        "ENG":"Then the robot places its cube.",
+        "FR":"Le robot place alors son cube.",
+        },
+    "training28":{
+        "ENG":"If, as now, you can no longer place your cube, you can place it back on the table by clicking on the left side of the table.",
+        "FR":"Si jamais, comme maintenant, vous ne pouvez plus placer votre cube, vous pouvez le reposer sur la table en cliquant sur la partie gauche de cette dernière.",
+        },
+    "training29":{
+        "ENG":"Now you can complete the task by grabbing and placing your pink bar.",
+        "FR":"Pouvez maintenant terminer la tâche en attrapant puis en plaçant votre barre rose.",
+        },
+    "training30":{
+        "ENG":"The task is complete, as is this tutorial. \n \n Thank you for your cooperation!",
+        "FR":"La tâche est terminée ainsi que ce tutoriel. \n \n Merci de votre coopération !",
         },
 }
 
