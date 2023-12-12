@@ -112,6 +112,19 @@ def format_txt(s):
             line += " " + w
         
         lines.append(line)
+
+    if LANG=="FR":
+        i = lines[-1].find("(Suivant)")
+    elif LANG=="ENG":
+        i = lines[-1].find("(Next)")
+    else:
+        raise Exception("format_txt: LANG unknown")
+    if i!=-1:
+        l = lines[-1]
+        while len(l)<MAX_CHAR:
+            l = l[:i] + " " +l[i:]
+            i+=1
+        lines[-1] = l
     
     output_s = ""
     for l in lines:
