@@ -97,7 +97,7 @@ def wait_prompt_button_pressed():
     g_prompt_button_pressed = False
 
 def format_txt(s):
-    MAX_CHAR = 38 # actually 39 but maybe should stop one before to avoid pending cursor to create newline
+    MAX_CHAR = 39 
 
     words = s.split(" ")
 
