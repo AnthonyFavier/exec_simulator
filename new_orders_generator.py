@@ -43,11 +43,10 @@ f.write("Chosen orders:\n")
 for o in orders:
     print(permu[o])
     f.write(str(permu[o]) + "\n")
+f.close()
 
 fig, axs = plt.subplots()
 axs.plot(range(len(orders)), orders, marker=".")
 axs.xaxis.set_major_locator(MultipleLocator(2))
 axs.xaxis.set_minor_locator(MultipleLocator(1))
 plt.show()
-
-f.close()
