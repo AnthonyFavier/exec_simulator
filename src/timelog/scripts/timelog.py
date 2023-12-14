@@ -502,6 +502,12 @@ def extract_metrics():
     # task completion time
     metrics["task_completion_time"] = g_events[-1].stamp
 
+    # number of steps
+    metrics["number_steps"] = 0
+    for sgl in g_r_signals:
+        if sgl.type in [Signal.NS, Signal.NS_IDLE]:
+            metrics["number_steps"] += 1
+
     # decision time - total + average
     metrics["total_decision_time"] = 0.0
     n = 0
@@ -518,16 +524,16 @@ def extract_metrics():
         if a.name == "wait_ns":
             n+=1
             metrics["total_wait_ns"] += a.dur()
-    metrics["average_wait_ns"] = 0 if n==0 else metrics["total_wait_ns"]/n
+    metrics["average_wait_ns"] = 0.0 if n==0 else metrics["total_wait_ns"]/n
 
-    # wait turn - total + average
-    metrics["total_wait_turn"] = 0.0
-    n=0
-    for a in g_h_activities:
-        if a.name == "wait_turn":
-            n+=1
-            metrics["total_wait_turn"] += a.dur()
-    metrics["average_wait_turn"] = 0 if n==0 else metrics["total_wait_turn"]/n
+    # # wait turn - total + average
+    # metrics["total_wait_turn"] = 0.0
+    # n=0
+    # for a in g_h_activities:
+    #     if a.name == "wait_turn":
+    #         n+=1
+    #         metrics["total_wait_turn"] += a.dur()
+    # metrics["average_wait_turn"] = 0.0 if n==0 else metrics["total_wait_turn"]/n
 
     # h action time - total + average
     metrics["total_h_action_time"] = 0.0
@@ -536,7 +542,7 @@ def extract_metrics():
         if a.name not in g_h_activities_names:
             n+=1
             metrics["total_h_action_time"] += a.dur()
-    metrics["average_h_action_time"] = 0 if n==0 else metrics["total_h_action_time"]/n
+    metrics["average_h_action_time"] = 0.0 if n==0 else metrics["total_h_action_time"]/n
     metrics["nb_h_action"] = n
 
     # r action time - total + average
@@ -546,7 +552,7 @@ def extract_metrics():
         if a.name not in g_r_activities_names:
             n+=1
             metrics["total_r_action_time"] += a.dur()
-    metrics["average_r_action_time"] = 0 if n==0 else metrics["total_r_action_time"]/n
+    metrics["average_r_action_time"] = 0.0 if n==0 else metrics["total_r_action_time"]/n
     metrics["nb_r_action"] = n
 
 
@@ -555,7 +561,10 @@ def extract_metrics():
 def show_metrics(metrics):
     print("Metrics:")
     for k in metrics:
-        print(f"\t-{k}: {metrics[k]:.2f}")
+        if isinstance(metrics[k], int):
+            print(f"\t-{k}: {metrics[k]}")
+        else:
+            print(f"\t-{k}: {metrics[k]:.2f}")
 
 ##########
 ## MAIN ##
