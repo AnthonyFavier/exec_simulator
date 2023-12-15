@@ -1798,7 +1798,7 @@ def main_exec():
     ## LOADING ## # pstates
     policy_tee = load("policy_task_end_early.p")
     policy_hmw = load("policy_human_min_work.p")
-    policy_hfe = load("policy_human_free_early.p")
+    policy_fhfe = load("policy_fake_human_free_early.p")
 
 
     if g_domain_name!=DOMAIN_NAME:
@@ -1812,8 +1812,8 @@ def main_exec():
         "3" : ("Human-First", "human_min_work", policy_hmw, "h_instru_tee"), # Finish task early
         "4" : ("Robot-First", "human_min_work", policy_hmw, "h_instru_tee"), # Finish task early
 
-        "5" : ("Human-First", "human_free_early", policy_hfe, "h_instru_hfe"), # Be free early
-        "6" : ("Robot-First", "human_free_early", policy_hfe, "h_instru_hfe"), # Be free early
+        "5" : ("Human-First", "fake_human_free_early", policy_fhfe, "h_instru_hfe"), # Be free early
+        "6" : ("Robot-First", "fake_human_free_early", policy_fhfe, "h_instru_hfe"), # Be free early
     }
 
     rospy.loginfo("Wait for hmi to be started...")
@@ -1847,7 +1847,6 @@ def main_exec():
         exec_regime, policy_name, policy, h_instructions = robots[robot_name]
         CM.g_PSTATES = policy
         ConM.setPolicyName(policy_name)
-        log_event(f"ROBOT_N_{i}_{robot_name}_{exec_regime}")
 
         # Reset world
         prompt("reset_world")
@@ -1855,6 +1854,8 @@ def main_exec():
 
         # Wait for Start Signal from Prompt Window
         wait_start_signal(robot_name, robots, i, h_instructions)
+
+        log_event(f"N{i}_{robot_name}_{exec_regime}_{h_instructions}")
         
         # Start delay before beginning
         start_delay()
