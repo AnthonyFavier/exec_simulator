@@ -1575,12 +1575,12 @@ g_prompt_messages = {
         "FR":  "TRAINING",
         },
     "h_instru_tee":{
-        "ENG": " Finish the task as fast as possible.\n",
-        "FR":  " Finissez la tâche au plus vite.\n",
+        "ENG": " Objective:\n Finish the task as fast as possible.",
+        "FR":  " Objectif:\n Finir la tâche au plus vite.",
         },
     "h_instru_hfe":{
-        "ENG": " Be free as fast as possible.",
-        "FR":  " Faite en sorte de pouvoir partir au\n plus vite.",
+        "ENG": " Objective:\n Be free as fast as possible.",
+        "FR":  " Objectif:\n Être libéré au plus vite.",
         },
     "training0":{
         "ENG": "Welcome to this tutorial! \n \n In collaboration with the robot, you'll need to make the stack of cubes shown at the top left of the screen. (Next) Click on the button ⬇ ",
@@ -1707,12 +1707,16 @@ g_prompt_messages = {
         "FR":  "La tâche est terminée ainsi que ce tutoriel. \n \n Merci de votre coopération !",
         },
     "end_task":{
-        "ENG": format_txt("Task complete \n \n Answer the questionnaire before clicking on the button to continue."),
-        "FR":  format_txt("Tâche terminée \n \n Repondez au questionnaire puis cliquez sur le bouton pour continuer."),
+        "ENG": format_txt("\t *** Task complete *** \n \n Answer the questionnaire before clicking on the button to continue."),
+        "FR":  format_txt("\t *** Tâche terminée *** \n \n Repondez au questionnaire puis cliquez sur le bouton pour continuer."),
         },
     "end_expe":{
-        "ENG": format_txt("Task complete \n \n Answer the questionnaire and the experiment will be over! \n \n \t \t Thanks!"),
-        "FR":  format_txt("Tâche terminée \n \n Repondez au questionnaire et l'expérience sera terminée ! \n \n \t \t Merci !"),
+        "ENG": "        *** Last task complete ***\n\n" + format_txt("Answer the questionnaire and the experiment will be over! \n \n \t \t Thanks!"),
+        "FR":  "     *** Dernière tâche terminée ***\n\n" + format_txt("Repondez au questionnaire et l'expérience sera terminée ! \n \n \t \t Merci !"),
+        },
+    "tuto_wait_start":{
+        "ENG": f"           *** Tutorial ***\n\n\n Click on the yellow button    ⬇ ",
+        "FR":  f"           *** Tutoriel ***\n\n\n Cliquez sur le bouton jaune   ⬇ ",
         },
 
 }
@@ -1740,10 +1744,12 @@ def wait_start_signal(robot_name, robots, i, h_instru):
     rospy.loginfo("READY TO START, waiting for start signal...")
 
     if robot_name=="t":
-        g_prompt_pub.publish(String( f"           *** Tutoriel ***\n\n\n Cliquez sur le bouton jaune   ⬇ ") )
+        g_prompt_pub.publish(String( g_prompt_messages["tuto_wait_start"][LANG] ))
     else:
-        g_prompt_pub.publish(String( f"    Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})\n\n{g_prompt_messages[h_instru][LANG]}\n\n Cliquez sur le bouton jaune   ⬇ ") )
-    rospy.loginfo(f"Robot n°{i} Type: {robots[robot_name][0]} ({robot_name})")
+        if LANG=="FR":
+            g_prompt_pub.publish(String( f"    Scénario n°{i}    {robots[robot_name][0]}\n\n{g_prompt_messages[h_instru][LANG]}\n\n Cliquez sur le bouton jaune   ⬇ ") )
+        elif LANG=="ENG":
+            g_prompt_pub.publish(String( f"    Scenario n°{i}    {robots[robot_name][0]}\n\n{g_prompt_messages[h_instru][LANG]}\n\n Click on the yellow button    ⬇ ") )
     
     wait_prompt_button_pressed()
     reset_permanent_prompt_line()
@@ -1860,7 +1866,7 @@ def main_exec():
 
     exec_regime = None
 
-    i = 0
+    i = 1
 
     # given order
     order = []
