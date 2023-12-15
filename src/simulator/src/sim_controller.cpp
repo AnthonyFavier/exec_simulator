@@ -1638,7 +1638,7 @@ std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start)
         name += "Pick(" + action.obj_name + ")";
         break;
     case sim_msgs::Action::PLACE_OBJ_NAME:
-        name += "Place(" + action.obj_name + "," + action.location + ")";
+        name += "Place(" + action.location + "," + action.obj_name + ")";
         break;
     case sim_msgs::Action::PUSH:
         name += "Push()";
