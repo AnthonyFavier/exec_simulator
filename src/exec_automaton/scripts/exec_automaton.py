@@ -1706,6 +1706,15 @@ g_prompt_messages = {
         "ENG": "The task is complete, as is this tutorial. \n \n Thank you for your cooperation!",
         "FR":  "La tâche est terminée ainsi que ce tutoriel. \n \n Merci de votre coopération !",
         },
+    "end_task":{
+        "ENG": format_txt("Task complete \n \n Answer the questionnaire before clicking on the button to continue."),
+        "FR":  format_txt("Tâche terminée \n \n Repondez au questionnaire puis cliquez sur le bouton pour continuer."),
+        },
+    "end_expe":{
+        "ENG": format_txt("Task complete \n \n Answer the questionnaire and the experiment will be over! \n \n \t \t Thanks!"),
+        "FR":  format_txt("Tâche terminée \n \n Repondez au questionnaire et l'expérience sera terminée ! \n \n \t \t Merci !"),
+        },
+
 }
 
 ##########
@@ -1902,12 +1911,10 @@ def main_exec():
             print("END, show trace ?")
 
         if order==[]:
-            robot_name = repeat_loop(robot_name, robots)
-            if robot_name!=None:
-                order.append(robot_name)
+            g_prompt_pub.publish(String( g_prompt_messages["end_expe"][LANG]))
         else:
             if exec_regime!="training":
-                g_prompt_pub.publish(String( format_txt("Tâche terminée \n \n Cliquez sur le bouton pour continuer")))
+                g_prompt_pub.publish(String( g_prompt_messages["end_task"][LANG]))
                 wait_prompt_button_pressed()
         full_reset()
         i+=1
