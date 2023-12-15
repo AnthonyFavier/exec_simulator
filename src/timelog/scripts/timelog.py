@@ -37,6 +37,8 @@ from tkinter import filedialog
 
 path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
+import ConcurrentModule as ConM
+import CommonModule as CM
 
 ## LOGGER ##
 logging.config.fileConfig(path + 'log.conf')
@@ -61,6 +63,7 @@ class Activity:
         self.name = name
         self.t_s = t_s
         self.t_e = t_e
+        self.h_is_best = False
 
     def dur(self):
         return self.t_e - self.t_s
@@ -88,7 +91,6 @@ def reset_times():
     # look for first NS event
     i = 0
     while g_events[i].name[:len("SGL_NS")] != "SGL_NS":
-        print("i=", i)
         i+=1
 
     # save first time
@@ -526,15 +528,6 @@ def extract_metrics():
             metrics["total_wait_ns"] += a.dur()
     metrics["average_wait_ns"] = 0.0 if n==0 else metrics["total_wait_ns"]/n
 
-    # # wait turn - total + average
-    # metrics["total_wait_turn"] = 0.0
-    # n=0
-    # for a in g_h_activities:
-    #     if a.name == "wait_turn":
-    #         n+=1
-    #         metrics["total_wait_turn"] += a.dur()
-    # metrics["average_wait_turn"] = 0.0 if n==0 else metrics["total_wait_turn"]/n
-
     # h action time - total + average
     metrics["total_h_action_time"] = 0.0
     n=0
@@ -555,6 +548,59 @@ def extract_metrics():
     metrics["average_r_action_time"] = 0.0 if n==0 else metrics["total_r_action_time"]/n
     metrics["nb_r_action"] = n
 
+    ## Optimal human actions
+    metrics["nb_h_optimal_action"] = 0
+    i_r = 0
+    i_h = 0
+    ps = CM.g_PSTATES[0]
+    while i_r<len(g_r_activities) and i_h<len(g_h_activities):
+        # identify HA 
+        if g_h_activities[i_h].name=="passive":
+            ha_name = "Passive"
+        else:
+            while g_h_activities[i_h].name!="wait_ns":
+                i_h+=1
+            if g_h_activities[i_h-1].name=="start_delay":
+                ha_name = "Passive"
+            else:
+                ha_name = g_h_activities[i_h-1].name.replace('\n','')
+        i_h+=1 # next_step
+    
+        # identify RA
+        while g_r_activities[i_r].name != "wait_end_step":
+            i_r+=1
+        if g_r_activities[i_r-1].name not in g_r_activities_names:
+            ra_name = g_r_activities[i_r-1].name.replace('\n','')
+        else:
+            ra_name = "Passive"
+        i_r+=3 # next_step
+    
+        # find corresponding pair in graph
+        for p in ps.children:
+            p_ha_name = p.human_action.name.capitalize() + "("
+            for k in p.human_action.parameters:
+                p_ha_name += k + ","
+            p_ha_name = p_ha_name[:-1] + ")"
+
+            p_ra_name = p.robot_action.name.capitalize() + "("
+            for k in p.robot_action.parameters:
+                p_ra_name += k + ","
+            p_ra_name = p_ra_name[:-1] + ")"
+
+            if p_ra_name==ra_name or (ra_name=="Passive" and p_ra_name[:len("Passive")]=="Passive"):
+                if p_ha_name==ha_name or (ha_name=="Passive" and p_ha_name[:len("Passive")]=="Passive"):
+                    break
+    
+        # check if pair is best 
+        if p.best:
+            metrics["nb_h_optimal_action"]+=1
+            if ha_name=="Passive":
+                g_h_activities[i_h-1].h_is_best = True
+            else:
+                g_h_activities[i_h-2].h_is_best = True
+            
+        # update current pstate
+        ps = CM.g_PSTATES[p.child]
 
     return metrics
 
@@ -569,6 +615,20 @@ def show_metrics(metrics):
 ##########
 ## MAIN ##
 ##########
+
+def load(filename):
+    global g_domain_name
+
+    print(f"Loading solution '{filename}' ... ", end="", flush=True)
+    s_t = time.time()
+
+    domain_name, pstates, final_pstates = dill.load(open(CM.path + filename, "rb"))
+
+    print("Loaded! - %.2fs" %(time.time()-s_t))
+
+    g_domain_name = domain_name
+    CM.g_FINAL_PSTATES = final_pstates
+    CM.g_PSTATES = pstates
 
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
@@ -625,6 +685,15 @@ if __name__ == "__main__":
             raise Exception("Cannot show the timelog of the training task!")
         print("events loaded")
 
+        i_s = file_path.find("instru_")+len("instru_")
+        i_e = i_s + 3
+        h_instru = file_path[i_s:i_e]
+        if h_instru=="tee":
+            load("policy_task_end_early.p")
+        elif h_instru=="hfe":
+            load("policy_real_human_free_early.p")
+        else:
+            raise Exception("h_instru unknown...")
 
         ########################
 ########## EXTRACT ACTIVITIES ##
@@ -775,6 +844,8 @@ if __name__ == "__main__":
                 text = g_h_activities_names[act.name][0]
                 color = g_h_activities_names[act.name][1]
                 text_color = g_h_activities_names[act.name][2]
+            if act.h_is_best:
+                text+="*"
 
             rec = ax.barh( ['H'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
             ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
