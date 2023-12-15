@@ -1111,7 +1111,7 @@ def reset():
     g_robot_acting = False
 
 def full_reset():
-    global g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_enter_pressed, g_prompt_button_pressed
+    global g_force_exec_stop, g_best_reachable_human_solution, g_best_reachable_human_solution_after_robot_choice, g_enter_pressed, g_prompt_button_pressed, AUTO_PASS
     reset()
     reset_permanent_prompt_line()
     g_force_exec_stop = False
@@ -1119,6 +1119,8 @@ def full_reset():
     g_best_reachable_human_solution_after_robot_choice = None
     g_enter_pressed = False
     g_prompt_button_pressed = False
+    AUTO_PASS = False
+    reset_auto_pass_hmi_pub.publish(EmptyM())
 
 def get_first_step(begin_step: ConM.Step):
     if len(begin_step.children)!=1:
@@ -1928,6 +1930,7 @@ if __name__ == "__main__":
     g_prompt_progress_bar_pub = rospy.Publisher("/prompt_update_progress_bar", String, queue_size=1)
     g_head_cmd_pub = rospy.Publisher("/tiago_head_cmd", HeadCmd, queue_size=10)
     start_prompt_bar_pub = rospy.Publisher("/start_prompt_bar", EmptyM, queue_size=1)
+    reset_auto_pass_hmi_pub = rospy.Publisher("/reset_auto_pass", EmptyM, queue_size=1)
 
     step_over_sub = rospy.Subscriber('/step_over', EmptyM, step_over_cb)
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)

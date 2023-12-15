@@ -239,6 +239,9 @@ def hide_auto_pass_indicator(req = None):
     g_set_model_state_client(srv)
     return EmptyResponse()
 
+def reset_auto_pass_cb(msg):
+    global AUTO_PASS
+    AUTO_PASS = False
 
 #########
 ## ROS ##
@@ -325,12 +328,14 @@ def main():
     global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_human_choice_pub, g_set_model_state_client, g_start_human_action_prox
     global g_prompt_button_pressed_pub
     global decision_sent
+    global AUTO_PASS
 
     rospy.init_node('mouse_human', log_level=rospy.INFO)
 
     human_vha_sub = rospy.Subscriber("hmi_vha", VHA, incoming_vha_cb, queue_size=1)
     click_sub = rospy.Subscriber("/mouse_pressed_pose", Point, mouse_pressed_cb, queue_size=1)
     TO_reached_sub = rospy.Subscriber("/hmi_timeout_reached", EmptyM, TO_reached_cb, queue_size=1)
+    reset_auto_pass_sub = rospy.Subscriber("/reset_auto_pass", EmptyM, reset_auto_pass_cb, queue_size=1)
 
     timeout_max_service = rospy.Service("hmi_timeout_max", Int, lambda req: IntResponse())
     r_idle_service = rospy.Service("hmi_r_idle", SetBool, lambda req: SetBoolResponse())
