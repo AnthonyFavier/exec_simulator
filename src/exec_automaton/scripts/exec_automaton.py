@@ -549,6 +549,8 @@ def execution_HF():
     """
     Main algorithm 
     """
+    global g_new_human_decision
+
     curr_pstate = CM.g_PSTATES[0] #type: CM.PState
     while not exec_over(curr_pstate) and not rospy.is_shutdown() and not g_force_exec_stop:
 
@@ -577,28 +579,33 @@ def execution_HF():
                 reset_permanent_prompt_line()
 
             send_NS_update_HAs(curr_pstate, VHA.NS, timeout=TIMEOUT_DELAY)
-            look_at_human()
-            wait_human_decision(curr_pstate)
 
-            ## 1 & 2 & 3 ##
-            if human_active(): 
-                # reset_permanent_prompt_line()
-                ## 1 & 2 ##
-                if ID_needed(curr_pstate): 
-                    result_id = MOCK_run_id_phase()
-                    ## 1 ##
-                    if ID_successful(result_id): 
-                        RA = select_best_compliant_RA(curr_pstate, result_id)
-                    ## 2 ##
-                    else: 
-                        RA = select_valid_passive(curr_pstate)
-                ## 3 ##
-                else: 
-                    lg.debug("ID not needed.")
-                    RA = select_best_RA(curr_pstate)
-            ## 4 ##
-            else: 
+            if AUTO_PASS:
+                g_new_human_decision = default_human_passive_action
                 RA = select_best_RA_H_passive(curr_pstate)
+            else:
+                look_at_human()
+                wait_human_decision(curr_pstate)
+
+                ## 1 & 2 & 3 ##
+                if human_active(): 
+                    # reset_permanent_prompt_line()
+                    ## 1 & 2 ##
+                    if ID_needed(curr_pstate): 
+                        result_id = MOCK_run_id_phase()
+                        ## 1 ##
+                        if ID_successful(result_id): 
+                            RA = select_best_compliant_RA(curr_pstate, result_id)
+                        ## 2 ##
+                        else: 
+                            RA = select_valid_passive(curr_pstate)
+                    ## 3 ##
+                    else: 
+                        lg.debug("ID not needed.")
+                        RA = select_best_RA(curr_pstate)
+                ## 4 ##
+                else: 
+                    RA = select_best_RA_H_passive(curr_pstate)
 
             start_execute_RA(RA)
             passive_update_HAs(curr_pstate, RA)
@@ -636,6 +643,8 @@ def execution_RF():
     """
     Main algorithm 
     """
+    global g_new_human_decision
+
     curr_pstate = CM.g_PSTATES[0] #type: CM.PState
     while not exec_over(curr_pstate) and not rospy.is_shutdown() and not g_force_exec_stop:
 
@@ -671,45 +680,49 @@ def execution_RF():
                 for p in compliant_pairs:
                     if not p.human_action.is_passive():
                         human_can_act_concurrently = True
-                start_execute_RA(RA, rf=True, h_inactive=(not human_can_act_concurrently))
+                start_execute_RA(RA, rf=True, h_inactive=(not human_can_act_concurrently or AUTO_PASS))
                 passive_update_HAs(curr_pstate, RA)
 
             elif RA.is_passive():
                 g_reset_last_click_client()
                 look_at_human()
                 send_NS_update_HAs(curr_pstate, VHA.NS, timeout=TIMEOUT_DELAY)
-                start_waiting_time = time.time()
-                str_bar = IncrementalBarStr(max = TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
-                log_event("R_S_RF_WAIT_H")
-                prompt("rf_r_passif")
-                time.sleep(0.01)
-                start_prompt_bar_pub.publish(EmptyM())
-                time.sleep(0.01)
-                while not rospy.is_shutdown() and time.time()-start_waiting_time<str_bar.max and g_new_human_decision==None:
-                    elapsed = time.time() - start_waiting_time
-                    str_bar.goto(elapsed)
-                    g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
-                    time.sleep(0.01)
-
-
-                if g_new_human_decision==None:
-                    str_bar.goto(str_bar.max)
-                    str_bar.finish()
-                    g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
-                    g_hmi_timeout_reached_pub.publish(EmptyM())
-                    rospy.loginfo("start wait reaction time")
-                    start_time = time.time()
-                    while not rospy.is_shutdown():
-                        if not g_h_decision_received and time.time()-start_time>1.0:
-                            break
-                        elif g_h_decision_received and g_new_human_decision:
-                            break
-                        else:
-                            time.sleep(0.01)
-                    if g_new_human_decision==None or g_new_human_decision.is_passive():
-                        RA = select_best_active_RA(curr_pstate)
-                elif g_new_human_decision.is_passive():
+                if AUTO_PASS:
+                    g_new_human_decision = default_human_passive_action
                     RA = select_best_active_RA(curr_pstate)
+                else:
+                    start_waiting_time = time.time()
+                    str_bar = IncrementalBarStr(max = TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
+                    log_event("R_S_RF_WAIT_H")
+                    prompt("rf_r_passif")
+                    time.sleep(0.01)
+                    start_prompt_bar_pub.publish(EmptyM())
+                    time.sleep(0.01)
+                    while not rospy.is_shutdown() and time.time()-start_waiting_time<str_bar.max and g_new_human_decision==None:
+                        elapsed = time.time() - start_waiting_time
+                        str_bar.goto(elapsed)
+                        g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
+                        time.sleep(0.01)
+
+
+                    if g_new_human_decision==None:
+                        str_bar.goto(str_bar.max)
+                        str_bar.finish()
+                        g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
+                        g_hmi_timeout_reached_pub.publish(EmptyM())
+                        rospy.loginfo("start wait reaction time")
+                        start_time = time.time()
+                        while not rospy.is_shutdown():
+                            if not g_h_decision_received and time.time()-start_time>1.0:
+                                break
+                            elif g_h_decision_received and g_new_human_decision:
+                                break
+                            else:
+                                time.sleep(0.01)
+                        if g_new_human_decision==None or g_new_human_decision.is_passive():
+                            RA = select_best_active_RA(curr_pstate)
+                    elif g_new_human_decision.is_passive():
+                        RA = select_best_active_RA(curr_pstate)
 
                 passive_update_HAs(curr_pstate, RA)
                 compliant_pairs = find_compliant_pairs_with_RA(curr_pstate, RA)
@@ -718,7 +731,7 @@ def execution_RF():
                     if not p.human_action.is_passive():
                         human_can_act_concurrently = True
                 log_event("R_E_RF_WAIT_H")
-                start_execute_RA(RA, rf=True, h_inactive=(not human_can_act_concurrently))
+                start_execute_RA(RA, rf=True, h_inactive=(not human_can_act_concurrently or AUTO_PASS))
 
                   
         wait_step_end()
@@ -1742,6 +1755,11 @@ def start_delay():
     g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
     time.sleep(0.01)
 
+AUTO_PASS = False
+def auto_pass_state_cb(msg):
+    global AUTO_PASS
+    AUTO_PASS = msg.data
+
 def repeat_loop(robot_name, robots):
     while True:
         in_choice = input("\nChoices:\n\t1- Repeat last\n\t2- Change Robot\n\t3- Training\n\t4- Stop\nAnswer: ")
@@ -1835,7 +1853,7 @@ def main_exec():
 
     # given order
     order = []
-    order = ["t",1,2,3,4,5,6]
+    order = [2,1,3,4,5,6]
     if order!=[]:
         order = [str(o) for o in order]
     else:
@@ -1921,6 +1939,8 @@ if __name__ == "__main__":
 
     force_exec_stop_sub = rospy.Subscriber('/force_exec_stop', EmptyM, force_exec_stop_cb)
     
+    auto_pass_state_sub = rospy.Subscriber('/auto_pass_state', Bool, auto_pass_state_cb)
+
     g_reset_world_client = rospy.ServiceProxy("reset_world", EmptyS)
     g_hmi_timeout_max_client = rospy.ServiceProxy("hmi_timeout_max", Int)
     g_hmi_r_idle_client = rospy.ServiceProxy("hmi_r_idle", SetBool)

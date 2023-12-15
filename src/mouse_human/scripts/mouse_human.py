@@ -50,7 +50,10 @@ class Zone:
 
         self.current_action_id = -10
 
+        # for pass zone
         self.is_pass = False
+        self.ready_activate_auto_pass = False
+        self.ns_idle = False
 
     def setPixelCoords(self, x1,y1,x2,y2):
         self.x1 = x1
@@ -110,8 +113,9 @@ else:
 # Detect PASS zone
 for z in g_zones.values():
     if z.valid_actions==["PASS"]:
-        z.is_pass = True
         break
+g_z_pass = z
+g_z_pass.is_pass = True
 
 def hide_all_zones(req = None):
     # srv = SetModelStateRequest()
@@ -220,6 +224,21 @@ def hide_tuto_zones(req = None):
     g_set_model_state_client(srv)
     return EmptyResponse()
 
+def show_auto_pass_indicator(req = None):
+    srv = SetModelStateRequest()
+    srv.model_state.model_name="auto_pass_indicator"
+    srv.model_state.pose = Pose(Point(2.1, 0.22, 1.495), q_all)
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+def hide_auto_pass_indicator(req = None):
+    srv = SetModelStateRequest()
+    srv.model_state.model_name="auto_pass_indicator"
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+
 
 #########
 ## ROS ##
@@ -233,32 +252,33 @@ def incoming_vha_cb(msg: VHA):
     g_vha = msg
     g_vha_received = True
 
-    # update zones
-    for z in g_zones.values():
-        if z.is_pass and g_vha.type==VHA.NS: # PASS
-            active = True
-            z.current_action_id = -1
-        else:
-            active = False
-            for i,ha in enumerate(g_vha.valid_human_actions):
-                for z_a in z.valid_actions:
-                    if z_a == ha[:len(z_a)]: # ha starts with z_a
-                        active = True
-                        z.current_action_id = i+1
-                        break
-                if active:
-                    break
+    # Update pass zone
+    print(g_vha)
+    if g_vha.type==VHA.NS:
+        g_z_pass.current_action_id = -1
+        g_z_pass.ready_activate_auto_pass = False
+        g_z_pass.ns_idle = False
+    elif g_vha.type==VHA.NS_IDLE: 
+        g_z_pass.current_action_id = -10
+        g_z_pass.ready_activate_auto_pass = True
+        g_z_pass.ns_idle = True
+    elif g_vha.type==VHA.CONCURRENT: # CONCURRENT (already PASS or TO)
+        g_z_pass.current_action_id = -10
+        g_z_pass.ready_activate_auto_pass = True
+        g_z_pass.ns_idle = False
 
-        # srv = SetModelStateRequest()
-        # srv.model_state.model_name = f"z{z.id}"
-        # srv.model_state.reference_frame = "world"
-        if active:
-            # srv.model_state.pose = z.world_pose
-            pass
-        else:
-            # srv.model_state.pose = g_far_zone_pose
-            z.current_action_id = -10
-        # g_set_model_state_client(srv)
+    # Update action zones
+    for z in g_zones.values():
+        if z.is_pass:
+            continue
+        z.current_action_id = -10
+        for i,ha in enumerate(g_vha.valid_human_actions):
+            for z_a in z.valid_actions:
+                if z_a == ha[:len(z_a)]: # ha starts with z_a
+                    z.current_action_id = i+1
+                    break
+            if z.current_action_id != -10:
+                break
 
     if g_vha.valid_human_actions==[]:
         # hide_can_click_indicator()
@@ -318,10 +338,13 @@ def main():
     hide_zones_service = rospy.Service("hide_zones", EmptyS, hide_all_zones)
     show_prompt_button_service = rospy.Service("show_prompt_button", EmptyS, show_prompt_button)
     hide_prompt_button_service = rospy.Service("hide_prompt_button", EmptyS, hide_prompt_button)
-    # show_can_click_indicator_service = rospy.Service("show_can_click_indicator", EmptyS, show_can_click_indicator)
-    # hide_can_click_indicator_service = rospy.Service("hide_can_click_indicator", EmptyS, hide_can_click_indicator)
     show_tuto_zones_service = rospy.Service("show_tuto_zones", EmptyS, show_tuto_zones)
     hide_tuto_zones_service = rospy.Service("hide_tuto_zones", EmptyS, hide_tuto_zones)
+    show_auto_pass_indicator_service = rospy.Service("show_auto_pass_indicator", EmptyS, show_auto_pass_indicator)
+    hide_auto_pass_indicator_service = rospy.Service("hide_auto_pass_indicator", EmptyS, hide_auto_pass_indicator)
+
+    auto_pass_pub = rospy.Publisher("/auto_pass_state", Bool, queue_size=1)
+
 
     reset_last_click_service = rospy.Service("reset_last_click", EmptyS, reset_last_click)
 
@@ -335,16 +358,6 @@ def main():
     # SPAWNING #
     rospy.wait_for_service('gazebo/spawn_sdf_model')
 
-    # Spawn zones
-    # nb_zones = 13
-    # for i in range(nb_zones+1):
-    #     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/z{i}.sdf','r')
-    #     sdff = f.read()
-    #     f.close()
-    #     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
-    #     spawn_model_prox(f"z{i}", sdff, "", g_far_zone_pose, "world")
-    #     print(f"z{i} spawned")
-    
     # spawn prompt button
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/prompt_button.sdf','r')
     sdff = f.read()
@@ -375,15 +388,14 @@ def main():
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t4", sdff, "", g_far_zone_pose, "world")
 
+    # spawn auto_click indicator
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/auto_pass_indicator.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    spawn_model_prox(f"auto_pass_indicator", sdff, "", g_far_zone_pose, "world")
 
-    # spawn can_click_indicator
-    # f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/can_click_indicator_new.sdf','r')
-    # sdff = f.read()
-    # f.close()
-    # spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
-    # spawn_model_prox(f"can_click_indicator", sdff, "", g_far_zone_pose, "world")
-    # print(f"can_click_indicator spawned")
-
+    ##################
 
     started_service = rospy.Service("hmi_started", EmptyS, lambda req: EmptyResponse())
     rospy.loginfo("HMI ready")
@@ -391,8 +403,11 @@ def main():
     rospy.wait_for_service("start_human_action")
     g_start_human_action_prox = rospy.ServiceProxy("start_human_action", Int)
 
+    AUTO_PASS = False
+
     while not rospy.is_shutdown():
 
+        # PROMPT BUTTON
         if g_prompt_button_shown:
             if g_prompt_button_zone.clickIn(g_last_click):
                 rospy.loginfo("prompt button pressed !")
@@ -401,16 +416,55 @@ def main():
                 reset_last_click()
 
         else:
-            for z in g_zones.values():
-                if z.isActive() and z.clickIn(g_last_click):
-                    decision_sent = True
-                    rospy.loginfo(f"zone clicked: {z}")
-                    g_start_human_action_prox(z.current_action_id)
-                    hide_all_zones()
-                    # hide_can_click_indicator()
-                    rospy.loginfo("human decision sent")
+
+            if AUTO_PASS==False:
+                # Check if AUTO_PASS being activated
+                if g_z_pass.ready_activate_auto_pass and g_z_pass.clickIn(g_last_click):
+                    rospy.logwarn("Activating AUTO_PASS")
+                    AUTO_PASS = True
+                    auto_pass_pub.publish(True)
                     reset_last_click()
-                    break
+                    show_auto_pass_indicator()
+
+                # ACTION ZONES
+                for z in g_zones.values():
+                    if z.isActive() and z.clickIn(g_last_click):
+                        decision_sent = True
+                        rospy.loginfo(f"zone clicked: {z}")
+                        g_start_human_action_prox(z.current_action_id)
+                        hide_all_zones()
+                        rospy.loginfo("human decision sent")
+                        reset_last_click()
+                        break
+            
+            if AUTO_PASS==True:
+
+                # Check if AUTO_PASS is being disabled
+                if g_z_pass.clickIn(g_last_click):
+                    rospy.logwarn("Disactivating AUTO_PASS")
+                    AUTO_PASS = False
+                    auto_pass_pub.publish(False)
+                    reset_last_click()
+                    hide_auto_pass_indicator()
+
+                # Make auto pass if possible
+                elif g_z_pass.isActive():
+                    decision_sent = True
+                    g_start_human_action_prox(g_z_pass.current_action_id)
+                    hide_all_zones()
+                    reset_last_click()
+
+                # Human should act, even in AUTO_PASS
+                elif g_z_pass.ns_idle:
+                    for z in g_zones.values():
+                        if z.isActive() and z.clickIn(g_last_click):
+                            decision_sent = True
+                            rospy.loginfo(f"zone clicked: {z}")
+                            g_start_human_action_prox(z.current_action_id)
+                            hide_all_zones()
+                            rospy.loginfo("human decision sent")
+                            reset_last_click()
+                            break
 
         # TODO: Sound click was ineffective
 
