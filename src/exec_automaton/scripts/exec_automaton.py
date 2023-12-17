@@ -1356,6 +1356,7 @@ def start_execute_RA(RA: CM.Action, rf=False, h_inactive=False):
 
     msg = compute_msg_action(RA)
     g_robot_action_pub.publish(msg)
+    time.sleep(0.01)
 
 def step_over_cb(msg):
     global step_over
