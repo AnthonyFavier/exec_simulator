@@ -96,8 +96,8 @@ def wait_prompt_button_pressed():
         time.sleep(0.05)
     g_prompt_button_pressed = False
 
+MAX_CHAR = 39 
 def format_txt(s):
-    MAX_CHAR = 39 
 
     words = s.split(" ")
 
@@ -145,6 +145,7 @@ def build_expected_ha(name, parameters):
 
     return HA
 
+sound_finished = sa.WaveObject.from_wave_file("/home/afavier/new_exec_sim_ws/src/exec_automaton/scripts/finished_70.wav")
 def training():
     global TIMEOUT_DELAY, g_enter_pressed, g_force_exec_stop, TRAINING_PROMPT_ONLY, step_over
 
@@ -540,7 +541,7 @@ def training():
 
     reset_head()
     g_go_idle_pose_client.call()
-
+    sound_finished.play()
     wait_prompt_button_pressed()
 
     return -2, -2
@@ -684,7 +685,6 @@ def execution_RF():
                 passive_update_HAs(curr_pstate, RA)
 
             elif RA.is_passive():
-                g_reset_last_click_client()
                 look_at_human()
                 send_NS_update_HAs(curr_pstate, VHA.NS, timeout=TIMEOUT_DELAY)
                 if AUTO_PASS:
@@ -1524,8 +1524,8 @@ g_prompt_messages = {
         "FR":  "Vous avez terminé.",
         },
     "h_can_leave":{
-        "ENG": "I can finish alone.",
-        "FR":  "Je suis capable de terminer seul.",
+        "ENG": "If needed, I can finish alone.",
+        "FR":  "Si besoin, je peux terminer seul.",
         },
     "human_turn":{
         "ENG": "It's your turn to act.",
@@ -1921,7 +1921,23 @@ def main_exec():
             g_prompt_pub.publish(String( g_prompt_messages["end_expe"][LANG]))
         else:
             if exec_regime!="training":
-                g_prompt_pub.publish(String( g_prompt_messages["end_task"][LANG]))
+                if LANG=="ENG":
+                    if h_instructions=="h_instru_tee":
+                        recap = "Finish Task Fast"
+                    elif h_instructions=="h_instru_hfe":
+                        recap = "Be Free Fast"
+                elif LANG=="FR":
+                    if h_instructions=="h_instru_tee":
+                        recap =  "Finir Tâche Vite"
+                    elif h_instructions=="h_instru_hfe":
+                        recap = "Être libéré Vite"
+                space = ""
+                while len(exec_regime + space + recap)<MAX_CHAR:
+                    space += " "
+                recap = exec_regime + space + recap + "\n\n" 
+                    
+                g_prompt_pub.publish(String( recap + g_prompt_messages["end_task"][LANG]))
+                sound_finished.play()
                 wait_prompt_button_pressed()
         full_reset()
         i+=1
