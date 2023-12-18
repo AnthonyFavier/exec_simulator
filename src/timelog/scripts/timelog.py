@@ -557,13 +557,23 @@ def extract_metrics():
         # identify HA 
         if g_h_activities[i_h].name=="passive":
             ha_name = "Passive"
-        else:
-            while g_h_activities[i_h].name!="wait_ns":
+        elif g_h_activities[i_h].name=="start_delay":
+
+            i_h+=1
+            if g_h_activities[i_h].name=="pass":
+
+                i_h+=1 
+                if g_h_activities[i_h].name in ["start_delay", "passive"]:
+                    ha_name = "Passive"
+
+                elif g_h_activities[i_h].name not in g_h_activities_names:
+                    ha_name = g_h_activities[i_h].name.replace('\n','')
+                    i_h+=1
+
+            elif g_h_activities[i_h].name not in g_h_activities_names:
+                ha_name = g_h_activities[i_h].name.replace('\n','')
                 i_h+=1
-            if g_h_activities[i_h-1].name=="start_delay":
-                ha_name = "Passive"
-            else:
-                ha_name = g_h_activities[i_h-1].name.replace('\n','')
+
         i_h+=1 # next_step
     
         # identify RA
