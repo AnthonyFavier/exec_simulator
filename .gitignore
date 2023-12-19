@@ -2,6 +2,6 @@ build/
 devel/
 *.vscode
 *.pyc
-*.p
+events.p
 .catkin_tools
 logs/
