@@ -1867,11 +1867,11 @@ def main_exec():
 
     exec_regime = None
 
-    i = 1
+    i = 0 # N° scenario
 
     # given order
     order = []
-    order = [2,1,3,4,5,6]
+    order = ['t',1,2,3,4,5,6]
     if order!=[]:
         order = [str(o) for o in order]
     else:
