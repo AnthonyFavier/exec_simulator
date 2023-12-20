@@ -691,7 +691,7 @@ if __name__ == "__main__":
 
         # Loading
         (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open(file_path, "rb"))
-        if g_events[0].name[-len("training"):]=="training":
+        if g_events[0].name[-len("training_"):]=="training_":
             raise Exception("Cannot show the timelog of the training task!")
         print("events loaded")
 
