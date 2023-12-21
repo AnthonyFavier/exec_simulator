@@ -81,8 +81,6 @@ g_to_signals = [] #type: List[LogSignal]
 def reset_times():
     global g_events, g_h_signals, g_r_signals, g_to_signals
 
-    print("start reset times")
-
     if len(g_events)==0:
         raise Exception("Events empty...")
 
@@ -495,7 +493,8 @@ def show_signals(signals):
         print(f"{s.name}_{s.type} - {s.stamp:.2f}")
 def show_activities(activities):
     for a in activities:
-        print(f"{a.name} - {a.t_s:.2f} > {a.t_e:.2f}")
+        name = a.name.replace('\n','')
+        print(f"{name} - {a.t_s:.2f} > {a.t_e:.2f}")
 
 
 def extract_metrics():
