@@ -554,6 +554,8 @@ def extract_metrics():
     i_h = 0
     ps = CM.g_PSTATES[0]
     while i_r<len(g_r_activities) and i_h<len(g_h_activities):
+
+        ## IDENTIFY EXECUTED PAIR ##
         # identify HA 
         if g_h_activities[i_h].name=="passive":
             ha_name = "Passive"
@@ -563,8 +565,9 @@ def extract_metrics():
             if g_h_activities[i_h].name=="pass":
 
                 i_h+=1 
-                if g_h_activities[i_h].name in ["start_delay", "passive"]:
+                if i_h>=len(g_h_activities) or g_h_activities[i_h].name in ["start_delay", "passive"]:
                     ha_name = "Passive"
+                    i_h-=1
 
                 elif g_h_activities[i_h].name not in g_h_activities_names:
                     ha_name = g_h_activities[i_h].name.replace('\n','')
@@ -585,32 +588,126 @@ def extract_metrics():
             ra_name = "Passive"
         i_r+=3 # next_step
     
-        # find corresponding pair in graph
+        # find executed pair in graph
+        found = False
         for p in ps.children:
             p_ha_name = p.human_action.name.capitalize() + "("
             for k in p.human_action.parameters:
                 p_ha_name += k + ","
             p_ha_name = p_ha_name[:-1] + ")"
+            if p_ha_name[:len("Drop")]=="Drop":
+                p_ha_name = "DropCube" + p_ha_name[len("Drop"):-3] + ")"
 
             p_ra_name = p.robot_action.name.capitalize() + "("
             for k in p.robot_action.parameters:
                 p_ra_name += k + ","
             p_ra_name = p_ra_name[:-1] + ")"
+            if p_ra_name[:len("Drop")]=="Drop":
+                p_ra_name = "DropCube" + p_ra_name[len("Drop"):-3] + ")" # Due to mismatch in sim_controller overiding Drop event name...
 
             if p_ra_name==ra_name or (ra_name=="Passive" and p_ra_name[:len("Passive")]=="Passive"):
                 if p_ha_name==ha_name or (ha_name=="Passive" and p_ha_name[:len("Passive")]=="Passive"):
+                    found = True
                     break
+        if not found:
+            raise Exception("Corresponding pair not found...")
+        executed_pair = p
+        del p, found, p_ha_name, p_ra_name
+
+        # extract executed_ha_name
+        executed_ha_name = executed_pair.human_action.name.capitalize() + "("
+        for k in executed_pair.human_action.parameters:
+            executed_ha_name += k + ","
+        del k
+        executed_ha_name = executed_ha_name[:-1] + ")"
+        if executed_ha_name[:len("Drop")]=="Drop":
+            executed_ha_name = "DropCube" + executed_ha_name[len("Drop"):-3] + ")"
+
+        # extract executed_ra_name
+        executed_ra_name = executed_pair.robot_action.name.capitalize() + "("
+        for k in executed_pair.robot_action.parameters:
+            executed_ra_name += k + ","
+        del k
+        executed_ra_name = executed_ra_name[:-1] + ")"
+        if executed_ra_name[:len("Drop")]=="Drop":
+            executed_ra_name = "DropCube" + executed_ra_name[len("Drop"):-3] + ")"
+
+
+        ####################
+
+        ## ACCORDING TO REGIME, CHECK IF HA IS OPTIMAL
+
+        # in Human-First, optimal human policy is HA of pair with best, optimal robot policy is RA of pair with HA and best_compliant
+        # in Robot-First, optimal human policy is HA of pair with best_compliant_h, optimal robot policy is RA of pair with best
+
+        ha_is_optimal = False
+
+        regime = g_events[0].name[len('ni_i_'):len('ni_i_')+len('human-first')]
+        if regime=="Human-First":
+            # find best pair
+            for p in ps.children:
+                if p.best:
+                    break
+            best_pair = p
+            del p
+
+            # get best_ha_name
+            best_ha_name = best_pair.human_action.name.capitalize() + "("
+            for k in best_pair.human_action.parameters:
+                best_ha_name += k + ","
+            del k
+            best_ha_name = best_ha_name[:-1] + ")"
+            if best_ha_name[:len("Drop")]=="Drop":
+                best_ha_name = "DropCube" + best_ha_name[len("Drop"):-3] + ")"
+
+            # Compare 
+            ha_is_optimal = best_ha_name==executed_ha_name
+
+        elif regime=="Robot-First":
+            # find best compliant pair
+            for p in ps.children:
+                p_ra_name = p.robot_action.name.capitalize() + "("
+                for k in p.robot_action.parameters:
+                    p_ra_name += k + ","
+                p_ra_name = p_ra_name[:-1] + ")"
+                if p_ra_name[:len("Drop")]=="Drop":
+                    p_ra_name = "DropCube" + p_ra_name[len("Drop"):-3] + ")" # Due to mismatch in sim_controller overiding Drop event name...
+
+                if p_ra_name==executed_ra_name and p.best_compliant_h:
+                    break
+            best_compliant_h_pair = p
+            del p
+
+            # get best_compliant_ha_name
+            best_compliant_ha_name = best_compliant_h_pair.human_action.name.capitalize() + "("
+            for k in best_compliant_h_pair.human_action.parameters:
+                best_compliant_ha_name += k + ","
+            del k
+            best_compliant_ha_name = best_compliant_ha_name[:-1] + ")"
+            if best_compliant_ha_name[:len("Drop")]=="Drop":
+                best_compliant_ha_name = "DropCube" + best_compliant_ha_name[len("Drop"):-3] + ")"
+
+            # Compare
+            ha_is_optimal = best_compliant_ha_name==executed_ha_name
+
+        else:
+            raise Exception("Execution regiment not found...")
+
+        ############################
     
-        # check if pair is best 
-        if p.best:
+        if ha_is_optimal:
             metrics["nb_h_optimal_action"]+=1
+
             if ha_name=="Passive":
                 g_h_activities[i_h-1].h_is_best = True
             else:
                 g_h_activities[i_h-2].h_is_best = True
             
         # update current pstate
-        ps = CM.g_PSTATES[p.child]
+        ps = CM.g_PSTATES[executed_pair.child]
+
+    # ratio_h_optimal_action
+    metrics["ratio_h_optimal_action"] = 100 * metrics["nb_h_optimal_action"]/metrics["number_steps"]
 
     return metrics
 
