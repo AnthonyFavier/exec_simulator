@@ -1712,8 +1712,8 @@ g_prompt_messages = {
         "FR":  format_txt("\t *** Tâche terminée *** \n \n Repondez au questionnaire puis cliquez sur le bouton pour continuer."),
         },
     "end_expe":{
-        "ENG": "        *** Last task complete ***\n\n" + format_txt("Answer the questionnaire and the experiment will be over! \n \n \t \t Thanks!"),
-        "FR":  "     *** Dernière tâche terminée ***\n\n" + format_txt("Repondez au questionnaire et l'expérience sera terminée ! \n \n \t \t Merci !"),
+        "ENG": "        *** Last task complete ***\n\n" + format_txt("Answer the questionnaire and the experiment will be over! Thanks!"),
+        "FR":  "     *** Dernière tâche terminée ***\n\n" + format_txt("Repondez au questionnaire et l'expérience sera terminée ! Merci !"),
         },
     "tuto_wait_start":{
         "ENG": f"           *** Tutorial ***\n\n\n Click on the yellow button    ⬇ ",
@@ -1917,27 +1917,30 @@ def main_exec():
             # print(f"END: id={id}, r_score=%.3f" % r_score)
             print("END, show trace ?")
 
+        # Recap prompt
+        recap=''
+        if exec_regime!="training":
+            if LANG=="ENG":
+                if h_instructions=="h_instru_tee":
+                    recap = "Finish Task Fast"
+                elif h_instructions=="h_instru_hfe":
+                    recap = "Be Free Fast"
+            elif LANG=="FR":
+                if h_instructions=="h_instru_tee":
+                    recap =  "Finir Tâche Vite"
+                elif h_instructions=="h_instru_hfe":
+                    recap = "Être Libéré Vite"
+            space = ""
+            while len(exec_regime + space + recap)<MAX_CHAR:
+                space += " "
+            recap = exec_regime + space + recap + "\n\n" 
+
+        sound_finished.play()
         if order==[]:
-            g_prompt_pub.publish(String( g_prompt_messages["end_expe"][LANG]))
+            g_prompt_pub.publish(String( recap + g_prompt_messages["end_expe"][LANG]))
         else:
-            if exec_regime!="training":
-                if LANG=="ENG":
-                    if h_instructions=="h_instru_tee":
-                        recap = "Finish Task Fast"
-                    elif h_instructions=="h_instru_hfe":
-                        recap = "Be Free Fast"
-                elif LANG=="FR":
-                    if h_instructions=="h_instru_tee":
-                        recap =  "Finir Tâche Vite"
-                    elif h_instructions=="h_instru_hfe":
-                        recap = "Être libéré Vite"
-                space = ""
-                while len(exec_regime + space + recap)<MAX_CHAR:
-                    space += " "
-                recap = exec_regime + space + recap + "\n\n" 
-                    
+            if exec_regime!='training':
                 g_prompt_pub.publish(String( recap + g_prompt_messages["end_task"][LANG]))
-                sound_finished.play()
                 wait_prompt_button_pressed()
         full_reset()
         i+=1
