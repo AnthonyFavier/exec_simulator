@@ -184,6 +184,8 @@ g_h_activities_names = {
 def r_extract_activities():
     global g_events, g_r_activities
 
+    g_r_activities = []
+
     i = 0
     e = g_events[i]
     while e.name[:6]!="SGL_NS":
@@ -370,6 +372,8 @@ def r_extract_activities():
 def h_extract_activities():
     global g_events, g_h_activities
 
+    g_h_activities = []
+
     i=0
     e = g_events[i]
 
@@ -509,43 +513,67 @@ def extract_metrics():
         if sgl.type in [Signal.NS, Signal.NS_IDLE]:
             metrics["number_steps"] += 1
 
-    # decision time - total + average
-    metrics["total_decision_time"] = 0.0
+    # decision time - total / average / SD
+    metrics["decision_time_total"] = 0.0
     n = 0
     for a in g_h_activities:
         if a.name == "start_delay":
             n+=1
-            metrics["total_decision_time"] += a.dur()
-    metrics["average_decision_time"] = 0 if n==0 else metrics["total_decision_time"]/n
+            metrics["decision_time_total"] += a.dur()
+    metrics["decision_time_average"] = 0 if n==0 else metrics["decision_time_total"]/n
+    metrics["decision_time_sd"] = 0.0
+    if n!=0:
+        for a in g_h_activities:
+            if a.name == "start_delay":
+                metrics["decision_time_sd"] += pow(a.dur()-metrics["decision_time_average"], 2)
+        metrics["decision_time_sd"] = math.sqrt( metrics["decision_time_sd"] / n)
 
-    # wait ns - total + average
-    metrics["total_wait_ns"] = 0.0
+    # wait ns - total / average / SD
+    metrics["wait_ns_total"] = 0.0
     n=0
     for a in g_h_activities:
         if a.name == "wait_ns":
             n+=1
-            metrics["total_wait_ns"] += a.dur()
-    metrics["average_wait_ns"] = 0.0 if n==0 else metrics["total_wait_ns"]/n
+            metrics["wait_ns_total"] += a.dur()
+    metrics["wait_ns_average"] = 0.0 if n==0 else metrics["wait_ns_total"]/n
+    metrics["wait_ns_sd"] = 0.0
+    if n!=0:
+        for a in g_h_activities:
+            if a.name == "wait_ns":
+                metrics["wait_ns_sd"] += pow(a.dur()-metrics["wait_ns_average"], 2)
+        metrics["wait_ns_sd"] = math.sqrt( metrics["wait_ns_sd"] / n)
 
-    # h action time - total + average
-    metrics["total_h_action_time"] = 0.0
-    n=0
+    # h action time - total / average / SD
+    metrics["h_action_time_total"] = 0.0
+    metrics["h_action_nb"] = 0
     for a in g_h_activities:
         if a.name not in g_h_activities_names:
-            n+=1
-            metrics["total_h_action_time"] += a.dur()
-    metrics["average_h_action_time"] = 0.0 if n==0 else metrics["total_h_action_time"]/n
-    metrics["nb_h_action"] = n
+            metrics["h_action_nb"] += 1
+            metrics["h_action_time_total"] += a.dur()
+    metrics["h_action_time_average"] = 0.0 if n==0 else metrics["h_action_time_total"]/metrics["h_action_nb"]
+    metrics["h_action_time_sd"] = 0.0
+    if metrics["h_action_nb"]!=0:
+        for a in g_h_activities:
+            if a.name not in g_h_activities_names:
+                metrics["h_action_time_sd"] += pow(a.dur()-metrics["h_action_time_average"], 2)
+        metrics["h_action_time_sd"] = math.sqrt(metrics["h_action_time_sd"] / metrics["h_action_nb"])
 
-    # r action time - total + average
-    metrics["total_r_action_time"] = 0.0
-    n=0
+
+    # r action time - total / average / SD
+    metrics["r_action_time_total"] = 0.0
+    metrics["r_action_nb"] = 0
     for a in g_r_activities:
         if a.name not in g_r_activities_names:
-            n+=1
-            metrics["total_r_action_time"] += a.dur()
-    metrics["average_r_action_time"] = 0.0 if n==0 else metrics["total_r_action_time"]/n
-    metrics["nb_r_action"] = n
+            metrics["r_action_nb"]+=1
+            metrics["r_action_time_total"] += a.dur()
+    metrics["r_action_time_average"] = 0.0 if n==0 else metrics["r_action_time_total"]/metrics["r_action_nb"]
+    metrics["r_action_time_sd"] = 0.0
+    if metrics["r_action_nb"]!=0:
+        for a in g_r_activities:
+            if a.name not in g_r_activities_names:
+                metrics["r_action_time_sd"] += pow(a.dur()-metrics["r_action_time_average"], 2)
+        metrics["r_action_time_sd"] = math.sqrt(metrics["r_action_time_sd"] / metrics["r_action_nb"])
+
 
     ## Optimal human actions
     metrics["nb_h_optimal_action"] = 0
@@ -710,27 +738,55 @@ def extract_metrics():
 
     return metrics
 
+def show_metric_line(k):
+    if isinstance(metrics[k], int):
+        print(f"\t-{k}: {metrics[k]}")
+    else:
+        print(f"\t-{k}: {metrics[k]:.2f}")
+
 def show_metrics(metrics):
     print("Metrics:")
     for k in metrics:
-        if isinstance(metrics[k], int):
-            print(f"\t-{k}: {metrics[k]}")
-        else:
-            print(f"\t-{k}: {metrics[k]:.2f}")
+        show_metric_line(k)
+        
+def excel_format_show_metrics(metrics):
+    print(metrics["task_completion_time"], end=" ")
+    print(metrics["number_steps"], end=" ")
+    print(metrics["nb_h_optimal_action"], end=" ")
+    print(metrics["ratio_h_optimal_action"], end=" ")
+    print(metrics["decision_time_total"], end=" ")
+    print(metrics["decision_time_average"], end=" ")
+    print(metrics["decision_time_sd"], end=" ")
+    print(metrics["wait_ns_total"], end=" ")
+    print(metrics["wait_ns_average"], end=" ")
+    print(metrics["wait_ns_sd"], end=" ")
+    print(metrics["h_action_nb"], end=" ")
+    print(metrics["h_action_time_total"], end=" ")
+    print(metrics["h_action_time_average"], end=" ")
+    print(metrics["h_action_time_sd"], end=" ")
+    print(metrics["r_action_nb"], end=" ")
+    print(metrics["r_action_time_total"], end=" ")
+    print(metrics["r_action_time_average"], end=" ")
+    print(metrics["r_action_time_sd"], end=" ")
+
+def get_n_scenario(f):
+    return f[1]
 
 ##########
 ## MAIN ##
 ##########
 
-def load(filename):
+def load(filename, verbose=True):
     global g_domain_name
 
-    print(f"Loading solution '{filename}' ... ", end="", flush=True)
-    s_t = time.time()
+    if verbose:
+        print(f"Loading solution '{filename}' ... ", end="", flush=True)
+        s_t = time.time()
 
     domain_name, pstates, final_pstates = dill.load(open(CM.path + filename, "rb"))
 
-    print("Loaded! - %.2fs" %(time.time()-s_t))
+    if verbose:
+        print("Loaded! - %.2fs" %(time.time()-s_t))
 
     g_domain_name = domain_name
     CM.g_FINAL_PSTATES = final_pstates
@@ -752,6 +808,9 @@ if __name__ == "__main__":
     log_r_sgl_sub = rospy.Subscriber('/robot_visual_signals', Signal, r_sgl_cb)
     log_h_sgl_sub = rospy.Subscriber('/human_visual_signals', Signal, h_sgl_cb)
 
+    ############
+    ## RECORD ##
+    ############
     if record:
         while not rospy.is_shutdown():
             print("\nStart recording")
@@ -776,193 +835,245 @@ if __name__ == "__main__":
             g_h_signals.clear()
             g_to_signals.clear()
 
+    #############
+    ## LOADING ##
+    #############
     else:
+
+        # Get file names
         root = tk.Tk()
         root.withdraw()
-        file_path = filedialog.askopenfilename(initialdir=path, filetypes=(("dumped files","*.p"),) )
+        input_files = list(filedialog.askopenfilenames(initialdir=path, filetypes=(("dumped files","*.p"),) ))
 
-        ################################
-########## LOADING EVENTS AND SIGNALS ##
-        ################################
+        if len(input_files)>1:
+            files = []
+            for f in input_files:
+                i_n = f.find('_N')
+                n_scenario = f[i_n+4]
+                files.append( (f, n_scenario) )
+            files.sort(key=get_n_scenario)
 
-        # Loading
-        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open(file_path, "rb"))
-        if g_events[0].name[-len("training_"):]=="training_":
-            raise Exception("Cannot show the timelog of the training task!")
-        print("events loaded")
+            for f in files:
+                file_path = f[0]
+                ################################
+        ########## LOADING EVENTS AND SIGNALS ##
+                ################################
 
-        i_s = file_path.find("instru_")+len("instru_")
-        i_e = i_s + 3
-        h_instru = file_path[i_s:i_e]
-        if h_instru=="tee":
-            load("policy_task_end_early.p")
-        elif h_instru=="hfe":
-            load("policy_real_human_free_early.p")
+                # Loading
+                (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open(file_path, "rb"))
+                if g_events[0].name[-len("training_"):]=="training_":
+                    raise Exception("Cannot show the timelog of the training task!")
+
+                i_s = file_path.find("instru_")+len("instru_")
+                i_e = i_s + 3
+                h_instru = file_path[i_s:i_e]
+                if h_instru=="tee":
+                    load("policy_task_end_early.p", verbose=False)
+                elif h_instru=="hfe":
+                    load("policy_real_human_free_early.p", verbose=False)
+                else:
+                    raise Exception("h_instru unknown...")
+
+                ###################
+        ########## EXTRACT INFOS ##
+                ###################
+
+                reset_times()
+                r_extract_activities()
+                h_extract_activities()
+                excel_format_show_metrics(extract_metrics())
+
+            print("\n")
+
+####################################################################################
+
+
         else:
-            raise Exception("h_instru unknown...")
+            
+            file_path = input_files[0]
 
-        ########################
-########## EXTRACT ACTIVITIES ##
-        ########################
+            ################################
+    ########## LOADING EVENTS AND SIGNALS ##
+            ################################
 
-        # Reset time of event w.r.t. first NS signal
-        reset_times()
+            # Loading
+            (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open(file_path, "rb"))
+            if g_events[0].name[-len("training_"):]=="training_":
+                raise Exception("Cannot show the timelog of the training task!")
+            print("events loaded")
 
-        # Show Events
-        print("\nEVENTS:")
-        show_events(g_events)
-        
-        # Extract and Show Robot Activities
-        r_extract_activities()
-        print("\nROBOT ACTIVITIES:")
-        show_activities(g_r_activities)
-
-        # Extract and Show Human Activities
-        h_extract_activities()
-        print("\nHUMAN ACTIVITIES:")
-        show_activities(g_h_activities)
-
-        # Show SIGNALS
-        print("\nR SIGNALS:")
-        show_signals(g_r_signals)
-        print("\nH SIGNALS:")
-        show_signals(g_h_signals)
-        print("\nTO SIGNALS:")
-        show_signals(g_to_signals)
-
-        # Show run informations (Robot type, id)
-        print("\nRUN:")
-        print(g_events[0].name)
-
-        #####################
-########## COMPUTE METRICS ##
-        #####################
-
-        metrics = extract_metrics()
-        show_metrics(metrics)
-
-        ##################
-########## SHOW TIMELOG ##
-        ##################
-
-        MIN_DURATION = 0.15
-        activities_zorder = 1
-        ns_lines_zorder = 2
-        signal_arrow_zorder = 3
-        signal_text_zorder = 10
-        signal_width_text = 1.5
-        signal_style="Simple, head_width=8, head_length=4, tail_width=4"
-
-        ####################
-        WITH_TIMEOUT = True
-        ####################
-
-
-        plt.rcParams.update({'font.size': 13})
-
-        fig, ax = plt.subplots(figsize=(18, 5))
-        ax.invert_yaxis()
-        
-        ax.set_axisbelow(True)
-        ax.grid(color='lightgrey', linestyle='dashed', axis='x')
-        tick_spacing = 1
-        horizontal_space = 0.2
-        max_x = g_events[-1].stamp
-        ax.set_xlim((-horizontal_space,max_x+horizontal_space))
-        x_ticks = np.arange(0, max_x, tick_spacing )
-        ax.set_xticks(x_ticks)
-        ax.set_xticklabels(["" for x in x_ticks], rotation=90)
-        ax.set_yticks([0.25, 1.0, 2.0, 3.0])
-        ax.set_yticklabels(['TO', 'R', 'Sgls', 'H'], rotation=90)
-        ax.set_ylim(3.5, 0.0)
-        if not WITH_TIMEOUT:
-            ax.set_ylim(3.5, 0.5)
-
-        ax2 = ax.twiny()
-        ax2.set_xticks( ax.get_xticks() )
-        ax2.set_xbound(ax.get_xbound())
-        x_tickslabels = []
-        for i,t in enumerate(x_ticks):
-            if i%2==0:
-                x_tickslabels.append(t)
+            i_s = file_path.find("instru_")+len("instru_")
+            i_e = i_s + 3
+            h_instru = file_path[i_s:i_e]
+            if h_instru=="tee":
+                load("policy_task_end_early.p")
+            elif h_instru=="hfe":
+                load("policy_real_human_free_early.p")
             else:
-                x_tickslabels.append("")
-        ax2.set_xticklabels(x_tickslabels, rotation=90)
-        ax2.set_xlabel("Time (s)", rotation=0)
-        ax2.format_coord = lambda x, y: 't={:g} s'.format(x)
+                raise Exception("h_instru unknown...")
+
+            ########################
+    ########## EXTRACT ACTIVITIES ##
+            ########################
+
+            # Reset time of event w.r.t. first NS signal
+            reset_times()
+
+            # Show Events
+            print("\nEVENTS:")
+            show_events(g_events)
             
-        # TIMEOUTS #
-        rec = ax.barh( ['TO'], [signal_width_text], left=[0.0], height=1.0, color=(0,0,0,0))
-        for sig in g_to_signals:
-            # if int(sig.stamp)==77:
-            #     continue
-            rec = ax.barh( ['TO'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=0.5, color=(0,0,0,0))
-            ax.bar_label(rec, labels=["TO     "], label_type='center', rotation=90, zorder=signal_text_zorder)
-            arrow = mpatches.FancyArrowPatch((sig.stamp, 0.25), (sig.stamp , 0.5), color="black", arrowstyle=signal_style, zorder=signal_arrow_zorder)
-            ax.add_patch(arrow)
+            # Extract and Show Robot Activities
+            r_extract_activities()
+            print("\nROBOT ACTIVITIES:")
+            show_activities(g_r_activities)
 
-        # ROBOT ACTIVITES #
-        for act in g_r_activities:
-            if act.dur() < MIN_DURATION:
-                continue
+            # Extract and Show Human Activities
+            h_extract_activities()
+            print("\nHUMAN ACTIVITIES:")
+            show_activities(g_h_activities)
 
-            text = act.name
-            color = 'lightskyblue'
-            text_color = 'black'
-            if act.name in g_r_activities_names:
-                text = g_r_activities_names[act.name][0]
-                color = g_r_activities_names[act.name][1]
-                text_color = g_r_activities_names[act.name][2]
+            # Show SIGNALS
+            print("\nR SIGNALS:")
+            show_signals(g_r_signals)
+            print("\nH SIGNALS:")
+            show_signals(g_h_signals)
+            print("\nTO SIGNALS:")
+            show_signals(g_to_signals)
+
+            # Show run informations (Robot type, id)
+            print("\nRUN:")
+            print(g_events[0].name)
+
+            #####################
+    ########## COMPUTE METRICS ##
+            #####################
+
+            metrics = extract_metrics()
+            show_metrics(metrics)
+
+            ##################
+    ########## SHOW TIMELOG ##
+            ##################
+
+            MIN_DURATION = 0.15
+            activities_zorder = 1
+            ns_lines_zorder = 2
+            signal_arrow_zorder = 3
+            signal_text_zorder = 10
+            signal_width_text = 1.5
+            signal_style="Simple, head_width=8, head_length=4, tail_width=4"
+
+            ####################
+            WITH_TIMEOUT = True
+            ####################
+
+
+            plt.rcParams.update({'font.size': 13})
+
+            fig, ax = plt.subplots(figsize=(18, 5))
+            ax.invert_yaxis()
             
-            rec = ax.barh( ['R'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
-            ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
+            ax.set_axisbelow(True)
+            ax.grid(color='lightgrey', linestyle='dashed', axis='x')
+            tick_spacing = 1
+            horizontal_space = 0.2
+            max_x = g_events[-1].stamp
+            ax.set_xlim((-horizontal_space,max_x+horizontal_space))
+            x_ticks = np.arange(0, max_x, tick_spacing )
+            ax.set_xticks(x_ticks)
+            ax.set_xticklabels(["" for x in x_ticks], rotation=90)
+            ax.set_yticks([0.25, 1.0, 2.0, 3.0])
+            ax.set_yticklabels(['TO', 'R', 'Sgls', 'H'], rotation=90)
+            ax.set_ylim(3.5, 0.0)
+            if not WITH_TIMEOUT:
+                ax.set_ylim(3.5, 0.5)
+
+            ax2 = ax.twiny()
+            ax2.set_xticks( ax.get_xticks() )
+            ax2.set_xbound(ax.get_xbound())
+            x_tickslabels = []
+            for i,t in enumerate(x_ticks):
+                if i%2==0:
+                    x_tickslabels.append(t)
+                else:
+                    x_tickslabels.append("")
+            ax2.set_xticklabels(x_tickslabels, rotation=90)
+            ax2.set_xlabel("Time (s)", rotation=0)
+            ax2.format_coord = lambda x, y: 't={:g} s'.format(x)
+                
+            # TIMEOUTS #
+            rec = ax.barh( ['TO'], [signal_width_text], left=[0.0], height=1.0, color=(0,0,0,0))
+            for sig in g_to_signals:
+                # if int(sig.stamp)==77:
+                #     continue
+                rec = ax.barh( ['TO'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=0.5, color=(0,0,0,0))
+                ax.bar_label(rec, labels=["TO     "], label_type='center', rotation=90, zorder=signal_text_zorder)
+                arrow = mpatches.FancyArrowPatch((sig.stamp, 0.25), (sig.stamp , 0.5), color="black", arrowstyle=signal_style, zorder=signal_arrow_zorder)
+                ax.add_patch(arrow)
+
+            # ROBOT ACTIVITES #
+            for act in g_r_activities:
+                if act.dur() < MIN_DURATION:
+                    continue
+
+                text = act.name
+                color = 'lightskyblue'
+                text_color = 'black'
+                if act.name in g_r_activities_names:
+                    text = g_r_activities_names[act.name][0]
+                    color = g_r_activities_names[act.name][1]
+                    text_color = g_r_activities_names[act.name][2]
+                
+                rec = ax.barh( ['R'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
+                ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
+                
+
+            # SIGNALS #
+            # R Signals #
+            for sig in g_r_signals:
+                rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
+                ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
+                arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 2.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
+                ax.add_patch(arrow)
+                # bar step separations
+                if sig.name[:2]=="NS":
+                    line = mpatches.FancyArrowPatch((sig.stamp, -1.0), (sig.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
+                    ax.add_patch(line)
+            # H Signals #
+            for sig in g_h_signals:
+                rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
+                ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
+                arrow = mpatches.FancyArrowPatch((sig.stamp, 2.5), (sig.stamp , 1.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
+                ax.add_patch(arrow)
             
+                
 
-        # SIGNALS #
-        # R Signals #
-        for sig in g_r_signals:
-            rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
-            ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
-            arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 2.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
-            ax.add_patch(arrow)
-            # bar step separations
-            if sig.name[:2]=="NS":
-                line = mpatches.FancyArrowPatch((sig.stamp, -1.0), (sig.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
-                ax.add_patch(line)
-        # H Signals #
-        for sig in g_h_signals:
-            rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
-            ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
-            arrow = mpatches.FancyArrowPatch((sig.stamp, 2.5), (sig.stamp , 1.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
-            ax.add_patch(arrow)
-        
+            # HUMAN ACTIVITES #
+            for act in g_h_activities:
+                if act.dur() < MIN_DURATION:
+                    continue
+
+                text = act.name
+                color = 'wheat'
+                text_color = 'black'
+                if act.name in g_h_activities_names:
+                    text = g_h_activities_names[act.name][0]
+                    color = g_h_activities_names[act.name][1]
+                    text_color = g_h_activities_names[act.name][2]
+                if act.h_is_best:
+                    text+="*"
+
+                rec = ax.barh( ['H'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
+                ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
+
             
-
-        # HUMAN ACTIVITES #
-        for act in g_h_activities:
-            if act.dur() < MIN_DURATION:
-                continue
-
-            text = act.name
-            color = 'wheat'
-            text_color = 'black'
-            if act.name in g_h_activities_names:
-                text = g_h_activities_names[act.name][0]
-                color = g_h_activities_names[act.name][1]
-                text_color = g_h_activities_names[act.name][2]
-            if act.h_is_best:
-                text+="*"
-
-            rec = ax.barh( ['H'], [act.t_e-act.t_s], left=[act.t_s], height=1.0, color=color, zorder=activities_zorder)
-            ax.bar_label(rec, labels=[text], label_type='center', rotation=90, color=text_color)
-
-        
-        # OVER bar
-        over_event = g_events[-1]
-        line = mpatches.FancyArrowPatch((over_event.stamp, -1.0), (over_event.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
-        ax.add_patch(line)
+            # OVER bar
+            over_event = g_events[-1]
+            line = mpatches.FancyArrowPatch((over_event.stamp, -1.0), (over_event.stamp , 3.5), color="black", arrowstyle="Simple, head_width=0.1, head_length=0.1, tail_width=2", zorder=ns_lines_zorder)
+            ax.add_patch(line)
 
 
-        plt.tight_layout()
+            plt.tight_layout()
 
-        plt.show()
+            plt.show()
