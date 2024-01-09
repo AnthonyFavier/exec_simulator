@@ -1935,7 +1935,7 @@ def main_exec():
                 space += " "
             recap = exec_regime + space + recap + "\n\n" 
 
-        sound_finished.play()
+            sound_finished.play()
         if order==[]:
             g_prompt_pub.publish(String( recap + g_prompt_messages["end_expe"][LANG]))
         else:
