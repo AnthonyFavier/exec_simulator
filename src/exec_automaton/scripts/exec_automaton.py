@@ -1869,7 +1869,7 @@ def main_exec():
 
 
     # given order
-    order = []
+    order = ['t',1,2,3,4,5,6]
     i = 7-len(order) # N° scenario
     if order!=[]:
         order = [str(o) for o in order]
