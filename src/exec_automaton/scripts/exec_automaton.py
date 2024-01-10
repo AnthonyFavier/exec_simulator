@@ -1165,7 +1165,7 @@ def check_if_human_is_done(ps: CM.PState):
     # where the human is always IDLE
     for c in ps.children:
         if c.human_action.is_idle():
-            if c.is_final or (not c.is_passive and check_if_human_is_done(CM.g_PSTATES[c.child])):
+            if c.is_final() or (not c.is_passive() and check_if_human_is_done(CM.g_PSTATES[c.child])):
                 return True
     return False
 
