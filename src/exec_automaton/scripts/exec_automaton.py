@@ -1808,7 +1808,7 @@ def main_exec():
     TIMEOUT_DELAY               = 4.0
     TRAINING_TIMEOUT_DELAY      = 3.0 #4.0
     ESTIMATED_R_REACTION_TIME   = 0.3
-    ID_DELAY                    = 0.5
+    ID_DELAY                    = 0.6
     ASSESS_DELAY                = 0.2
     TT_R_PASSIVE_DELAY          = 1.0
     START_SIMU_DELAY            = 2.0
