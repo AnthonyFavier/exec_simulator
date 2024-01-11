@@ -1560,8 +1560,8 @@ g_prompt_messages = {
         "FR":  "Vous ne pouvez pas agir, je continue.",
         },
     "rf_r_passif":{
-        "ENG": "I prefer you to act\n" + g_prompt_start_extra + "but I can act myself.",
-        "FR":  "Je prefère que vous agissiez\n" + g_prompt_start_extra + "mais je peux agir moi même.",
+        "ENG": "I prefer you to act.",
+        "FR":  "Je préfère que vous agissiez.",
         },
     "rf_robot_acting_h_inactive":{
         "ENG": "I'm performing an action",
@@ -1701,7 +1701,7 @@ g_prompt_messages = {
         },
     "training29":{
         "ENG": "Now you can complete the task by grabbing and placing your pink bar.",
-        "FR":  "Pouvez maintenant terminer la tâche en attrapant puis en plaçant votre barre rose.",
+        "FR":  "Vous pouvez maintenant terminer la tâche en attrapant puis en plaçant votre barre rose.",
         },
     "training30":{
         "ENG": "The task is complete, as is this tutorial. \n \n Thank you for your cooperation!",
