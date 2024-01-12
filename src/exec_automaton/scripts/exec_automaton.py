@@ -115,7 +115,7 @@ def format_txt(s):
 
     if LANG=="FR":
         i = lines[-1].find("(Suivant)")
-    elif LANG=="ENG":
+    elif LANG=="EN":
         i = lines[-1].find("(Next)")
     else:
         raise Exception("format_txt: LANG unknown")
@@ -1454,7 +1454,7 @@ def force_exec_stop_cb(msg):
 ## PROMPT ##
 ############
 
-LANG = "FR" # ENG | FR
+LANG = "FR" # EN | FR
 g_permanent_prompt = ""
 g_prompt_start_extra = "  "
 def set_permanent_prompt_line(msg_id):
@@ -1468,255 +1468,255 @@ def prompt(msg_id: str, extra="", from_training=False):
         g_prompt_pub.publish(String( g_permanent_prompt + g_prompt_start_extra + g_prompt_messages[msg_id][LANG] + extra ))
 g_prompt_messages = {
     "start_simu_delay": {
-        "ENG":  "Starting in:",
+        "EN":  "Starting in:",
         "FR":   "Début dans :",
         },
     "HF_idle_step_started": {
-        "ENG": "You must act, I will wait.",
+        "EN": "You must act, I will wait.",
         "FR":  "Vous devez agir, je vais patienter.",
         },
     "RF_idle_step_started": {
-        "ENG": "You must act, I will wait.",
+        "EN": "You must act, I will wait.",
         "FR":  "Vous devez agir, je vais patienter.",
         },
     "task_done": {
-        "ENG": "The task done.",
+        "EN": "The task done.",
         "FR":  "Tâche terminée.",
         },
     "ID_started": {
-        "ENG": "*Identifying Action*",
+        "EN": "*Identifying Action*",
         "FR":  "*Identification de l'action*",
         },
     "out_of_idle": {
-        "ENG": "I'm getting ready..",
+        "EN": "I'm getting ready..",
         "FR":  "Je me prepare..",
         },
     "going_idle": {
-        "ENG": "I'm getting ready..",
+        "EN": "I'm getting ready..",
         "FR":  "Je me prepare..",
         },
     "wait_human_decision": {
-        "ENG": "Act if you will.",
+        "EN": "Act if you will.",
         "FR":  "Agissez si vous le souhaitez.",
         },
     "wait_h_decision_timeout": {
-        "ENG": "Then, I will start.",
+        "EN": "Then, I will start.",
         "FR":  "Je vais commencer alors.",
         },
     "wait_end_ha": {
-        "ENG": "I'm waiting for you to be done.",
+        "EN": "I'm waiting for you to be done.",
         "FR":  "J'attends que vous ayez terminé.",
         },
     "robot_is_passive": {
-        "ENG": "I will be passive this step.",
+        "EN": "I will be passive this step.",
         "FR":  "Je serai passif.",
         },
     "robot_is_acting": {
-        "ENG": "I'm performing an action...",
+        "EN": "I'm performing an action...",
         "FR":  "J'agis...",
         },
     "reset_world":{
-        "ENG": "Resetting the world...",
+        "EN": "Resetting the world...",
         "FR":  "Réinitialisation...",
         },
     "h_done":{
-        "ENG": "You are done.",
+        "EN": "You are done.",
         "FR":  "Vous avez terminé.",
         },
     "h_can_leave":{
-        "ENG": "If needed, I can finish alone.",
+        "EN": "If needed, I can finish alone.",
         "FR":  "Si besoin, je peux terminer seul.",
         },
     "human_turn":{
-        "ENG": "It's your turn to act.",
+        "EN": "It's your turn to act.",
         "FR":  "C'est à votre tour d'agir.",
         },
     "robot_turn":{
-        "ENG": "It's my turn to act.",
+        "EN": "It's my turn to act.",
         "FR":  "C'est à mon tour d'agir.",
         },
     "turn_idle":{
-        "ENG": "I can't act.",
+        "EN": "I can't act.",
         "FR":  "Je ne peux pas agir.",
         },
     "TT_idle":{
-        "ENG": "I let you proceed.",
+        "EN": "I let you proceed.",
         "FR":  "Je vous laisse faire.",
         },
     "start_ready":{
-        "ENG": "\t* Ready to start *",
+        "EN": "\t* Ready to start *",
         "FR":  "\t* Prêt à démarrer *",
         },
     "start_press_enter":{
-        "ENG": "Click on the yellow button",
+        "EN": "Click on the yellow button",
         "FR":  "Cliquez sur le bouton jaune",
         },
     "force_stop":{
-        "ENG": "Force Stop",
+        "EN": "Force Stop",
         "FR":  "Force Stop",
         },
     "h_can_t_act":{
-        "ENG": "You can't act, I proceed.",
+        "EN": "You can't act, I proceed.",
         "FR":  "Vous ne pouvez pas agir, je continue.",
         },
     "rf_r_passif":{
-        "ENG": "I prefer you to act.",
+        "EN": "I prefer you to act.",
         "FR":  "Je préfère que vous agissiez.",
         },
     "rf_robot_acting_h_inactive":{
-        "ENG": "I'm performing an action",
+        "EN": "I'm performing an action",
         "FR":  "J'agis...",
         },
     "rf_robot_acting":{
-        "ENG": "I'm performing an action\n" + g_prompt_start_extra + "You can act in parallel.",
+        "EN": "I'm performing an action\n" + g_prompt_start_extra + "You can act in parallel.",
         "FR":  "J'agis...\n" + g_prompt_start_extra + "Vous pouvez agir en même temps.",
         },
     "training":{
-        "ENG": "TRAINING",
+        "EN": "TRAINING",
         "FR":  "TRAINING",
         },
     "h_instru_tee":{
-        "ENG": " Objective:\n Finish the task as fast as possible.",
+        "EN": " Objective:\n Finish the task as fast as possible.",
         "FR":  " Objectif:\n Finir la tâche au plus vite.",
         },
     "h_instru_hfe":{
-        "ENG": " Objective:\n Be free as fast as possible.",
+        "EN": " Objective:\n Be free as fast as possible.",
         "FR":  " Objectif:\n Être libéré au plus vite.",
         },
     "training0":{
-        "ENG": "Welcome to this tutorial! \n \n In collaboration with the robot, you'll need to make the stack of cubes shown at the top left of the screen. (Next) Click on the button ⬇ ",
+        "EN": "Welcome to this tutorial! \n \n In collaboration with the robot, you'll need to make the stack of cubes shown at the top left of the screen. (Next) Click on the button ⬇ ",
         "FR":  "Bienvenue dans ce tutoriel ! \n \n En collaboration avec le robot, vous allez devoir réaliser la pile de cube montrée en haut à gauche de l'écran. (Suivant) Cliquez sur le bouton ⬇ ",
         },
     "training1":{
-        "ENG": "The table has different zones. \n \n On the right is the stacking area. \n \n On the left are the cubes arranged in three separate zones. (Next)",
+        "EN": "The table has different zones. \n \n On the right is the stacking area. \n \n On the left are the cubes arranged in three separate zones. (Next)",
         "FR":  "La table comporte différentes zones. A droite se trouve la zone d'empilement. \n A gauche se trouve les cubes disposés dans trois zones distinctes. (Suivant)",
         },
     "training2":{
-        "ENG": "You can grab the cubes in front of you and those in the middle. \n Similarly, the robot can grab the cubes in front of itself and those in the middle. (Next)",
+        "EN": "You can grab the cubes in front of you and those in the middle. \n Similarly, the robot can grab the cubes in front of itself and those in the middle. (Next)",
         "FR":  "Vous pouvez attraper les cubes disposés devant vous et ceux présent au milieu. \n De même, le robot peut attraper les cubes devant lui et ceux au milieu. (Suivant)",
         },
     "training3":{
-        "ENG": "Note also that only cubes that can be placed immediately can be picked up. \n Thus, it is not possible to grab a cube in anticipation. (Next)",
+        "EN": "Note also that only cubes that can be placed immediately can be picked up. \n Thus, it is not possible to grab a cube in anticipation. (Next)",
         "FR":  "Notez également que seul les cubes pouvant être placés immédiatement peuvent être attrapés. \n Ainsi, il n'est pas possible d'attraper un cube à l'avance. (Suivant)",
         },
     "training4":{
-        "ENG": "Now you need to understand the concept of steps. The start of a step is signaled by a beep from the robot. You and the robot can only perform a maximum of one action per step. (Next)",
+        "EN": "Now you need to understand the concept of steps. The start of a step is signaled by a beep from the robot. You and the robot can only perform a maximum of one action per step. (Next)",
         "FR":  "Il vous faut maintenant comprendre la notion d'étape. Le début d'une étape sera marqué par un signal sonore émis par le robot. Vous et le robot ne pouvez effectuer qu'une action maximum par étape. (Suivant)",
         },
     "training5":{
-        "ENG": "The first step begins. \n \n To grab a cube, simply click on it. \n Grab the central yellow cube.",
+        "EN": "The first step begins. \n \n To grab a cube, simply click on it. \n Grab the central yellow cube.",
         "FR":  "La première étape commence. \n \n Pour attraper un cube il vous suffit de cliquer dessus. \n Attrapez le cube jaune central.",
         },
     "training6":{
-        "ENG": "The robot has observed your action and acts accordingly...",
+        "EN": "The robot has observed your action and acts accordingly...",
         "FR":  "Le robot a observé votre action et agit en fonction en parallèle...",
         },
     "training7":{
-        "ENG": "Your action and that of the robot are complete, so the step is finished. \n \n The next step is ready to start. (Next)",
+        "EN": "Your action and that of the robot are complete, so the step is finished. \n \n The next step is ready to start. (Next)",
         "FR":  "Votre action et celle du robot sont terminées, l'étape est donc terminée. \n La suivante est prête à démarrer. (Suivant)",
         },
     "training8":{
-        "ENG": "The next step begins. \n \n To place a cube, simply click on the stacking area on the right. \n Place the yellow cube.",
+        "EN": "The next step begins. \n \n To place a cube, simply click on the stacking area on the right. \n Place the yellow cube.",
         "FR":  "L'étape suivante commence. \n \n Pour placer un cube il vous suffit de cliquer à droite sur la zone d'empilement. \n Placez le cube jaune.",
         },
     "training9":{
-        "ENG": "Once again, the robot has observed you and is following you, acting in parallel.",
+        "EN": "Once again, the robot has observed you and is following you, acting in parallel.",
         "FR":  "Une nouvelle fois, le robot vous a observé et vous suit en agissant en parallèle.",
         },
     "training10":{
-        "ENG": "At each step you can choose to be passive and take no action. \n \n There are two ways of doing this. (Next)",
+        "EN": "At each step you can choose to be passive and take no action. \n \n There are two ways of doing this. (Next)",
         "FR":  "A chaque étape vous pouvez choisir d'être passif et de ne pas agir. \n \n Il y a deux manières pour cela. (Suivant)",
         },
     "training11":{
-        "ENG": "First, you can wave your hand. \n \n This explicitly indicates to the robot that you wish to be passive. (Next)",
+        "EN": "First, you can wave your hand. \n \n This explicitly indicates to the robot that you wish to be passive. (Next)",
         "FR":  "D'abord, vous pouvez faire un signe de la main. \n \n Cela indique explicitement au robot que vous souhaitez être passif. (Suivant)",
         },
     "training12":{
-        "ENG": "The step begins. \n \n Click on the hand to wave and let the robot begin.",
+        "EN": "The step begins. \n \n Click on the hand to wave and let the robot begin.",
         "FR":  "L'étape commence. \n \n Cliquez sur la main pour faire un signe et laisser le robot commencer.",
         },
     "training13":{
-        "ENG": "The robot takes your signal into account and decides to grab its pink bar.",
+        "EN": "The robot takes your signal into account and decides to grab its pink bar.",
         "FR":  "Le robot prend votre signal en compte et décide d'attraper sa barre rose.",
         },
     "training14":{
-        "ENG": "Note that despite your hand signal, you could have decided to act in parallel with the robot. (Next)",
+        "EN": "Note that despite your hand signal, you could have decided to act in parallel with the robot. (Next)",
         "FR":  "Notez que malgré votre signe de la main vous auriez pu décider de tout de même agir en parallèle du robot. (Suivant)",
         },
     "training15":{
-        "ENG": "At the start of a step, the robot can start a timer to wait for your decision. Without any action or sign from you, you'll be considered passive. (Next)",
+        "EN": "At the start of a step, the robot can start a timer to wait for your decision. Without any action or sign from you, you'll be considered passive. (Next)",
         "FR":  "Au début d'une étape, le robot pourra lancer un chrono pour attendre votre décision. Sans action ni signe de votre part, vous serez considéré comme passif. (Suivant)",
         },
     "training16":{
-        "ENG": "Wait for the timer to run out to let the robot act on its own.",
+        "EN": "Wait for the timer to run out to let the robot act on its own.",
         "FR":  "Attendez la fin du chrono pour laisser le robot agir seul.",
         },
     "training17":{
-        "ENG": "Without any indication, the robot has considered you passive and places its bar.",
+        "EN": "Without any indication, the robot has considered you passive and places its bar.",
         "FR":  "Sans indication, le robot vous a considéré comme passif et place sa barre.",
         },
     "training18":{
-        "ENG": "The robot can also start, letting you act in parallel. \n In the next step, the robot will directly grab the grey cube. Meanwhile, grab the orange cube. (Next)",
+        "EN": "The robot can also start, letting you act in parallel. \n In the next step, the robot will directly grab the grey cube. Meanwhile, grab the orange cube. (Next)",
         "FR":  "Le robot peut également commencer, vous laissant agir en parallèle. \n A la prochaine étape le robot va directement attraper le cube gris. Attrapez en parallèle le cube orange. (Suivant)",
         },
     "training19":{
-        "ENG": "Grab the orange cube!",
+        "EN": "Grab the orange cube!",
         "FR":  "Attrapez le cube orange !",
         },
     "training20":{
-        "ENG": "The next step has begun. \n \n Place the orange cube!",
+        "EN": "The next step has begun. \n \n Place the orange cube!",
         "FR":  "L'étape suivante a commencée. \n \n Placez le cube orange !",
         },
     "training21":{
-        "ENG": "Notice here that the robot is able to place the blue cube, but must first remove the green cube. (Next)",
+        "EN": "Notice here that the robot is able to place the blue cube, but must first remove the green cube. (Next)",
         "FR":  "Remarquez ici que le robot est capable de placer le cube bleu mais il doit d'abord enlever le cube vert. (Suivant)",
         },
     "training22":{
-        "ENG": "The step begins. \n \n Grab the white cube to induce the robot to pick up the green cube.",
+        "EN": "The step begins. \n \n Grab the white cube to induce the robot to pick up the green cube.",
         "FR":  "L'étape commence. \n \n Attrapez le cube blanc pour inciter le robot à prendre le cube vert.",
         },
     "training23":{
-        "ENG": "The robot starts to make its blue cube accessible.",
+        "EN": "The robot starts to make its blue cube accessible.",
         "FR":  "Le robot commence à rendre son cube bleu accessible.",
         },
     "training24":{
-        "ENG": "Place the white cube. Concurrently, the robot will place the green cube on the table.",
+        "EN": "Place the white cube. Concurrently, the robot will place the green cube on the table.",
         "FR":  "Placez le cube blanc. En parallèle, le robot posera le cube vert sur table.",
         },
     "training25":{
-        "ENG": "Now grab the blue cube while the robot grabs its own.",
+        "EN": "Now grab the blue cube while the robot grabs its own.",
         "FR":  "Attrapez maintenant le cube bleu pendant que le robot attrape le sien.",
         },
     "training26":{
-        "ENG": "Finally, tell the robot that you're going to be passive.",
+        "EN": "Finally, tell the robot that you're going to be passive.",
         "FR":  "Finalement, indiquez au robot que vous allez être passif.",
         },
     "training27":{
-        "ENG": "Then the robot places its cube.",
+        "EN": "Then the robot places its cube.",
         "FR":  "Le robot place alors son cube.",
         },
     "training28":{
-        "ENG": "If, as now, you can no longer place your cube, you can place it back on the table by clicking on the left side of the table.",
+        "EN": "If, as now, you can no longer place your cube, you can place it back on the table by clicking on the left side of the table.",
         "FR":  "Si jamais, comme maintenant, vous ne pouvez plus placer votre cube, vous pouvez le reposer sur la table en cliquant sur la partie gauche de cette dernière.",
         },
     "training29":{
-        "ENG": "Now you can complete the task by grabbing and placing your pink bar.",
+        "EN": "Now you can complete the task by grabbing and placing your pink bar.",
         "FR":  "Vous pouvez maintenant terminer la tâche en attrapant puis en plaçant votre barre rose.",
         },
     "training30":{
-        "ENG": "The task is complete, as is this tutorial. \n \n Thank you for your cooperation!",
+        "EN": "The task is complete, as is this tutorial. \n \n Thank you for your cooperation!",
         "FR":  "La tâche est terminée ainsi que ce tutoriel. \n \n Merci de votre coopération !",
         },
     "end_task":{
-        "ENG": format_txt("\t *** Task complete *** \n \n Answer the questionnaire before clicking on the button to continue."),
+        "EN": format_txt("\t *** Task complete *** \n \n Answer the questionnaire before clicking on the button to continue."),
         "FR":  format_txt("\t *** Tâche terminée *** \n \n Repondez au questionnaire puis cliquez sur le bouton pour continuer."),
         },
     "end_expe":{
-        "ENG": "        *** Last task complete ***\n\n" + format_txt("Answer the questionnaire and the experiment will be over! Thanks!"),
+        "EN": "        *** Last task complete ***\n\n" + format_txt("Answer the questionnaire and the experiment will be over! Thanks!"),
         "FR":  "     *** Dernière tâche terminée ***\n\n" + format_txt("Repondez au questionnaire et l'expérience sera terminée ! Merci !"),
         },
     "tuto_wait_start":{
-        "ENG": f"           *** Tutorial ***\n\n\n Click on the yellow button    ⬇ ",
+        "EN": f"           *** Tutorial ***\n\n\n Click on the yellow button    ⬇ ",
         "FR":  f"           *** Tutoriel ***\n\n\n Cliquez sur le bouton jaune   ⬇ ",
         },
 
@@ -1749,7 +1749,7 @@ def wait_start_signal(robot_name, robots, i, h_instru):
     else:
         if LANG=="FR":
             g_prompt_pub.publish(String( f"    Scénario n°{i}    {robots[robot_name][0]}\n\n{g_prompt_messages[h_instru][LANG]}\n\n Cliquez sur le bouton jaune   ⬇ ") )
-        elif LANG=="ENG":
+        elif LANG=="EN":
             g_prompt_pub.publish(String( f"    Scenario n°{i}    {robots[robot_name][0]}\n\n{g_prompt_messages[h_instru][LANG]}\n\n Click on the yellow button    ⬇ ") )
     
     wait_prompt_button_pressed()
@@ -1802,6 +1802,7 @@ def main_exec():
     global g_domain_name
     global g_enter_pressed
     global g_force_exec_stop
+    global LANG
 
     # CONSTANTS #
     #   Delays 
@@ -1868,8 +1869,10 @@ def main_exec():
     exec_regime = None
 
 
+    LANG = "FR" # 'FR' | 'EN'
+
     # given order
-    order = ['t',1,2,3,4,5,6]
+    order = ['t', 2, 6, 3, 1, 4, 5]
     i = 7-len(order) # N° scenario
     if order!=[]:
         order = [str(o) for o in order]
@@ -1919,7 +1922,7 @@ def main_exec():
         # Recap prompt
         recap=''
         if exec_regime!="training":
-            if LANG=="ENG":
+            if LANG=="EN":
                 if h_instructions=="h_instru_tee":
                     recap = "Finish Task Fast"
                 elif h_instructions=="h_instru_hfe":
