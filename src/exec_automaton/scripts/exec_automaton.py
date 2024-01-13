@@ -1872,7 +1872,7 @@ def main_exec():
     LANG = "FR" # 'FR' | 'EN'
 
     # given order
-    order = ['t', 2, 6, 3, 1, 4, 5]
+    order = ['t',1,2,3,4,5,6]
     i = 7-len(order) # N° scenario
     if order!=[]:
         order = [str(o) for o in order]
