@@ -80,30 +80,21 @@ def dump_data(dir_path):
             f.write(str_metric("number_steps", p, i))
             f.write(str_metric("nb_h_optimal_action", p, i))
             f.write(str_metric("ratio_h_optimal_action", p, i))
-            f.write(str_metric("total_decision_time", p, i))
-            f.write(str_metric("average_decision_time", p, i))
-            f.write(str_metric("total_wait_ns", p, i))
-            f.write(str_metric("average_wait_ns", p, i))
-            f.write(str_metric("nb_h_action", p, i))
-            f.write(str_metric("total_h_action_time", p, i))
-            f.write(str_metric("average_h_action_time", p, i))
-            f.write(str_metric("nb_r_action", p, i))
-            f.write(str_metric("total_r_action_time", p, i))
-            f.write(str_metric("average_r_action_time", p, i))
-
-            # task_completion_time
-            # number_steps
-            # nb_h_optimal_action
-            # total_decision_time
-            # average_decision_time
-            # total_wait_ns
-            # average_wait_ns
-            # nb_h_action
-            # total_h_action_time
-            # average_h_action_time
-            # nb_r_action
-            # total_r_action_time
-            # average_r_action_time
+            f.write(str_metric("decision_time_total", p, i))
+            f.write(str_metric("decision_time_average", p, i))
+            f.write(str_metric("decision_time_sd", p, i))
+            f.write(str_metric("wait_ns_total", p, i))
+            f.write(str_metric("wait_ns_average", p, i))
+            f.write(str_metric("wait_ns_sd", p, i))
+            f.write(str_metric("h_action_nb", p, i))
+            f.write(str_metric("h_action_time_total", p, i))
+            f.write(str_metric("h_action_time_average", p, i))
+            f.write(str_metric("h_action_time_sd", p, i))
+            f.write(str_metric("r_action_nb", p, i))
+            f.write(str_metric("r_action_time_total", p, i))
+            f.write(str_metric("r_action_time_average", p, i))
+            f.write(str_metric("r_action_time_sd", p, i))
+            f.write(str_metric("time_human_free", p, i))
 
         f.write("\n")
 
@@ -122,8 +113,9 @@ if __name__=='__main__':
     files = []
     for file_path in os.listdir(dir_path):
         if os.path.isfile(os.path.join(dir_path, file_path)):
-            if file_path not in ['.gitignore', 'events.p', 'metrics.txt']:
-                files.append(file_path)
+            if 'unedited' not in file_path:
+                if file_path not in ['.gitignore', 'events.p', 'metrics.txt']:
+                    files.append(file_path)
     
     files.sort()
     for f in files:
