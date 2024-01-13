@@ -738,37 +738,10 @@ def extract_metrics():
 
     
     ## Time_human_free
-    metrics['time_human_free'] = -1.0
-    # Check from last step, find last human action, end of last human action = time after which human is free.
-    i_h_activities = len(g_h_activities) - 1
-    last_h_action_found = False
-    time_human_free = 0.0
-    while not last_h_action_found:
-        
-        # act_name in ['wait_ns', 'pass', 'passive']
-        if g_h_activities[i_h_activities].name == 'passive':
-            i_h_activities -= 1 # previous step
-            if i_h_activities<0:
-                break
-
-        elif g_h_activities[i_h_activities].name == 'pass':
-            i_h_activities -= 2 # previous step
-            if i_h_activities<0:
-                break
-
-        elif g_h_activities[i_h_activities].name == 'wait_ns':
-            i_h_activities -= 2
-            if g_h_activities[i_h_activities].name == 'pass':
-                i_h_activities -= 2 # previous step
-                if i_h_activities<0:
-                    break
-
-            # Human is acting
-            elif g_h_activities[i_h_activities].name == 'start_delay':
-                i_h_activities += 1
-                last_h_action_found = True
-                time_human_free = g_h_activities[i_h_activities].t_e
-    metrics['time_human_free'] = time_human_free
+    for h_act in g_h_activities:
+        if h_act.name == "Place\n(l3,p1)":
+            break
+    metrics['time_human_free'] = h_act.t_e
 
     return metrics
 
