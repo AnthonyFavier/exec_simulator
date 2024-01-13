@@ -792,11 +792,16 @@ def load(filename, verbose=True):
     CM.g_FINAL_PSTATES = final_pstates
     CM.g_PSTATES = pstates
 
+def get_stamp(e):
+    return e.stamp
+
 if __name__ == "__main__":
     sys.setrecursionlimit(100000)
 
     sys.argv.append("load")
+    # sys.argv.append("edit")
     record = sys.argv[1] == "record"
+    edit = sys.argv[1] == "edit"
 
     path = "/home/afavier/new_exec_sim_ws/events/"
 
@@ -807,6 +812,48 @@ if __name__ == "__main__":
     log_sub = rospy.Subscriber('/event_log', EventLog, log_cb)
     log_r_sgl_sub = rospy.Subscriber('/robot_visual_signals', Signal, r_sgl_cb)
     log_h_sgl_sub = rospy.Subscriber('/human_visual_signals', Signal, h_sgl_cb)
+
+
+    ##########
+    ## EDIT ##
+    ##########
+    if edit:
+        # Get file names
+        root = tk.Tk()
+        root.withdraw()
+        input_files = list(filedialog.askopenfilenames(initialdir=path, filetypes=(("dumped files","*.p"),) ))
+        file_path = input_files[0]
+
+        # Loading
+        (g_events, g_r_signals, g_h_signals, g_to_signals) = dill.load(open(file_path, "rb"))
+        if g_events[0].name[-len("training_"):]=="training_":
+            raise Exception("Cannot show the timelog of the training task!")
+
+        i_s = file_path.find("instru_")+len("instru_")
+        i_e = i_s + 3
+        h_instru = file_path[i_s:i_e]
+        if h_instru=="tee":
+            load("policy_task_end_early.p", verbose=False)
+        elif h_instru=="hfe":
+            load("policy_real_human_free_early.p", verbose=False)
+        else:
+            raise Exception("h_instru unknown...")
+        
+        # Edition:
+        
+        g_events[8].stamp = 1704985896.6525281
+        
+        g_events[10].stamp = 1704985896.6770347
+        g_h_signals[0].stamp = g_events[10].stamp
+
+
+        g_events.sort(key=get_stamp)
+
+        # Dumping
+        dill.dump((g_events, g_r_signals, g_h_signals, g_to_signals), open(path + "edited_events.p", "wb"))
+        print("edited events dumped")
+
+        exit()
 
     ############
     ## RECORD ##
