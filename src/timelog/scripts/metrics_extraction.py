@@ -115,7 +115,11 @@ if __name__=='__main__':
         if os.path.isfile(os.path.join(dir_path, file_path)):
             if 'unedited' not in file_path:
                 if file_path not in ['.gitignore', 'events.p', 'metrics.txt']:
-                    files.append(file_path)
+                    i_end_date = file_path.find('_')
+                    date = file_path[:i_end_date]
+                    d,m,y = date.split('-')
+                    new_date = y+'-'+m+'-'+d
+                    files.append( new_date + file_path[i_end_date:])
     
     files.sort()
     for f in files:
@@ -133,8 +137,13 @@ if __name__=='__main__':
                 print("=> participant metrics saved")
             participant_metrics = {"stamp": f[:f.find("_N")]}
         else:
-            print("Treating ", f)
-            loading(dir_path+'/'+f)
+            i_end_date = f.find('_')
+            new_date = f[:i_end_date]
+            d,m,y = new_date.split('-')
+            old_date = y+'-'+m+'-'+d
+            new_name_file = old_date + f[i_end_date:]
+            print("Treating ", new_name_file)
+            loading(dir_path+'/'+new_name_file)
             metrics = metrics_retrieval()
             participant_metrics[id] = metrics
 
