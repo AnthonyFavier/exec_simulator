@@ -848,11 +848,17 @@ if __name__ == "__main__":
             raise Exception("h_instru unknown...")
         
         # Edition:
+
+        # 32.65
+        # must be after NS around 32.8, around 32.85
+        # offset of 0.228
+        # must move event start S_HA g_events[59]
+        # must move sgl S_HA g_h_signals[6]  and associate EVENT SGL_S_HA g_events[60]
         
-        g_events[8].stamp = 1704985896.6525281
-        
-        g_events[10].stamp = 1704985896.6770347
-        g_h_signals[0].stamp = g_events[10].stamp
+        offset = 0.228
+        g_events[59].stamp += offset
+        g_events[60].stamp += offset
+        g_h_signals[6].stamp = g_events[60].stamp
 
 
         g_events.sort(key=get_stamp)
