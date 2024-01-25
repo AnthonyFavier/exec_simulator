@@ -515,11 +515,15 @@ def extract_metrics():
 
     # decision time - total / average / SD
     metrics["decision_time_total"] = 0.0
+    metrics["decision_time_min"] = 99999999
+    metrics["decision_time_max"] = -1
     n = 0
     for a in g_h_activities:
         if a.name == "start_delay":
             n+=1
             metrics["decision_time_total"] += a.dur()
+            if a.dur() > metrics["decision_time_max"]: metrics["decision_time_max"] = a.dur()
+            if a.dur() < metrics["decision_time_min"]: metrics["decision_time_min"] = a.dur()
     metrics["decision_time_average"] = 0 if n==0 else metrics["decision_time_total"]/n
     metrics["decision_time_sd"] = 0.0
     if n!=0:
@@ -530,11 +534,15 @@ def extract_metrics():
 
     # wait ns - total / average / SD
     metrics["wait_ns_total"] = 0.0
+    metrics["wait_ns_min"] = 99999999
+    metrics["wait_ns_max"] = -1
     n=0
     for a in g_h_activities:
         if a.name == "wait_ns":
             n+=1
             metrics["wait_ns_total"] += a.dur()
+            if a.dur() > metrics["wait_ns_max"]: metrics["wait_ns_max"] = a.dur()
+            if a.dur() < metrics["wait_ns_min"]: metrics["wait_ns_min"] = a.dur()
     metrics["wait_ns_average"] = 0.0 if n==0 else metrics["wait_ns_total"]/n
     metrics["wait_ns_sd"] = 0.0
     if n!=0:
@@ -545,11 +553,15 @@ def extract_metrics():
 
     # h action time - total / average / SD
     metrics["h_action_time_total"] = 0.0
+    metrics["h_action_time_min"] = 99999999
+    metrics["h_action_time_max"] = -1
     metrics["h_action_nb"] = 0
     for a in g_h_activities:
         if a.name not in g_h_activities_names:
             metrics["h_action_nb"] += 1
             metrics["h_action_time_total"] += a.dur()
+            if a.dur() > metrics["h_action_time_max"]: metrics["h_action_time_max"] = a.dur()
+            if a.dur() < metrics["h_action_time_min"]: metrics["h_action_time_min"] = a.dur()
     metrics["h_action_time_average"] = 0.0 if n==0 else metrics["h_action_time_total"]/metrics["h_action_nb"]
     metrics["h_action_time_sd"] = 0.0
     if metrics["h_action_nb"]!=0:
@@ -561,11 +573,15 @@ def extract_metrics():
 
     # r action time - total / average / SD
     metrics["r_action_time_total"] = 0.0
+    metrics["r_action_time_min"] = 9999999
+    metrics["r_action_time_max"] = -1
     metrics["r_action_nb"] = 0
     for a in g_r_activities:
         if a.name not in g_r_activities_names:
             metrics["r_action_nb"]+=1
             metrics["r_action_time_total"] += a.dur()
+            if a.dur() > metrics["r_action_time_max"]: metrics["r_action_time_max"] = a.dur()
+            if a.dur() < metrics["r_action_time_min"]: metrics["r_action_time_min"] = a.dur()
     metrics["r_action_time_average"] = 0.0 if n==0 else metrics["r_action_time_total"]/metrics["r_action_nb"]
     metrics["r_action_time_sd"] = 0.0
     if metrics["r_action_nb"]!=0:
@@ -736,7 +752,6 @@ def extract_metrics():
     ## Ratio_h_optimal_action
     metrics["ratio_h_optimal_action"] = 100 * metrics["nb_h_optimal_action"]/metrics["number_steps"]
 
-    
     ## Time_human_free
     for h_act in g_h_activities:
         if h_act.name == "Place\n(l3,p1)":
@@ -906,6 +921,8 @@ if __name__ == "__main__":
         root.withdraw()
         input_files = list(filedialog.askopenfilenames(initialdir=path, filetypes=(("dumped files","*.p"),) ))
 
+        ######################
+        # Multiple files
         if len(input_files)>1:
             files = []
             for f in input_files:
@@ -946,9 +963,8 @@ if __name__ == "__main__":
 
             print("\n")
 
-####################################################################################
-
-
+        ######################
+        # Single file
         else:
             
             file_path = input_files[0]
