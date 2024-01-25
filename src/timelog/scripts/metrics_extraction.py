@@ -108,6 +108,20 @@ def dump_data(dir_path):
 
     f.close()
 
+def optimal_sort(dir_path):
+    f = open(dir_path+'/optimal.txt', 'w')
+
+    for p in overall_data:
+        f.write(p["stamp"] + " ")
+        scores = ""
+        sum = 0
+        for i in range(1,7):
+            sm = str_metric("ratio_h_optimal_action", p, i)
+            m = float( sm.replace(',','.') )
+            sum += m
+            scores += f"{m:.1f} "
+        f.write(f"{sum:.1f} "+scores[:-1]+"\n")
+    f.close()
 
 if __name__=='__main__':
 
@@ -122,7 +136,7 @@ if __name__=='__main__':
     for file_path in os.listdir(dir_path):
         if os.path.isfile(os.path.join(dir_path, file_path)):
             if 'unedited' not in file_path:
-                if file_path not in ['.gitignore', 'events.p', 'metrics.txt']:
+                if file_path not in ['.gitignore', 'events.p', 'metrics.txt', 'optimal.txt']:
                     i_end_date = file_path.find('_')
                     date = file_path[:i_end_date]
                     d,m,y = date.split('-')
@@ -160,6 +174,7 @@ if __name__=='__main__':
             overall_data.append(participant_metrics)
 
     dump_data(dir_path)
+    optimal_sort(dir_path)
 
 
 
