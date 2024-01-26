@@ -11,7 +11,7 @@ l = range(1,7)
 permu = list(itertools.permutations(l))
 
 MAX = len(permu)
-N = 25
+N = 30
 
 print(MAX)
 
