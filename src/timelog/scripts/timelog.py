@@ -500,99 +500,9 @@ def show_activities(activities):
         name = a.name.replace('\n','')
         print(f"{name} - {a.t_s:.2f} > {a.t_e:.2f}")
 
+def extract_nb_optimal_h_action():
+    nb_optimal_h_action = 0
 
-def extract_metrics():
-    metrics = {}
-
-    # task completion time
-    metrics["task_completion_time"] = g_events[-1].stamp
-
-    # number of steps
-    metrics["number_steps"] = 0
-    for sgl in g_r_signals:
-        if sgl.type in [Signal.NS, Signal.NS_IDLE]:
-            metrics["number_steps"] += 1
-
-    # decision time - total / average / SD
-    metrics["decision_time_total"] = 0.0
-    metrics["decision_time_min"] = 99999999
-    metrics["decision_time_max"] = -1
-    n = 0
-    for a in g_h_activities:
-        if a.name == "start_delay":
-            n+=1
-            metrics["decision_time_total"] += a.dur()
-            if a.dur() > metrics["decision_time_max"]: metrics["decision_time_max"] = a.dur()
-            if a.dur() < metrics["decision_time_min"]: metrics["decision_time_min"] = a.dur()
-    metrics["decision_time_average"] = 0 if n==0 else metrics["decision_time_total"]/n
-    metrics["decision_time_sd"] = 0.0
-    if n!=0:
-        for a in g_h_activities:
-            if a.name == "start_delay":
-                metrics["decision_time_sd"] += pow(a.dur()-metrics["decision_time_average"], 2)
-        metrics["decision_time_sd"] = math.sqrt( metrics["decision_time_sd"] / n)
-
-    # wait ns - total / average / SD
-    metrics["wait_ns_total"] = 0.0
-    metrics["wait_ns_min"] = 99999999
-    metrics["wait_ns_max"] = -1
-    n=0
-    for a in g_h_activities:
-        if a.name == "wait_ns":
-            n+=1
-            metrics["wait_ns_total"] += a.dur()
-            if a.dur() > metrics["wait_ns_max"]: metrics["wait_ns_max"] = a.dur()
-            if a.dur() < metrics["wait_ns_min"]: metrics["wait_ns_min"] = a.dur()
-    metrics["wait_ns_average"] = 0.0 if n==0 else metrics["wait_ns_total"]/n
-    metrics["wait_ns_sd"] = 0.0
-    if n!=0:
-        for a in g_h_activities:
-            if a.name == "wait_ns":
-                metrics["wait_ns_sd"] += pow(a.dur()-metrics["wait_ns_average"], 2)
-        metrics["wait_ns_sd"] = math.sqrt( metrics["wait_ns_sd"] / n)
-
-    # h action time - total / average / SD
-    metrics["h_action_time_total"] = 0.0
-    metrics["h_action_time_min"] = 99999999
-    metrics["h_action_time_max"] = -1
-    metrics["h_action_nb"] = 0
-    for a in g_h_activities:
-        if a.name not in g_h_activities_names:
-            metrics["h_action_nb"] += 1
-            metrics["h_action_time_total"] += a.dur()
-            if a.dur() > metrics["h_action_time_max"]: metrics["h_action_time_max"] = a.dur()
-            if a.dur() < metrics["h_action_time_min"]: metrics["h_action_time_min"] = a.dur()
-    metrics["h_action_time_average"] = 0.0 if n==0 else metrics["h_action_time_total"]/metrics["h_action_nb"]
-    metrics["h_action_time_sd"] = 0.0
-    if metrics["h_action_nb"]!=0:
-        for a in g_h_activities:
-            if a.name not in g_h_activities_names:
-                metrics["h_action_time_sd"] += pow(a.dur()-metrics["h_action_time_average"], 2)
-        metrics["h_action_time_sd"] = math.sqrt(metrics["h_action_time_sd"] / metrics["h_action_nb"])
-
-
-    # r action time - total / average / SD
-    metrics["r_action_time_total"] = 0.0
-    metrics["r_action_time_min"] = 9999999
-    metrics["r_action_time_max"] = -1
-    metrics["r_action_nb"] = 0
-    for a in g_r_activities:
-        if a.name not in g_r_activities_names:
-            metrics["r_action_nb"]+=1
-            metrics["r_action_time_total"] += a.dur()
-            if a.dur() > metrics["r_action_time_max"]: metrics["r_action_time_max"] = a.dur()
-            if a.dur() < metrics["r_action_time_min"]: metrics["r_action_time_min"] = a.dur()
-    metrics["r_action_time_average"] = 0.0 if n==0 else metrics["r_action_time_total"]/metrics["r_action_nb"]
-    metrics["r_action_time_sd"] = 0.0
-    if metrics["r_action_nb"]!=0:
-        for a in g_r_activities:
-            if a.name not in g_r_activities_names:
-                metrics["r_action_time_sd"] += pow(a.dur()-metrics["r_action_time_average"], 2)
-        metrics["r_action_time_sd"] = math.sqrt(metrics["r_action_time_sd"] / metrics["r_action_nb"])
-
-
-    ## Nb_h_optimal_action
-    metrics["nb_h_optimal_action"] = 0
     i_r = 0
     i_h = 0
     ps = CM.g_PSTATES[0]
@@ -739,8 +649,7 @@ def extract_metrics():
         ############################
     
         if ha_is_optimal:
-            metrics["nb_h_optimal_action"]+=1
-
+            nb_optimal_h_action+=1
             if ha_name=="Passive":
                 g_h_activities[i_h-1].h_is_best = True
             else:
@@ -749,6 +658,74 @@ def extract_metrics():
         # update current pstate
         ps = CM.g_PSTATES[executed_pair.child]
 
+    return nb_optimal_h_action
+
+def extract_metrics():
+    metrics = {}
+
+    # task completion time
+    metrics["task_completion_time"] = g_events[-1].stamp
+
+    # number of steps
+    metrics["number_steps"] = 0
+    for sgl in g_r_signals:
+        if sgl.type in [Signal.NS, Signal.NS_IDLE]:
+            metrics["number_steps"] += 1
+
+    # decision time - total / average / SD
+    decision_time_a = []
+    for a in g_h_activities:
+        if a.name not in g_h_activities_names:
+            decision_time_a.append(a.dur())
+    decision_time_a = np.array(decision_time_a)
+    metrics["decision_time_total"]    = np.sum(decision_time_a)
+    metrics["decision_time_min"]      = np.min(decision_time_a)
+    metrics["decision_time_max"]      = np.max(decision_time_a)
+    metrics["decision_time_average"]  = np.mean(decision_time_a)
+    metrics["decision_time_sd"]       = np.std(decision_time_a)
+
+    # wait ns - total / average / SD
+    wait_ns_a = []
+    for a in g_h_activities:
+        if a.name not in g_h_activities_names:
+            wait_ns_a.append(a.dur())
+    wait_ns_a = np.array(wait_ns_a)
+    metrics["wait_ns_total"]    = np.sum(wait_ns_a)
+    metrics["wait_ns_min"]      = np.min(wait_ns_a)
+    metrics["wait_ns_max"]      = np.max(wait_ns_a)
+    metrics["wait_ns_average"]  = np.mean(wait_ns_a)
+    metrics["wait_ns_sd"]       = np.std(wait_ns_a)
+
+    # h action time - total / average / SD
+    h_actions_a = []
+    for a in g_h_activities:
+        if a.name not in g_h_activities_names:
+            h_actions_a.append(a.dur())
+    h_actions_a = np.array(h_actions_a)
+    metrics["h_action_nb"]              = len(h_actions_a)
+    metrics["h_action_time_total"]      = np.sum(h_actions_a)
+    metrics["h_action_time_min"]        = np.min(h_actions_a)
+    metrics["h_action_time_max"]        = np.max(h_actions_a)
+    metrics["h_action_time_average"]    = np.mean(h_actions_a)
+    metrics["h_action_time_sd"]         = np.std(h_actions_a)
+
+
+    # r action time - total / average / SD
+    r_actions_a = []
+    for a in g_r_activities:
+        if a.name not in g_r_activities_names:
+            r_actions_a.append(a.dur())
+    metrics["r_action_nb"]              = len(r_actions_a)
+    metrics["r_action_time_total"]      = np.sum(r_actions_a)
+    metrics["r_action_time_min"]        = np.min(r_actions_a)
+    metrics["r_action_time_max"]        = np.max(r_actions_a)
+    metrics["r_action_time_average"]    = np.mean(r_actions_a)
+    metrics["r_action_time_sd"]         = np.std(r_actions_a)
+
+
+    ## Nb_h_optimal_action
+    metrics["nb_h_optimal_action"] = extract_nb_optimal_h_action()
+    
     ## Ratio_h_optimal_action
     metrics["ratio_h_optimal_action"] = 100 * metrics["nb_h_optimal_action"]/metrics["number_steps"]
 
@@ -757,6 +734,18 @@ def extract_metrics():
         if h_act.name == "Place\n(l3,p1)":
             break
     metrics['time_human_free'] = h_act.t_e
+
+    ## mvt plan
+    plan_mvt_a = []
+    for a in g_r_activities:
+        if a.name == "plan_mvt":
+            plan_mvt_a.append(a.dur())
+    plan_mvt_a = np.array(plan_mvt_a)
+    metrics["plan_mvt_total"]    = np.sum(plan_mvt_a)
+    metrics["plan_mvt_min"]      = np.min(plan_mvt_a)
+    metrics["plan_mvt_max"]      = np.max(plan_mvt_a)
+    metrics["plan_mvt_average"]  = np.mean(plan_mvt_a)
+    metrics["plan_mvt_sd"]       = np.std(plan_mvt_a)
 
     return metrics
 
