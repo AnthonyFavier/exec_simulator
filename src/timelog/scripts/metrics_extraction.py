@@ -103,6 +103,11 @@ def dump_data(dir_path):
             f.write(str_metric("r_action_time_max", p, i))
             f.write(str_metric("r_action_time_min", p, i))
             f.write(str_metric("time_human_free", p, i))
+            f.write(str_metric("plan_mvt_total", p, i))
+            f.write(str_metric("plan_mvt_min", p, i))
+            f.write(str_metric("plan_mvt_max", p, i))
+            f.write(str_metric("plan_mvt_average", p, i))
+            f.write(str_metric("plan_mvt_sd", p, i))
 
         f.write("\n")
 
