@@ -122,7 +122,15 @@ if __name__=='__main__':
         print(f + "\t" + f[f.find("_N")+4])
 
 
-    traces = []
+    traces_per_id = {
+        '1':[],
+        '2':[],
+        '3':[],
+        '4':[],
+        '5':[],
+        '6':[],
+    }
+    all_traces = []
 
     i = 0
     while i<len(files):
@@ -144,16 +152,23 @@ if __name__=='__main__':
 
         new_trace = extract_trace()
         print("\t", new_trace)
-        if not trace_already_in(new_trace, traces):
-            traces.append(new_trace)
+        if not trace_already_in(new_trace, all_traces):
+            all_traces.append(new_trace)
+        if not trace_already_in(new_trace, traces_per_id[id]):
+            traces_per_id[id].append(new_trace)
 
         i+=1
         
 
-    print(f"traces (N={len(traces)}):")
-    for t in traces:
+    print(f"traces (N={len(all_traces)}):")
+    for t in all_traces:
         print("\t", t)
 
+    print("traces per id:")
+    for id in traces_per_id:
+        print(f"{id} (N={len(traces_per_id[id])}):")
+        for t in traces_per_id[id]:
+            print("\t", t)
 
 
 
