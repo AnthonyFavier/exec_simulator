@@ -1031,7 +1031,7 @@ if __name__ == "__main__":
             signal_style="Simple, head_width=8, head_length=4, tail_width=4"
 
             ####################
-            WITH_TIMEOUT = False
+            WITH_TIMEOUT = True
             ####################
 
 
