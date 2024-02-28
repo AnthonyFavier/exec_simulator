@@ -141,7 +141,7 @@ if __name__=='__main__':
     for file_path in os.listdir(dir_path):
         if os.path.isfile(os.path.join(dir_path, file_path)):
             if 'unedited' not in file_path:
-                if file_path not in ['.gitignore', 'events.p', 'metrics.txt', 'optimal.txt']:
+                if file_path not in ['.gitignore', 'events.p', 'metrics.txt', 'optimal.txt', 'example_logs.p']:
                     i_end_date = file_path.find('_')
                     date = file_path[:i_end_date]
                     d,m,y = date.split('-')
