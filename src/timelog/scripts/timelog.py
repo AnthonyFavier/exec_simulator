@@ -164,12 +164,12 @@ g_r_activities_names = {
     # act_name :            [display_name,                  shape_color,            text_color]
     "rf_wait_h":            ["Wait H",                      "yellow",               "black"],
     "wait_hc":              ["Wait H",                      "yellow",               "black"],
-    "plan_mvt":             ["Plan Mvt",                    "silver",               "black"],
+    "plan_mvt":             ["Plan Motion",                    "silver",               "black"],
     "idle_wait_h":          ["Passive\nWait HA",            "silver",               "black"],
     "grns":                 ["GRNS",                        "silver",               "black"],
     "id":                   ["ID Phase",                    "lightgreen",           "black"],
     "sa":                   ["SA",                          "lightgreen",           "black"],
-    "wait_end_step":        ["Wait End Step",               "forestgreen",          "white"],
+    "wait_end_step":        ["Wait End",               "forestgreen",          "white"],
     "passive":              ["Pass",                        "lightgrey",           "black"],
     "wait_turn":            ["Wait Turn",                   "lightgrey",           "black"],
 }
@@ -1031,7 +1031,7 @@ if __name__ == "__main__":
             signal_style="Simple, head_width=8, head_length=4, tail_width=4"
 
             ####################
-            WITH_TIMEOUT = True
+            WITH_TIMEOUT = False
             ####################
 
 
@@ -1050,7 +1050,7 @@ if __name__ == "__main__":
             ax.set_xticks(x_ticks)
             ax.set_xticklabels(["" for x in x_ticks], rotation=90)
             ax.set_yticks([0.25, 1.0, 2.0, 3.0])
-            ax.set_yticklabels(['TO', 'R', 'Sgls', 'H'], rotation=90)
+            ax.set_yticklabels(['TO', 'R', 'Signals', 'H'], rotation=90)
             ax.set_ylim(3.5, 0.0)
             if not WITH_TIMEOUT:
                 ax.set_ylim(3.5, 0.5)
@@ -1099,7 +1099,13 @@ if __name__ == "__main__":
             # R Signals #
             for sig in g_r_signals:
                 rec = ax.barh( ['Signals'], [signal_width_text], left=[sig.stamp-signal_width_text/2], height=1.0, color=(0,0,0,0))
-                ax.bar_label(rec, labels=[sig.name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
+                new_s_name = sig.name
+                if sig.name[:2]=="NS":
+                    if sig.name=="NS":
+                        new_s_name = "START"
+                    elif sig.name=="NS_IDLE":
+                        new_s_name = "START_IDLE"
+                ax.bar_label(rec, labels=[new_s_name], label_type='center', rotation=90, color=sig.color_text, zorder=signal_text_zorder)
                 arrow = mpatches.FancyArrowPatch((sig.stamp, 1.5), (sig.stamp , 2.5), color=sig.color_arrow, arrowstyle=signal_style, zorder=signal_arrow_zorder)
                 ax.add_patch(arrow)
                 # bar step separations
