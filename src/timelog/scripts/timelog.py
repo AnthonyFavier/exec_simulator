@@ -675,7 +675,7 @@ def extract_metrics():
     # decision time - total / average / SD
     decision_time_a = []
     for a in g_h_activities:
-        if a.name not in g_h_activities_names:
+        if a.name == "start_delay":
             decision_time_a.append(a.dur())
     decision_time_a = np.array(decision_time_a)
     metrics["decision_time_total"]    = np.sum(decision_time_a)
@@ -687,7 +687,7 @@ def extract_metrics():
     # wait ns - total / average / SD
     wait_ns_a = []
     for a in g_h_activities:
-        if a.name not in g_h_activities_names:
+        if a.name == "wait_ns":
             wait_ns_a.append(a.dur())
     wait_ns_a = np.array(wait_ns_a)
     metrics["wait_ns_total"]    = np.sum(wait_ns_a)
@@ -1031,7 +1031,7 @@ if __name__ == "__main__":
             signal_style="Simple, head_width=8, head_length=4, tail_width=4"
 
             ####################
-            WITH_TIMEOUT = True
+            WITH_TIMEOUT = False
             ####################
 
 
