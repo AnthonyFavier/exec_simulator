@@ -12,6 +12,10 @@ find_package (Qt5Core REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gazebo REQUIRED)
 find_package(roscpp REQUIRED)
+find_package(std_msgs REQUIRED)
+
+include_directories(${roscpp_INCLUDE_DIRS})
+include_directories(${std_msgs_INCLUDE_DIRS})
 
 include_directories(SYSTEM ${GAZEBO_INCLUDE_DIRS} ${Qt5Core_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
@@ -28,6 +32,11 @@ target_link_libraries(GUITextPlugin ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES}
 add_library(CameraLockPlugin SHARED ${headers_MOC}
   CameraLockPlugin.cc)
 target_link_libraries(CameraLockPlugin ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES})
+
+add_library(CameraControlPlugin SHARED ${headers_MOC}
+CameraControlPlugin.cc)
+target_link_libraries(CameraControlPlugin ${GAZEBO_LIBRARIES} ${catkin_LIBRARIES}
+    ${roscpp_LIBRARIES})
 
 add_library(MousePosePublisherPlugin SHARED ${headers_MOC}
   MousePosePublisherPlugin.cc)

@@ -8,7 +8,7 @@
   <arg name="end_effector"  default="pal-gripper"/>  <!-- false, pal-gripper, pal-hey5, schunk-wsg-->
   <arg name="ft_sensor"  default="false"/> <!-- false, schunk-ft -->
   <arg name="laser_model"  default="false"/> <!-- false, hokuyo, sick-551, sick-561, sick-571-->
-  <arg name="camera_model"  default="orbbec-astra"/> <!-- false, orbbec-astra, orbbec-astra-pro, asus-xtion -->
+  <arg name="camera_model"  default="false"/> <!-- false, orbbec-astra, orbbec-astra-pro, asus-xtion -->
   <arg name="multi" default=""/>
   <arg name="gzpose" default="-x 0.0 -y 0.0 -z 0.0 -R 0.0 -P 0.0 -Y 0.0"/>
   <arg name="gui" default="true"/>
