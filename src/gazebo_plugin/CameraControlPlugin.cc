@@ -115,7 +115,7 @@ namespace gazebo
             switch(m_camera_state)
             {
                 case STATIC:
-                    ROS_INFO_STREAM("1 Yaw = " << m_current_pose.Yaw());
+                    // ROS_INFO_STREAM("1 Yaw = " << m_current_pose.Yaw());
                     break;
 
                 case TURN_180_LEFT:{
@@ -124,7 +124,7 @@ namespace gazebo
                     m_current_pose.Set( m_current_pose.X(), m_current_pose.Y(), m_current_pose.Z(),
                                         m_current_pose.Roll(), m_current_pose.Pitch(), m_current_pose.Yaw()+m_rotation_incr);
 
-                    ROS_INFO_STREAM("2 Yaw = " << m_current_pose.Yaw());
+                    // ROS_INFO_STREAM("2 Yaw = " << m_current_pose.Yaw());
 
                     double a = m_init_yaw;
                     double c = m_current_pose.Yaw();
@@ -150,7 +150,7 @@ namespace gazebo
 
                     double delta_x = 1.5;
 
-                    ROS_INFO_STREAM("2 X = " << m_current_pose.X());
+                    // ROS_INFO_STREAM("2 X = " << m_current_pose.X());
 
                     double c = m_current_pose.X();
                     bool direction_positive = m_current_pose.Yaw()<0.01 && m_current_pose.Yaw()>-0.01;

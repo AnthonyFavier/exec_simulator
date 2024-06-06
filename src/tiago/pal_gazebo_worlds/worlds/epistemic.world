@@ -3,7 +3,7 @@
 
     <plugin name='ros_link_attacher_plugin' filename='libgazebo_ros_link_attacher.so'/>
 
-    <!-- <model name='control_camera_pose_model'>
+    <model name='control_camera_pose_model'>
       <link name='link'>
         <visual name='visual'>
           <geometry>
@@ -12,7 +12,7 @@
           <plugin name="CameraControlPlugin" filename="libCameraControlPlugin.so" />
         </visual>
       </link>
-    </model> -->
+    </model>
 
     <gui fullscreen='0'>
       <camera name='user_camera'>
@@ -218,9 +218,10 @@
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>1.0 0.43 0.7  0 0 0</pose>
+      <pose>0.85 0.2 0.7  0 0 0</pose>
     </model>
 
+    <!-- box_transparent_1 -->
     <model name='box_transparent_1'>
       <link name='box_transparent_1_link'>
         <inertial>
@@ -265,9 +266,10 @@
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>1.0 0.0 0.7  0 0 0</pose>
+      <pose>0.85 -0.2 0.7  0 0 0</pose>
     </model>
 
+    <!-- main_table -->
     <model name='main_table'>
       <link name='main_table_link'>
         <inertial>
@@ -315,6 +317,7 @@
       <pose>0.852639 0 0.7 0 0 0</pose>
     </model>
 
+    <!-- side_table -->
     <model name='side_table'>
       <link name='side_table_link'>
         <inertial>
@@ -362,6 +365,7 @@
       <pose>6.0 0 0.7 0 0 0</pose>
     </model>
 
+    <!-- b1 -->
     <model name='b1'>
       <link name='link'>
         <inertial>
@@ -418,9 +422,10 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>1.0 0.0 1.5  0 0 0</pose>
+      <pose>1.2 0.5 1.5  0 0 0</pose>
     </model>
 
+    <!-- r1 -->
     <model name='r1'>
       <link name='link'>
         <inertial>
@@ -477,7 +482,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>1.0 -0.4 1.0  0 0 0</pose>
+      <pose>0.5 -0.5 0.75  0 0 0</pose>
     </model>
 
   </world>
