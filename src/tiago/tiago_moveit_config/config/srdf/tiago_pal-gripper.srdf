@@ -24,13 +24,13 @@
         <joint name="arm_7_joint"       value="0"/>
     </group_state>
     <group_state name="home" group="arm_torso">
-        <joint name="arm_1_joint"       value="0.1096"/>
-        <joint name="arm_2_joint"       value="0.2697"/>
-        <joint name="arm_3_joint"       value="-1.5477"/>
-        <joint name="arm_4_joint"       value="2.1117"/>
-        <joint name="arm_5_joint"       value="1.6834"/>
-        <joint name="arm_6_joint"       value="-0.5719"/>
-        <joint name="arm_7_joint"       value="-0.8007"/>
+        <joint name="arm_1_joint"       value="0.07"/>
+        <joint name="arm_2_joint"       value="0.70"/>
+        <joint name="arm_3_joint"       value="-1.57"/>
+        <joint name="arm_4_joint"       value="2.28"/>
+        <joint name="arm_5_joint"       value="-0.57"/>
+        <joint name="arm_6_joint"       value="1.39"/>
+        <joint name="arm_7_joint"       value="-0.3"/>
     </group_state>
     <group_state name="idle" group="arm_torso">
         <joint name="arm_1_joint"       value="0.1096"/>
