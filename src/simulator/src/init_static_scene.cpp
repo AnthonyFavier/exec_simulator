@@ -51,15 +51,15 @@ void init_scene_epistemic()
   box_1.primitives.resize(1);
   box_1.primitives[0].type = box_1.primitives[0].BOX;
   box_1.primitives[0].dimensions.resize(3);
-  box_1.primitives[0].dimensions[0] = 0.35;
-  box_1.primitives[0].dimensions[1] = 0.35;
-  box_1.primitives[0].dimensions[2] = 0.33;
+  box_1.primitives[0].dimensions[0] = 0.38;
+  box_1.primitives[0].dimensions[1] = 0.38;
+  box_1.primitives[0].dimensions[2] = 0.38;
 
   /* Define the pose of the object. */
   box_1.primitive_poses.resize(1);  
   box_1.primitive_poses[0].position.x = 0.85;
   box_1.primitive_poses[0].position.y = 0.2;
-  box_1.primitive_poses[0].position.z = 0.865;
+  box_1.primitive_poses[0].position.z = 0.89;
   box_1.primitive_poses[0].orientation.w = 1.0;
 
   box_1.operation = box_1.ADD;
@@ -76,15 +76,15 @@ void init_scene_epistemic()
   box_2.primitives.resize(1);
   box_2.primitives[0].type = box_2.primitives[0].BOX;
   box_2.primitives[0].dimensions.resize(3);
-  box_2.primitives[0].dimensions[0] = 0.35;
-  box_2.primitives[0].dimensions[1] = 0.35;
-  box_2.primitives[0].dimensions[2] = 0.33;
+  box_2.primitives[0].dimensions[0] = 0.38;
+  box_2.primitives[0].dimensions[1] = 0.38;
+  box_2.primitives[0].dimensions[2] = 0.38;
 
   /* Define the pose of the object. */
   box_2.primitive_poses.resize(1);  
   box_2.primitive_poses[0].position.x = 0.85;
   box_2.primitive_poses[0].position.y = -0.20;
-  box_2.primitive_poses[0].position.z = 0.865;
+  box_2.primitive_poses[0].position.z = 0.89;
   box_2.primitive_poses[0].orientation.w = 1.0;
 
   box_2.operation = box_2.ADD;
