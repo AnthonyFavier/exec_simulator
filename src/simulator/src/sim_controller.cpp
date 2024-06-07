@@ -20,6 +20,10 @@ ros::Publisher visual_signals_pub[2];
 ros::Publisher event_log_pub[2];
 ros::Publisher head_cmd_pub;
 ros::Publisher prompt_pub;
+ros::Publisher h_control_camera_pub;
+
+ros::ServiceClient set_link_state_client;
+
 
 
 // DOMAIN_NAME
@@ -1777,7 +1781,6 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"b1",                  make_pose(make_point(1.2, 0.5, 0.75),           make_quaternion())},
         {"r1",                  make_pose(make_point(0.5,  -0.5, 0.75),         make_quaternion())},
 };
-geometry_msgs::Pose init_human_hand_pose = make_pose(make_point(1.48, 0.5, 0.87), make_quaternion_RPY(0, 0.0, 3.14159));
 
 class DropZone
 {
@@ -1943,6 +1946,87 @@ void BePassive(AGENT agent)
     }
 }
 
+
+enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SIDE_LOOK_MAIN};
+HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
+geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
+geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(2.98,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(5.22, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
+
+double delta_move_x = 1.5;
+void TurnAround()
+{
+    // compute new hand pose
+    geometry_msgs::Pose new_hand_pose ;
+    switch(g_human_state)
+    {
+        case HUMAN_STATE::AT_MAIN_LOOK_MAIN:{
+            g_human_state = AT_MAIN_LOOK_SIDE;
+            new_hand_pose = hand_pose_AT_MAIN_LOOK_SIDE;
+            break;}
+
+        case HUMAN_STATE::AT_MAIN_LOOK_SIDE:{
+            g_human_state = AT_MAIN_LOOK_MAIN;
+            new_hand_pose = hand_pose_AT_MAIN_LOOK_MAIN;
+            break;}
+
+        case HUMAN_STATE::AT_SIDE_LOOK_SIDE:{
+            g_human_state = AT_SIDE_LOOK_MAIN;
+            new_hand_pose = hand_pose_AT_SIDE_LOOK_MAIN;
+            break;}
+
+        case HUMAN_STATE::AT_SIDE_LOOK_MAIN:{
+            g_human_state = AT_SIDE_LOOK_SIDE;
+            new_hand_pose = hand_pose_AT_SIDE_LOOK_SIDE;
+            break;}
+    }    
+
+    // turn around
+    std_msgs::Int32 msg;
+    msg.data = 0;
+    h_control_camera_pub.publish(msg);
+
+    // move hand 
+    gazebo_msgs::SetLinkState link_state;
+	link_state.request.link_state.link_name = "human_hand_link";
+	link_state.request.link_state.pose = new_hand_pose;
+    set_link_state_client.call(link_state);
+
+    sleep(2);
+}
+
+void MoveForward()
+{
+    // compute new hand pose
+    geometry_msgs::Pose new_hand_pose ;
+    switch(g_human_state)
+    {
+        case HUMAN_STATE::AT_MAIN_LOOK_SIDE:{
+            g_human_state = AT_SIDE_LOOK_SIDE;
+            new_hand_pose = hand_pose_AT_SIDE_LOOK_SIDE;
+            break;}
+
+        case HUMAN_STATE::AT_SIDE_LOOK_MAIN:{
+            g_human_state = AT_MAIN_LOOK_MAIN;
+            new_hand_pose = hand_pose_AT_MAIN_LOOK_MAIN;
+            break;}
+    }
+
+    // move forward
+    std_msgs::Int32 msg;
+    msg.data = 1;
+    h_control_camera_pub.publish(msg);
+
+    // move hand 
+    gazebo_msgs::SetLinkState link_state;
+	link_state.request.link_state.link_name = "human_hand_link";
+	link_state.request.link_state.pose = new_hand_pose;
+    set_link_state_client.call(link_state);
+
+    sleep(2);
+}
+
 //  MANAGE ACTIONS + EVENTS + SIGNALS  //
 std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start)
 {
@@ -2022,10 +2106,39 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 
         std_msgs::String str_msg;
         ROS_INFO("%d type=%d", agent, action.type);
-        ROS_INFO("sim_msgs::Action::PICK_OBJ_NAME=%d", sim_msgs::Action::PICK_OBJ_NAME);
 
         if (sim_msgs::Action::PASSIVE == action.type)
             BePassive(agent);
+        else if(sim_msgs::Action::TURN_AROUND == action.type)
+        {
+            action_received[agent] = true;
+            // send visual signal
+            sim_msgs::Signal sgl;
+            sgl.id = action.id;
+            sgl.type = sim_msgs::Signal::S_HA;
+            visual_signals_pub[agent].publish(sgl);
+            ROS_INFO("Start signal SENT");
+            
+            TurnAround();
+
+            send_visual_signal_action_over(agent, action);
+            action_done[agent] = true;
+        }
+        else if(sim_msgs::Action::MOVE_FORWARD == action.type)
+        {
+            action_received[agent] = true;
+            // send visual signal
+            sim_msgs::Signal sgl;
+            sgl.id = action.id;
+            sgl.type = sim_msgs::Signal::S_HA;
+            visual_signals_pub[agent].publish(sgl);
+            ROS_INFO("Start signal SENT");
+            
+            MoveForward();
+
+            send_visual_signal_action_over(agent, action);
+            action_done[agent] = true;
+        }
         else
         {
             // log event
@@ -2069,7 +2182,9 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 // ************************* LOW LEVEL ACTIONS **************************** //
 void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool human_home /* = false */)
 {
-    ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << " MOVE_POSE_TARGET START (" << std::setprecision(4) << pose_target.position.x << ", " << pose_target.position.y << ", " << pose_target.position.z << ")");
+    ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << std::setprecision(4) << " MOVE_POSE_TARGET START (" 
+        << pose_target.position.x << ", " << pose_target.position.y << ", " << pose_target.position.z << ")" <<
+        " (" << pose_target.orientation.x << ", " << pose_target.orientation.y << ", " << pose_target.orientation.z << ", " << pose_target.orientation.w << ")");
     sim_msgs::MoveArm srv;
     srv.request.pose_target = pose_target;
 
@@ -2079,7 +2194,9 @@ void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool 
 
     if (!move_arm_pose_client[agent].call(srv) || !srv.response.success)
         throw ros::Exception("Calling service move_arm_pose_target failed...");
-    ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << " MOVE_POSE_TARGET END (" << std::setprecision(4) << pose_target.position.x << ", " << pose_target.position.y << ", " << pose_target.position.z << ")");
+    ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << std::setprecision(4) << " MOVE_POSE_TARGET END (" 
+        << pose_target.position.x << ", " << pose_target.position.y << ", " << pose_target.position.z << ")" <<
+        " (" << pose_target.orientation.x << ", " << pose_target.orientation.y << ", " << pose_target.orientation.z << ", " << pose_target.orientation.w << ")");
 }
 
 void move_location_target(AGENT agent, const std::string &loc_name)
@@ -2107,7 +2224,19 @@ void move_home(AGENT agent)
     if (agent == AGENT::ROBOT)
         move_named_target(agent, "home");
     else if (agent == AGENT::HUMAN)
-        move_pose_target(agent, init_human_hand_pose, true);
+    {
+        switch(g_human_state)
+        {
+            case HUMAN_STATE::AT_MAIN_LOOK_MAIN:
+                move_pose_target(agent, hand_pose_AT_MAIN_LOOK_MAIN, true);
+                break;
+            case HUMAN_STATE::AT_SIDE_LOOK_SIDE:
+                move_pose_target(agent, hand_pose_AT_SIDE_LOOK_SIDE, true);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 void move_named_target(AGENT agent, const std::string &named_target)
@@ -2128,6 +2257,7 @@ void grab_obj(AGENT agent, const std::string &object)
 
     ROS_INFO("\t\t%s GRAB_OBJ START", get_agent_str(agent).c_str());
 
+    sleep(0.5);
 
     gazebo_ros_link_attacher::Attach srv;
     if (agent == AGENT::ROBOT)
@@ -2157,6 +2287,7 @@ void drop(AGENT agent, const std::string &object)
 
     ROS_INFO("\t\t%s DROP START", get_agent_str(agent).c_str());
 
+    sleep(0.5);
 
     gazebo_ros_link_attacher::Attach srv;
     if (agent == AGENT::ROBOT)
@@ -2506,6 +2637,8 @@ int main(int argc, char **argv)
     ros::Subscriber h_home = node_handle.subscribe("/h_home", 1, h_home_cb);
     h_home_pub = node_handle.advertise<std_msgs::Empty>("/h_home", 1);
 
+    h_control_camera_pub = node_handle.advertise<std_msgs::Int32>("/control_camera", 1);
+
     const std::string r_move_pose_srv_name("/move_pose_target");
     const std::string r_move_named_topic_name("/move_named_target");
     const std::string r_head_cmd_topic_name("/tiago_head_cmd");
@@ -2537,6 +2670,8 @@ int main(int argc, char **argv)
     event_log_pub[AGENT::HUMAN] = node_handle.advertise<sim_msgs::EventLog>("/event_log", 10);
     visual_signals_pub[AGENT::ROBOT] = node_handle.advertise<sim_msgs::Signal>("/robot_visual_signals", 10);
     visual_signals_pub[AGENT::HUMAN] = node_handle.advertise<sim_msgs::Signal>("/human_visual_signals", 10);
+
+	set_link_state_client = node_handle.serviceClient<gazebo_msgs::SetLinkState>("/gazebo/set_link_state");
 
     ros::Publisher step_over_pub = node_handle.advertise<std_msgs::Empty>("/step_over", 10);
     std_msgs::Empty empty_msg;
