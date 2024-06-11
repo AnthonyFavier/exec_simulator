@@ -88,11 +88,7 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
 
 	// Set goal pose
 	geometry_msgs::Pose goal_pose;
-	goal_pose.position = req.pose_target.position;
-	goal_pose.orientation.w = 0.0;
-	goal_pose.orientation.x = 0.0;
-	goal_pose.orientation.y = 0.0;
-	goal_pose.orientation.z = 1.0;
+	goal_pose = req.pose_target;
 	// std::cout << "goal hand pose : " << goal_pose.position.x <<","<< goal_pose.position.y <<","<< goal_pose.position.z << std::endl;
 
 	// Compute direction vector
@@ -160,6 +156,10 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
 
 		loop.sleep();
 	}
+
+	// move hand link
+	link_state.request.link_state.pose = goal_pose;
+	set_link_state_client.call(link_state);
 
 	return true;
 }
