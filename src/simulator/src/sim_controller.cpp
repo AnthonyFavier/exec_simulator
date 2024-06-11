@@ -22,7 +22,15 @@ ros::Publisher head_cmd_pub;
 ros::Publisher prompt_pub;
 ros::Publisher h_control_camera_pub;
 
+ros::Publisher robot_action_done_pub;
+ros::Publisher human_action_done_pub;
+
 ros::ServiceClient set_link_state_client;
+
+ros::ServiceClient set_synchro_step_client;
+
+bool g_step_synchro_on = true;
+
 
 
 
@@ -1778,7 +1786,7 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"box_transparent_1",   make_pose(make_point(0.85,-0.20, 0.7),          make_quaternion())},
         {"main_table",          make_pose(make_point(0.852639, 0.0, 0.7),       make_quaternion())},
         {"side_table",          make_pose(make_point(6.0, 0.0, 0.7),            make_quaternion())},
-        {"b1",                  make_pose(make_point(1.2, 0.5, 0.75),           make_quaternion())},
+        {"b1",                  make_pose(make_point(5.9, 0, 0.75),             make_quaternion())},
         {"r1",                  make_pose(make_point(0.5,  -0.5, 0.75),         make_quaternion())},
 };
 
@@ -2577,6 +2585,8 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     camera_reset_msg.data = -1;
     h_control_camera_pub.publish(camera_reset_msg);
 
+    // Set synchro step
+    g_step_synchro_on = true;
 
     ROS_INFO("World reset ok");
 
@@ -2625,6 +2635,13 @@ void home_agents()
     std_msgs::Empty msg;
     h_home_pub.publish(msg);
     move_home(AGENT::ROBOT);
+}
+
+bool set_synchro_step_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolResponse &res)
+{
+    g_step_synchro_on = req.data;
+
+    return true;
 }
 
 int main(int argc, char **argv)
@@ -2692,8 +2709,15 @@ int main(int argc, char **argv)
 
     prompt_pub = node_handle.advertise<std_msgs::String>("/simu_prompt", 10);
 
+    robot_action_done_pub = node_handle.advertise<std_msgs::Empty>("/robot_action_done", 1);
+    human_action_done_pub = node_handle.advertise<std_msgs::Empty>("/human_action_done", 1);
+
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
+
+    // set_synchro_step_client = node_handle.serviceClient<std_srvs::SetBool>("/set_synchro_step");
+    ros::ServiceServer set_synchro_step_service = node_handle.advertiseService("set_synchro_step", set_synchro_step_server);
+
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);
     ros::Subscriber h_start_moving_sub = node_handle.subscribe("/h_start_moving", 1, h_start_moving_cb);
@@ -2713,20 +2737,45 @@ int main(int argc, char **argv)
 
     ROS_INFO("Controllers Ready!");
 
+
     ros::Rate loop(50);
     while (ros::ok())
     {
-        // ROS_INFO("%d-%d %d-%d", action_received[AGENT::ROBOT], action_done[AGENT::ROBOT], action_received[AGENT::HUMAN], action_done[AGENT::HUMAN]);
-        if ((action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]) || (action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && !action_received[AGENT::HUMAN] && !action_done[AGENT::HUMAN]) || (!action_received[AGENT::ROBOT] && !action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]))
+
+        if(g_step_synchro_on)
         {
-            ROS_INFO("=> STEP OVER");
-            // move_named_target(AGENT::ROBOT, "home"); // Reset robot
-            step_over_pub.publish(empty_msg);
-            action_received[AGENT::ROBOT] = false;
-            action_done[AGENT::ROBOT] = false;
-            action_received[AGENT::HUMAN] = false;
-            action_done[AGENT::HUMAN] = false;
-            waiting_step_start = true;
+            // ROS_INFO("%d-%d %d-%d", action_received[AGENT::ROBOT], action_done[AGENT::ROBOT], action_received[AGENT::HUMAN], action_done[AGENT::HUMAN]);
+            if((action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]) 
+            || (action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT] && !action_received[AGENT::HUMAN] && !action_done[AGENT::HUMAN])
+            || (!action_received[AGENT::ROBOT] && !action_done[AGENT::ROBOT] && action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN]))
+            {
+                ROS_INFO("=> STEP OVER");
+                // move_named_target(AGENT::ROBOT, "home"); // Reset robot
+                step_over_pub.publish(empty_msg);
+                action_received[AGENT::ROBOT] = false;
+                action_done[AGENT::ROBOT] = false;
+                action_received[AGENT::HUMAN] = false;
+                action_done[AGENT::HUMAN] = false;
+                waiting_step_start = true;
+            }
+
+        }
+
+        else
+        {
+            if(action_received[AGENT::ROBOT] && action_done[AGENT::ROBOT])
+            {
+                robot_action_done_pub.publish(empty_msg);
+                action_received[AGENT::ROBOT] = false;
+                action_done[AGENT::ROBOT] = false;
+            }
+
+            if(action_received[AGENT::HUMAN] && action_done[AGENT::HUMAN])
+            {
+                human_action_done_pub.publish(empty_msg);
+                action_received[AGENT::HUMAN] = false;
+                action_done[AGENT::HUMAN] = false;
+            }
         }
 
         loop.sleep();

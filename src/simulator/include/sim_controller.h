@@ -10,6 +10,7 @@
 #include <std_msgs/Empty.h>
 #include <std_msgs/Int32.h>
 #include <std_srvs/Empty.h>
+#include <std_srvs/SetBool.h>
 #include "sim_msgs/Action.h"
 #include "sim_msgs/MoveArm.h"
 #include "sim_msgs/EventLog.h"
