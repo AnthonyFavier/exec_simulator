@@ -1990,18 +1990,24 @@ void TurnAround()
             break;}
     }    
 
+    // hand disapear 
+    gazebo_msgs::SetLinkState link_state;
+	link_state.request.link_state.link_name = "human_hand_link";
+	link_state.request.link_state.pose = make_pose(make_point(0,0,5), make_quaternion_RPY(0,0,0));
+    set_link_state_client.call(link_state);
+
     // turn around
     std_msgs::Int32 msg;
     msg.data = 0;
     h_control_camera_pub.publish(msg);
 
+    sleep(2);
+
     // move hand 
-    gazebo_msgs::SetLinkState link_state;
 	link_state.request.link_state.link_name = "human_hand_link";
 	link_state.request.link_state.pose = new_hand_pose;
     set_link_state_client.call(link_state);
 
-    sleep(2);
 }
 
 void MoveForward()
@@ -2021,18 +2027,24 @@ void MoveForward()
             break;}
     }
 
+    // hand disapear 
+    gazebo_msgs::SetLinkState link_state;
+	link_state.request.link_state.link_name = "human_hand_link";
+	link_state.request.link_state.pose = make_pose(make_point(0,0,5), make_quaternion_RPY(0,0,0));
+    set_link_state_client.call(link_state);
+
     // move forward
     std_msgs::Int32 msg;
     msg.data = 1;
     h_control_camera_pub.publish(msg);
 
+    sleep(2);
+
     // move hand 
-    gazebo_msgs::SetLinkState link_state;
 	link_state.request.link_state.link_name = "human_hand_link";
 	link_state.request.link_state.pose = new_hand_pose;
     set_link_state_client.call(link_state);
 
-    sleep(2);
 }
 
 //  MANAGE ACTIONS + EVENTS + SIGNALS  //
