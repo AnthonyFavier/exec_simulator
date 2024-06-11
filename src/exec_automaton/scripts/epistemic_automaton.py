@@ -179,6 +179,7 @@ def robot_action_done_cb(m: EmptyM):
     print("BAZABF R DONE")
 def human_action_done_cb(m: EmptyM):
     global g_human_action_done
+    rospy.sleep(0.5)
     g_human_action_done = True
     print("BAZABF H DONE")
 
@@ -262,6 +263,7 @@ def exec_epistemic(init_step):
                     g_robot_action_done = False
 
                 if len(HAs) and g_human_action_done:
+                    sound_ns.play()
                     HA = HAs.pop(0)
                     g_possible_human_actions = [HA]
                     send_vha(g_possible_human_actions, VHA.NS, timeout=0.0)
