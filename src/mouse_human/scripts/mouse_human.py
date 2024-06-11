@@ -25,13 +25,13 @@ from geometry_msgs.msg import Pose, Twist, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import time
 
-DOMAIN_NAME = "stack_empiler_2"
+DOMAIN_NAME = "epistemic"
 
-path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
-sys.path.insert(0, path)
+# path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
+# sys.path.insert(0, path)
 
 ## LOGGER ##
-logging.config.fileConfig(path + 'log.conf')
+# logging.config.fileConfig(path + 'log.conf')
 
 
 class Zone:
@@ -98,15 +98,14 @@ def create_zone(id, x, y, w, h, list_actions):
     g_zones[id] = Zone(id, None, list_actions)
     g_zones[id].setPixelCoords(x, y, x+w, y+h)
 
-if DOMAIN_NAME=="stack_empiler_2":
-    create_zone(0,      1063,352,348,374,   ["place"])
-    create_zone(1,      251,479,837,466,    ["drop"])
-    create_zone(2,      912,585,98,120,     ["pick('o1',)"])
-    create_zone(3,      794,585,96,120,     ["pick('w1',)"])
-    create_zone(4,      674,585,101,120,    ["pick('y1',)"])
-    create_zone(5,      441,762,131,137,    ["pick('b2',)"])
-    create_zone(6,      582,759,296,138,    ["pick('p1',)"])
-    create_zone(7,      1371,820,228,217,   ["PASS"])
+if DOMAIN_NAME=="epistemic":
+    create_zone(0,      0,0,500,1080,       ["change_focus_towards"])
+    create_zone(1,      0,0,1920,300,       ["move_to_table"])
+    create_zone(2,      901,548,122,141,    ["pick"])
+    create_zone(3,      634,374,312,378,    ["place_1('w1', 'box_1')"])
+    create_zone(4,      973,374,312,378,    ["place_1('w1', 'box_2')"])
+    create_zone(5,      0,0,0,0,            ["communicate_if_cube_can_be_put"])
+    create_zone(6,      1371,820,228,217,   ["PASS"])
 else:
     raise Exception("Domain_name unknown...")
 
@@ -256,7 +255,7 @@ def incoming_vha_cb(msg: VHA):
     g_vha_received = True
 
     # Update pass zone
-    print(g_vha)
+    # print(g_vha)
     if g_vha.type==VHA.NS:
         g_z_pass.current_action_id = -1
         g_z_pass.ready_activate_auto_pass = False
