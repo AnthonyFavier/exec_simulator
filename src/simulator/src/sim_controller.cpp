@@ -2571,6 +2571,13 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     std_msgs::String prompt_msg;
     prompt_pub.publish(prompt_msg);
 
+    // Reset Camera
+    ROS_INFO("\tReset camera");
+    std_msgs::Int32 camera_reset_msg;
+    camera_reset_msg.data = -1;
+    h_control_camera_pub.publish(camera_reset_msg);
+
+
     ROS_INFO("World reset ok");
 
     return true;

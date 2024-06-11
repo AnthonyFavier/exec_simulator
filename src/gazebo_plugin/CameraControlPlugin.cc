@@ -19,7 +19,8 @@
 enum STATE{ TURN_180_LEFT,  TURN_180_RIGHT,
             TURN_90_LEFT,   TURN_90_RIGHT,
             MOVE_FORWARD,
-            STATIC
+            STATIC,
+            RESET
             };
 
 namespace gazebo
@@ -52,7 +53,8 @@ namespace gazebo
             this->m_control_sub = this->rosNode->subscribe("/control_camera", 1, &CameraControlPlugin::control_gazebo_camera_cb, this);
             this->rosQueueThread = std::thread(std::bind(&CameraControlPlugin::QueueThread, this));
 
-            m_current_pose = ignition::math::Pose3d(2.6, 0, 2.0, 0, 0.56, M_PI);
+            m_init_pose_camera = ignition::math::Pose3d(2.6, 0, 2.0, 0, 0.56, M_PI);
+            m_current_pose = m_init_pose_camera;
             m_rotation_incr = 0.03;
             m_move_incr = 0.01;
 
@@ -99,6 +101,12 @@ namespace gazebo
                     ROS_WARN("CAMERA STATE SWITCH TO MOVE_FORWARD");
                     break;
 
+                // RESET
+                case -1:
+                    m_camera_state = STATE::RESET;
+                    ROS_WARN("CAMERA STATE SWITCH TO RESET");
+                    break;
+
                 default:
                     break;
             }
@@ -114,6 +122,11 @@ namespace gazebo
 
             switch(m_camera_state)
             {
+                case RESET:
+                    m_current_pose = m_init_pose_camera;
+                    m_camera_state = STATE::STATIC;
+                    break;
+
                 case STATIC:
                     // ROS_INFO_STREAM("1 Yaw = " << m_current_pose.Yaw());
                     break;
@@ -203,6 +216,7 @@ namespace gazebo
         rendering::UserCameraPtr m_camera;
         event::ConnectionPtr m_update_connection;
 
+        ignition::math::Pose3d m_init_pose_camera;
         ignition::math::Pose3d m_current_pose;
         STATE m_camera_state = STATE::STATIC;
         float m_rotation_incr;
