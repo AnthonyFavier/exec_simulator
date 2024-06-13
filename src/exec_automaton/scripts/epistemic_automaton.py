@@ -277,7 +277,7 @@ def exec_epistemic(init_step):
                     sound_ns.play()
                     HA = HAs.pop(0)
                     g_possible_human_actions = [HA]
-                    send_vha(g_possible_human_actions, VHA.NS, timeout=0.0)
+                    send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
                     g_human_action_done = False
 
             # enable step synchro
