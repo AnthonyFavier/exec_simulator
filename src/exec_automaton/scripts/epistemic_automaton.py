@@ -215,6 +215,16 @@ def exec_epistemic(init_step):
 
                 # Extract Possible human actions
                 g_possible_human_actions = get_possible_human_actions(curr_step)
+
+                # If can ask question, prompt and expect question
+                # questions = []
+                # for ha in g_possible_human_actions:
+                #     if ha.name == "communicate_if_cube_can_be_put":
+                #         questions.append(ha)
+
+                # if len(questions):
+                #     # send to prompt 
+                
                 
                 # Send NS + HAs to HMI
                 send_NS(VHA.NS)
