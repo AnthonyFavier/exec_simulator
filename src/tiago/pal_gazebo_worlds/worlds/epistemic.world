@@ -22,7 +22,7 @@
       </camera>
     </gui>
 
-    <model name='camera'>
+    <model name='bird_camera'>
       <static>true</static>
       <pose>-1 0 4 0 1 0</pose>
       <link name='link'>
@@ -252,7 +252,7 @@
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.85 0.2 0.7  0 0 0</pose>
+      <pose>0.85 -0.25 0.7  0 0 0</pose>
     </model>
 
     <!-- box_transparent_1 -->
@@ -300,8 +300,58 @@
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.85 -0.2 0.7  0 0 0</pose>
+      <pose>0.85 0.1 0.7  0 0 0</pose>
     </model>
+
+
+    <!-- box_opaque_2 -->
+    <model name='box_opaque_2'>
+      <link name='box_opaque_2_link'>
+        <inertial>
+          <mass>1</mass>
+          <inertia>
+            <ixx>0.166667</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>0.166667</iyy>
+            <iyz>0</iyz>
+            <izz>0.166667</izz>
+          </inertia>
+          <pose>0 0 0 0 -0 0</pose>
+        </inertial>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <pose>0 0 0 0 -0 0</pose>
+        <gravity>0</gravity>
+        <visual name='box_opaque_2_link'>
+          <geometry>
+            <mesh>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/box_opaque.stl</uri>
+              <scale>1.0 1.0 1.0</scale>
+            </mesh>
+          </geometry>
+          <pose>0 0 0 0 -0 0</pose>
+          <transparency>0</transparency>
+          <cast_shadows>0</cast_shadows>
+        </visual>
+        <collision name='collision'>
+          <laser_retro>0</laser_retro>
+          <max_contacts>10</max_contacts>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/box_opaque.stl</uri>
+              <scale>1.0 1.0 1.0</scale>
+            </mesh>
+          </geometry>
+        </collision>
+      </link>
+      <static>1</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose>0.85 0.45 0.7  0 0 0</pose>
+    </model>
+
 
     <!-- main_table -->
     <model name='main_table'>
@@ -516,7 +566,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.5 -0.5 0.75  0 0 0</pose>
+      <pose>0.5 -0.6 0.75  0 0 0</pose>
     </model>
 
   </world>

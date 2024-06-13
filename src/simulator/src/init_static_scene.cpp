@@ -58,7 +58,7 @@ void init_scene_epistemic()
   /* Define the pose of the object. */
   box_1.primitive_poses.resize(1);  
   box_1.primitive_poses[0].position.x = 0.85;
-  box_1.primitive_poses[0].position.y = 0.2;
+  box_1.primitive_poses[0].position.y = -0.25;
   box_1.primitive_poses[0].position.z = 0.89;
   box_1.primitive_poses[0].orientation.w = 1.0;
 
@@ -83,12 +83,36 @@ void init_scene_epistemic()
   /* Define the pose of the object. */
   box_2.primitive_poses.resize(1);  
   box_2.primitive_poses[0].position.x = 0.85;
-  box_2.primitive_poses[0].position.y = -0.20;
+  box_2.primitive_poses[0].position.y = 0.1;
   box_2.primitive_poses[0].position.z = 0.89;
   box_2.primitive_poses[0].orientation.w = 1.0;
 
   box_2.operation = box_2.ADD;
   planning_scene_interface.applyCollisionObject(box_2);
+
+    /* Box 3 */
+
+  moveit_msgs::CollisionObject box_3;
+  box_3.id = "box_3";
+  box_3.header.frame_id = "world";
+
+  /* Define the primitive and its dimensions. */
+  box_3.primitives.resize(1);
+  box_3.primitives[0].type = box_3.primitives[0].BOX;
+  box_3.primitives[0].dimensions.resize(3);
+  box_3.primitives[0].dimensions[0] = 0.42;
+  box_3.primitives[0].dimensions[1] = 0.42;
+  box_3.primitives[0].dimensions[2] = 0.38;
+
+  /* Define the pose of the object. */
+  box_3.primitive_poses.resize(1);  
+  box_3.primitive_poses[0].position.x = 0.85;
+  box_3.primitive_poses[0].position.y = 0.45;
+  box_3.primitive_poses[0].position.z = 0.89;
+  box_3.primitive_poses[0].orientation.w = 1.0;
+
+  box_3.operation = box_3.ADD;
+  planning_scene_interface.applyCollisionObject(box_3);
 
 
   /* cube */

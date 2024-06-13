@@ -853,17 +853,7 @@ def compute_msg_action_epistemic(a):
         else:
             msg.obj_name=a.parameters[0]
 
-        if a.agent=="H":
-            if a.parameters[1]=="box_1":
-                msg.location="l4"
-            if a.parameters[1]=="box_2":
-                msg.location="l3"
-        else:
-            if a.parameters[1]=="box_1":
-                msg.location="l2"
-            if a.parameters[1]=="box_2":
-                msg.location="l1"
-
+        msg.location = a.parameters[1] + "_" + a.agent
 
     elif "change_focus_towards"==a.name:
         msg.type=Action.TURN_AROUND
