@@ -623,6 +623,11 @@ def get_next_step(s: ConM.Step, HA: CM.Action, RA: CM.Action):
     
     if executed_pair==None:
         raise Exception("get_next_step: executed pair not found!")
+
+    # If two steps passive, repeat
+    if executed_pair.is_passive() and executed_pair.in_human_option.in_step.from_pair.is_passive():
+        return executed_pair.in_human_option.in_step.from_pair.in_human_option.in_step
+
     return executed_pair.next[0].in_human_option.in_step
 
 def convert_rank_to_score(rank, nb):
