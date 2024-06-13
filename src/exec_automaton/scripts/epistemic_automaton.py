@@ -226,7 +226,8 @@ def exec_epistemic(init_step):
                 wait_human_decision(curr_step)
                 HA = MOCK_assess_human_action()
 
-                wait_step_end()
+                if not HA.is_passive():
+                    wait_step_end()
 
 
             # Robot Turn
