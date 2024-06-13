@@ -51,8 +51,8 @@ void init_scene_epistemic()
   box_1.primitives.resize(1);
   box_1.primitives[0].type = box_1.primitives[0].BOX;
   box_1.primitives[0].dimensions.resize(3);
-  box_1.primitives[0].dimensions[0] = 0.38;
-  box_1.primitives[0].dimensions[1] = 0.38;
+  box_1.primitives[0].dimensions[0] = 0.42;
+  box_1.primitives[0].dimensions[1] = 0.42;
   box_1.primitives[0].dimensions[2] = 0.38;
 
   /* Define the pose of the object. */
@@ -76,8 +76,8 @@ void init_scene_epistemic()
   box_2.primitives.resize(1);
   box_2.primitives[0].type = box_2.primitives[0].BOX;
   box_2.primitives[0].dimensions.resize(3);
-  box_2.primitives[0].dimensions[0] = 0.38;
-  box_2.primitives[0].dimensions[1] = 0.38;
+  box_2.primitives[0].dimensions[0] = 0.42;
+  box_2.primitives[0].dimensions[1] = 0.42;
   box_2.primitives[0].dimensions[2] = 0.38;
 
   /* Define the pose of the object. */
