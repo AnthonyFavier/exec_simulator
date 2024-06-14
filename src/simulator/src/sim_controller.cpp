@@ -42,21 +42,22 @@ bool g_r_start_moving = false;
 //  DOMAIN DESCRIPTION  //
 std::map<std::string, geometry_msgs::Pose> locations =
     {
-        {"box_1_R",  make_pose(make_point(0.72, -0.2, 1.15), make_quaternion())},
-        {"box_2_R",  make_pose(make_point(0.72, 0.1, 1.15), make_quaternion())},
-        {"box_3_R",  make_pose(make_point(0.72, 0.4, 1.15), make_quaternion())},
-        {"box_1_H",  make_pose(make_point(0.98, -0.2, 1.15), make_quaternion())},
-        {"box_2_H",  make_pose(make_point(0.98, 0.1, 1.15), make_quaternion())},
-        {"box_3_H",  make_pose(make_point(0.98, 0.4, 1.15), make_quaternion())},
+        {"box_1_R",     make_pose(make_point(0.72, -0.2, 1.15),     make_quaternion())},
+        {"box_2_R",     make_pose(make_point(0.72, 0.1, 1.15),      make_quaternion())},
+        {"box_3_R",     make_pose(make_point(0.72, 0.4, 1.15),      make_quaternion())},
+        {"box_1_H",     make_pose(make_point(0.98, -0.2, 1.15),     make_quaternion())},
+        {"box_2_H",     make_pose(make_point(0.98, 0.1, 1.15),      make_quaternion())},
+        {"box_3_H",     make_pose(make_point(0.98, 0.4, 1.15),      make_quaternion())},
 };
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
-        {"box_opaque_1",        make_pose(make_point(0.85, -0.25, 0.7),         make_quaternion())},
-        {"box_transparent_1",   make_pose(make_point(0.85, 0.1, 0.7),           make_quaternion())},
-        {"box_opaque_2",        make_pose(make_point(0.85, 0.45, 0.7),          make_quaternion())},
-        {"b1",                  make_pose(make_point(5.9, 0, 0.75),             make_quaternion())},
-        {"r1",                  make_pose(make_point(0.5,  -0.6, 0.75),         make_quaternion())},
+        {"box_1_cover",       make_pose(make_point(0.85, -0.25, 0.7),     make_quaternion())},
+        {"box_2_cover",       make_pose(make_point(0.85, 0.1, 0.7),       make_quaternion())},
+        {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),      make_quaternion())},
+        {"b1",                make_pose(make_point(5.9, 0, 0.75),         make_quaternion())},
+        {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),     make_quaternion())},
 };
+
 
 // Deprecated for epistemic
 class DropZone
@@ -925,6 +926,38 @@ bool set_synchro_step_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolRes
     return true;
 }
 
+bool set_box_cover_server(sim_msgs::SetBoxCoverRequest &req, sim_msgs::SetBoxCoverResponse &res)
+{
+    gazebo_msgs::SetModelState srv_set;
+    geometry_msgs::Pose far_pose = make_pose(make_point(0, 0, -1), make_quaternion_RPY(0,0,0));
+
+    /* Box 1 */
+    srv_set.request.model_state.model_name = "box_1_cover";
+    if(req.box_1)
+        srv_set.request.model_state.pose = init_poses["box_1_cover"];
+    else
+        srv_set.request.model_state.pose = far_pose;
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    /* Box 2 */
+    srv_set.request.model_state.model_name = "box_2_cover";
+    if(req.box_2)
+        srv_set.request.model_state.pose = init_poses["box_2_cover"];
+    else
+        srv_set.request.model_state.pose = far_pose;
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    /* Box 3 */
+    srv_set.request.model_state.model_name = "box_3_cover";
+    if(req.box_3)
+        srv_set.request.model_state.pose = init_poses["box_3_cover"];
+    else
+        srv_set.request.model_state.pose = far_pose;
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     init_cubes();
@@ -998,6 +1031,8 @@ int main(int argc, char **argv)
 
     // set_synchro_step_client = node_handle.serviceClient<std_srvs::SetBool>("/set_synchro_step");
     ros::ServiceServer set_synchro_step_service = node_handle.advertiseService("set_synchro_step", set_synchro_step_server);
+    
+    ros::ServiceServer set_box_cover_service = node_handle.advertiseService("set_box_cover", set_box_cover_server);
 
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);

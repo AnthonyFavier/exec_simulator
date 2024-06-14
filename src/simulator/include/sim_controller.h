@@ -25,6 +25,7 @@
 #include "gazebo_ros_link_attacher/Attach.h"
 #include "gazebo_msgs/SetLinkState.h"
 #include "sim_msgs/HeadCmd.h"
+#include "sim_msgs/SetBoxCover.h"
 
 #define ROBOT_ATTACH_MODEL_NAME "tiago"
 #define ROBOT_ATTACH_LINK_NAME "arm_7_link"

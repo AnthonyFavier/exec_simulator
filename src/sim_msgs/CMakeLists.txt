@@ -20,6 +20,7 @@ add_service_files(
   MoveArm.srv
   AttachObj.srv
   Int.srv
+  SetBoxCover.srv
 )
 
 generate_messages(
