@@ -51,12 +51,9 @@ std::map<std::string, geometry_msgs::Pose> locations =
 };
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
-        {"scene",               make_pose(make_point(0.0, 0.0, 0.0),            make_quaternion())},
         {"box_opaque_1",        make_pose(make_point(0.85, -0.25, 0.7),         make_quaternion())},
         {"box_transparent_1",   make_pose(make_point(0.85, 0.1, 0.7),           make_quaternion())},
         {"box_opaque_2",        make_pose(make_point(0.85, 0.45, 0.7),          make_quaternion())},
-        {"main_table",          make_pose(make_point(0.852639, 0.0, 0.7),       make_quaternion())},
-        {"side_table",          make_pose(make_point(6.0, 0.0, 0.7),            make_quaternion())},
         {"b1",                  make_pose(make_point(5.9, 0, 0.75),             make_quaternion())},
         {"r1",                  make_pose(make_point(0.5,  -0.6, 0.75),         make_quaternion())},
 };
@@ -811,36 +808,37 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
         (*it).setOccupied(false);
 
     // Get world models
-    ROS_INFO("\tGet world models");
-    gazebo_msgs::GetWorldProperties srv;
-    if (!get_world_properties.call(srv) || !srv.response.success)
-        throw ros::Exception("Calling get_world_properties failed...");
+    // ROS_INFO("\tGet world models");
+    // gazebo_msgs::GetWorldProperties srv;
+    // if (!get_world_properties.call(srv) || !srv.response.success)
+    //     throw ros::Exception("Calling get_world_properties failed...");
 
     // Detach and reset pose of world models
     ROS_INFO("\tDetach and reset world pose of models");
     gazebo_ros_link_attacher::Attach srv_attach;
     gazebo_msgs::SetModelState srv_set;
-    for (std::vector<std::string>::iterator it = srv.response.model_names.begin(); it != srv.response.model_names.end(); it++)
+
+    for(auto const& x: init_poses)
     {
-        if ("human_hand" != (*it) && "tiago" != (*it))
-        {
-            // Detach obj from robot
-            srv_attach.request.model_name_2 = (*it);
-            srv_attach.request.link_name_2 = "link";
-            srv_attach.request.model_name_1 = ROBOT_ATTACH_MODEL_NAME;
-            srv_attach.request.link_name_1 = ROBOT_ATTACH_LINK_NAME;
-            detach_plg_client[AGENT::ROBOT].call(srv_attach);
+        std::string obj_name = x.first;
+        geometry_msgs::Pose obj_pose = x.second;
 
-            // Detach obj from human hand
-            srv_attach.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
-            srv_attach.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
-            detach_plg_client[AGENT::HUMAN].call(srv_attach);
+        // Detach obj from robot
+        srv_attach.request.model_name_2 = obj_name;
+        srv_attach.request.link_name_2 = "link";
+        srv_attach.request.model_name_1 = ROBOT_ATTACH_MODEL_NAME;
+        srv_attach.request.link_name_1 = ROBOT_ATTACH_LINK_NAME;
+        detach_plg_client[AGENT::ROBOT].call(srv_attach);
 
-            // Set obj to initial pose
-            srv_set.request.model_state.model_name = (*it);
-            srv_set.request.model_state.pose = init_poses[(*it)];
-            set_model_state_client[AGENT::ROBOT].call(srv_set);
-        }
+        // Detach obj from human hand
+        srv_attach.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
+        srv_attach.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
+        detach_plg_client[AGENT::HUMAN].call(srv_attach);
+
+        // Set obj to initial pose
+        srv_set.request.model_state.model_name = obj_name;
+        srv_set.request.model_state.pose = obj_pose;
+        set_model_state_client[AGENT::ROBOT].call(srv_set);
     }
 
     // Reset robot head
