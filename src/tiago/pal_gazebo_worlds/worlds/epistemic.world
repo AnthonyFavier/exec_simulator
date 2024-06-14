@@ -24,7 +24,7 @@
 
     <model name='bird_camera'>
       <static>true</static>
-      <pose>-1 0 4 0 1 0</pose>
+      <pose>-3 0 10 0 1 0</pose>
       <link name='link'>
         <visual name='visual'>
           <geometry>
@@ -49,7 +49,7 @@
             </clip>
           </camera>
           <always_on>1</always_on>
-          <update_rate>30</update_rate>
+          <update_rate>2</update_rate>
         </sensor>
       </link>
     </model>
