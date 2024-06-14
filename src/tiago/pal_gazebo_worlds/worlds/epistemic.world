@@ -209,16 +209,16 @@
 
     <!-- box_opaque_1 -->
     <model name='box_opaque_1'>
-      <link name='box_opaque_1_link'>
+      <link name='link'>
         <inertial>
-          <mass>1</mass>
+          <mass>1000</mass>
           <inertia>
-            <ixx>0.166667</ixx>
+            <ixx>10.166667</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>0.166667</iyy>
+            <iyy>10.166667</iyy>
             <iyz>0</iyz>
-            <izz>0.166667</izz>
+            <izz>10.166667</izz>
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
@@ -226,8 +226,8 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
         <pose>0 0 0 0 -0 0</pose>
-        <gravity>0</gravity>
-        <visual name='box_opaque_1_link'>
+        <gravity>1</gravity>
+        <visual name='visual'>
           <geometry>
             <mesh>
               <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/box_opaque.stl</uri>
@@ -250,23 +250,23 @@
           </geometry>
         </collision>
       </link>
-      <static>1</static>
+      <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.85 -0.25 0.7  0 0 0</pose>
     </model>
 
     <!-- box_transparent_1 -->
     <model name='box_transparent_1'>
-      <link name='box_transparent_1_link'>
+      <link name='link'>
         <inertial>
-          <mass>1</mass>
+          <mass>1000</mass>
           <inertia>
-            <ixx>0.166667</ixx>
+            <ixx>10.166667</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>0.166667</iyy>
+            <iyy>10.166667</iyy>
             <iyz>0</iyz>
-            <izz>0.166667</izz>
+            <izz>10.166667</izz>
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
@@ -274,8 +274,8 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
         <pose>0 0 0 0 -0 0</pose>
-        <gravity>0</gravity>
-        <visual name='box_transparent_1_link'>
+        <gravity>1</gravity>
+        <visual name='visual'>
           <geometry>
             <mesh>
               <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/box_transparent.stl</uri>
@@ -298,24 +298,23 @@
           </geometry>
         </collision>
       </link>
-      <static>1</static>
+      <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.85 0.1 0.7  0 0 0</pose>
     </model>
 
-
     <!-- box_opaque_2 -->
     <model name='box_opaque_2'>
-      <link name='box_opaque_2_link'>
+      <link name='link'>
         <inertial>
-          <mass>1</mass>
+          <mass>1000</mass>
           <inertia>
-            <ixx>0.166667</ixx>
+            <ixx>10.166667</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>0.166667</iyy>
+            <iyy>10.166667</iyy>
             <iyz>0</iyz>
-            <izz>0.166667</izz>
+            <izz>10.166667</izz>
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
@@ -323,8 +322,8 @@
         <enable_wind>0</enable_wind>
         <kinematic>0</kinematic>
         <pose>0 0 0 0 -0 0</pose>
-        <gravity>0</gravity>
-        <visual name='box_opaque_2_link'>
+        <gravity>1</gravity>
+        <visual name='visual'>
           <geometry>
             <mesh>
               <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/box_opaque.stl</uri>
@@ -347,7 +346,7 @@
           </geometry>
         </collision>
       </link>
-      <static>1</static>
+      <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.85 0.45 0.7  0 0 0</pose>
     </model>
