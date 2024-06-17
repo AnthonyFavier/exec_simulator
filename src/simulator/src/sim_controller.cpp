@@ -229,8 +229,8 @@ enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SID
 HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
 geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
 geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
-geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(2.98,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
-geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(5.22, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(3.48 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(5.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
 
 double delta_move_x = 1.5;
 void TurnAround()
