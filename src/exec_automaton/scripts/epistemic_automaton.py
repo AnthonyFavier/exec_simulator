@@ -267,18 +267,29 @@ def exec_epistemic(init_step):
             g_set_synchro_step_client(False)
 
             # Monitor if RA/HA done, and send new one to exec until both lists are done
-            while len(RAs) or len(HAs) or not g_robot_action_done or not g_human_action_done:
+            robot_done = False
+            human_done = False
+            while not rospy.is_shutdown() and (not human_done or not robot_done):
 
-                if len(RAs) and g_robot_action_done:
-                    start_execute_RA(RAs.pop(0))
-                    g_robot_action_done = False
+                if g_robot_action_done:
+                    if len(RAs):
+                        start_execute_RA(RAs.pop(0))
+                        g_robot_action_done = False
+                    else:
+                        robot_done = True
+                        reset_head()
 
-                if len(HAs) and g_human_action_done:
-                    sound_ns.play()
-                    HA = HAs.pop(0)
-                    g_possible_human_actions = [HA]
-                    send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
-                    g_human_action_done = False
+                if g_human_action_done:
+                    if len(HAs):
+                        sound_ns.play()
+                        HA = HAs.pop(0)
+                        g_possible_human_actions = [HA]
+                        send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
+                        g_human_action_done = False
+                    else:   
+                        human_done = True
+
+                rospy.sleep(0.1)
 
             # enable step synchro
             g_set_synchro_step_client(True)
