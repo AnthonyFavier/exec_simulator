@@ -25,6 +25,8 @@ ros::Publisher h_control_camera_pub;
 ros::Publisher robot_action_done_pub;
 ros::Publisher human_action_done_pub;
 
+ros::Publisher move_human_body_pub;
+
 ros::ServiceClient set_link_state_client;
 
 ros::ServiceClient set_synchro_step_client;
@@ -266,7 +268,12 @@ void TurnAround()
 	link_state.request.link_state.pose = make_pose(make_point(0,0,5), make_quaternion_RPY(0,0,0));
     set_link_state_client.call(link_state);
 
-    // turn around
+    // Turn human body
+    std_msgs::Int32 msg_body;
+    msg_body.data = 0;
+    move_human_body_pub.publish(msg_body);
+
+    // turn around camera
     std_msgs::Int32 msg;
     msg.data = 0;
     h_control_camera_pub.publish(msg);
@@ -303,7 +310,12 @@ void MoveForward()
 	link_state.request.link_state.pose = make_pose(make_point(0,0,5), make_quaternion_RPY(0,0,0));
     set_link_state_client.call(link_state);
 
-    // move forward
+    // Move human body
+    std_msgs::Int32 msg_body;
+    msg_body.data = 1;
+    move_human_body_pub.publish(msg_body);
+
+    // move forward camera
     std_msgs::Int32 msg;
     msg.data = 1;
     h_control_camera_pub.publish(msg);
@@ -870,6 +882,11 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     // Set synchro step
     g_step_synchro_on = true;
 
+    // Reset human body
+    std_msgs::Int32 msg_body;
+    msg_body.data = -1;
+    move_human_body_pub.publish(msg_body);
+
     ROS_INFO("World reset ok");
 
     return true;
@@ -1025,6 +1042,8 @@ int main(int argc, char **argv)
 
     robot_action_done_pub = node_handle.advertise<std_msgs::Empty>("/robot_action_done", 1);
     human_action_done_pub = node_handle.advertise<std_msgs::Empty>("/human_action_done", 1);
+
+    move_human_body_pub = node_handle.advertise<std_msgs::Int32>("/move_human_body", 1);
 
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");

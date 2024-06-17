@@ -9,6 +9,9 @@
         <node name="own_move_hand" type="own_move_hand" pkg="simulator" respawn="false" output="screen"/>
     </group>
 
+    <node name="move_human_body" type="move_human_body" pkg="simulator" respawn="false" output="screen"/>
+
+
     <!-- SIM CONTROLLER -->
     <node name="sim_controller" pkg="simulator" type="sim_controller" respawn="false" output="screen"/>
 

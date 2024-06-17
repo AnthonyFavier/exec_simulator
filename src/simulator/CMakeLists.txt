@@ -45,6 +45,7 @@ move_arm
 move_hand
 own_move_hand
 sim_controller
+move_human_body
 )
 
 foreach(NODE ${EXEC_LIST})
