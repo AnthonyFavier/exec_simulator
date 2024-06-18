@@ -22,10 +22,11 @@
       </camera>
     </gui>
 
-    <model name='bird_camera'>
-      <static>true</static>
-      <pose>-3 0 10 0 1 0</pose>
-      <link name='link'>
+    <model name="bird_camera">
+      <static>false</static>
+      <pose>-3 0 8 0 1 0</pose>
+      <link name="bird_camera_link">
+        <gravity>0</gravity>
         <visual name='visual'>
           <geometry>
             <box>
@@ -33,15 +34,13 @@
             </box>
           </geometry>
         </visual>
-        <sensor name='my_camera' type='camera'>
+        <sensor name="bird_camera" type="camera">
           <camera>
-            <save enabled="true">
-              <path>/tmp/camera_save_tutorial</path>
-            </save>
             <horizontal_fov>1.047</horizontal_fov>
             <image>
-              <width>1920</width>
-              <height>1080</height>
+              <width>800</width>
+              <height>800</height>
+              <format>R8G8B8</format>
             </image>
             <clip>
               <near>0.1</near>
@@ -49,10 +48,20 @@
             </clip>
           </camera>
           <always_on>1</always_on>
-          <update_rate>2</update_rate>
+          <update_rate>20</update_rate>
+          <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+            <alwaysOn>true</alwaysOn>
+            <updateRate>0.0</updateRate>
+            <cameraName>bird_camera</cameraName>
+            <frameName>bird_camera_link</frameName>
+            <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+            <imageTopicName>image_raw</imageTopicName>
+            <hackBaseline>0.07</hackBaseline>
+          </plugin>
         </sensor>
       </link>
     </model>
+    
 
 
     <gravity>0 0 -4.9</gravity>
