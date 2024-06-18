@@ -234,7 +234,8 @@ geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.
 geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(3.48 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
 geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(5.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
 
-double delta_move_x = 1.5;
+geometry_msgs::Pose hand_pose_far = make_pose(make_point(0,0,10), make_quaternion_RPY(0,0,0));
+
 void TurnAround()
 {
     // compute new hand pose
@@ -265,7 +266,7 @@ void TurnAround()
     // hand disapear 
     gazebo_msgs::SetLinkState link_state;
 	link_state.request.link_state.link_name = "human_hand_link";
-	link_state.request.link_state.pose = make_pose(make_point(0,0,5), make_quaternion_RPY(0,0,0));
+	link_state.request.link_state.pose = hand_pose_far;
     set_link_state_client.call(link_state);
 
     // Turn human body
@@ -278,12 +279,18 @@ void TurnAround()
     msg.data = 0;
     h_control_camera_pub.publish(msg);
 
-    sleep(2);
+    sleep(1.9);
 
-    // move hand 
-	link_state.request.link_state.link_name = "human_hand_link";
-	link_state.request.link_state.pose = new_hand_pose;
-    set_link_state_client.call(link_state);
+    for(int i=0; i<2; i++)
+    {
+        ROS_INFO("move hand");
+        // move hand 
+        link_state.request.link_state.link_name = "human_hand_link";
+        link_state.request.link_state.pose = new_hand_pose;
+        set_link_state_client.call(link_state);
+
+        sleep(0.1);
+    }
 
 }
 
@@ -307,7 +314,7 @@ void MoveForward()
     // hand disapear 
     gazebo_msgs::SetLinkState link_state;
 	link_state.request.link_state.link_name = "human_hand_link";
-	link_state.request.link_state.pose = make_pose(make_point(0,0,5), make_quaternion_RPY(0,0,0));
+	link_state.request.link_state.pose = hand_pose_far;
     set_link_state_client.call(link_state);
 
     // Move human body
@@ -320,12 +327,17 @@ void MoveForward()
     msg.data = 1;
     h_control_camera_pub.publish(msg);
 
-    sleep(2);
+    sleep(3.4);
 
-    // move hand 
-	link_state.request.link_state.link_name = "human_hand_link";
-	link_state.request.link_state.pose = new_hand_pose;
-    set_link_state_client.call(link_state);
+    for(int i=0; i<2; i++)
+    {
+        // move hand 
+        link_state.request.link_state.link_name = "human_hand_link";
+        link_state.request.link_state.pose = new_hand_pose;
+        set_link_state_client.call(link_state);
+
+        sleep(0.1);
+    }
 
 }
 
