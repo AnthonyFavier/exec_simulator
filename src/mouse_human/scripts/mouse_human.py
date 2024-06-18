@@ -33,6 +33,16 @@ DOMAIN_NAME = "epistemic"
 ## LOGGER ##
 # logging.config.fileConfig(path + 'log.conf')
 
+def quaternion_msgs_from_rpy(r,p,y):
+    x,y,z,w = quaternion_from_euler(r,p,y)
+    return Quaternion(x,y,z,w)
+
+
+TURN_BUTTON_POSE_MAIN = Pose( Point(2.0, -0.35, 1.63), quaternion_msgs_from_rpy(3.14159, -0.6, 0))
+MOVE_BUTTON_POSE_MAIN = Pose( Point(3.4, 0, 1.75), quaternion_msgs_from_rpy(1.57, 0.6, 0))
+
+TURN_BUTTON_POSE_SIDE = Pose( Point(5.2, 0.35, 1.63), quaternion_msgs_from_rpy(0, 0.6, 0))
+MOVE_BUTTON_POSE_SIDE = Pose( Point(3.8, 0, 1.75), quaternion_msgs_from_rpy(1.57, -0.6, 0))
 
 class Zone:
     def __init__(self, id, pose, valid_actions) -> None:
@@ -101,7 +111,7 @@ def create_zone(id, x, y, w, h, list_actions):
 if DOMAIN_NAME=="epistemic":
     create_zone(0,      0,0,500,1080,       ["change_focus_towards"])
     create_zone(1,      0,0,1920,300,       ["move_to_table"])
-    create_zone(2,      901,548,122,141,    ["pick"])
+    create_zone(2,      1211,561,104,116,   ["pick"])
     create_zone(3,      634,374,312,378,    ["place_1('w1', 'box_1')"])
     create_zone(4,      973,374,312,378,    ["place_1('w1', 'box_2')"])
     create_zone(5,      0,0,0,0,            ["communicate_if_cube_can_be_put"])
@@ -127,6 +137,9 @@ def hide_all_zones(req = None):
     #     srv.model_state.pose = g_far_zone_pose
     #     srv.model_state.reference_frame = "world" 
     #     g_set_model_state_client(srv)
+
+    hide_move_buttons()
+
     return EmptyResponse()
 
 def show_all_zones(req = None):
@@ -242,6 +255,39 @@ def reset_auto_pass_cb(msg):
     global AUTO_PASS
     AUTO_PASS = False
 
+
+def show_turn_buttons(req = None):
+    srv = SetModelStateRequest()
+    srv.model_state.model_name="move_button_main"
+    srv.model_state.pose = TURN_BUTTON_POSE_MAIN
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="move_button_side"
+    srv.model_state.pose = TURN_BUTTON_POSE_SIDE
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+def show_move_buttons(req = None):
+    srv = SetModelStateRequest()
+    srv.model_state.model_name="move_button_main"
+    srv.model_state.pose = MOVE_BUTTON_POSE_MAIN
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="move_button_side"
+    srv.model_state.pose = MOVE_BUTTON_POSE_SIDE
+    srv.model_state.reference_frame = "world"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+def hide_move_buttons(req = None):
+    srv = SetModelStateRequest()
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    srv.model_state.model_name="move_button_main"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="move_button_side"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+
 #########
 ## ROS ##
 #########
@@ -278,6 +324,13 @@ def incoming_vha_cb(msg: VHA):
             for z_a in z.valid_actions:
                 if z_a == ha[:len(z_a)]: # ha starts with z_a
                     z.current_action_id = i+1
+
+                    # If turn or move actions, show buttons
+                    if z_a == "change_focus_towards":
+                        show_turn_buttons()
+                    elif z_a =="move_to_table":
+                        show_move_buttons()
+
                     break
             if z.current_action_id != -10:
                 break
@@ -346,6 +399,9 @@ def main():
     hide_tuto_zones_service = rospy.Service("hide_tuto_zones", EmptyS, hide_tuto_zones)
     show_auto_pass_indicator_service = rospy.Service("show_auto_pass_indicator", EmptyS, show_auto_pass_indicator)
     hide_auto_pass_indicator_service = rospy.Service("hide_auto_pass_indicator", EmptyS, hide_auto_pass_indicator)
+    show_turn_buttons_service = rospy.Service("show_turn_buttons", EmptyS, show_turn_buttons)
+    show_move_buttons_service = rospy.Service("show_move_buttons", EmptyS, show_move_buttons)
+    hide_move_buttons_service = rospy.Service("hide_move_buttons", EmptyS, hide_move_buttons)
 
     auto_pass_pub = rospy.Publisher("/auto_pass_state", Bool, queue_size=1)
 
@@ -369,6 +425,16 @@ def main():
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"prompt_button", sdff, "", g_far_zone_pose, "world")
     print(f"prompt_button spawned")
+
+    # spawn move_button
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/move_button.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+    spawn_model_prox(f"move_button_main", sdff, "", g_far_zone_pose, "world")
+    print(f"move_button main spawned")
+    spawn_model_prox(f"move_button_side", sdff, "", g_far_zone_pose, "world")
+    print(f"move_button side spawned")
 
     # spawn tuto zones
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t1.sdf','r')
