@@ -32,6 +32,8 @@ ros::ServiceClient set_link_properties_client;
 
 ros::ServiceClient set_synchro_step_client;
 
+ros::ServiceClient hide_move_buttons_client;
+
 bool g_step_synchro_on = true;
 
 
@@ -890,6 +892,11 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     std_msgs::String prompt_msg;
     prompt_pub.publish(prompt_msg);
 
+    // Reset move buttons
+    ROS_INFO("\tReset move buttions");
+    std_srvs::Empty empty_srv;
+    hide_move_buttons_client.call(empty_srv);
+
     // Reset Camera
     ROS_INFO("\tReset camera");
     std_msgs::Int32 camera_reset_msg;
@@ -1063,6 +1070,8 @@ int main(int argc, char **argv)
     human_action_done_pub = node_handle.advertise<std_msgs::Empty>("/human_action_done", 1);
 
     move_human_body_pub = node_handle.advertise<std_msgs::Int32>("/move_human_body", 1);
+    
+    hide_move_buttons_client = node_handle.serviceClient<std_srvs::Empty>("/hide_move_buttons");
 
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
