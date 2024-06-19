@@ -28,6 +28,7 @@ ros::Publisher human_action_done_pub;
 ros::Publisher move_human_body_pub;
 
 ros::ServiceClient set_link_state_client;
+ros::ServiceClient set_link_properties_client;
 
 ros::ServiceClient set_synchro_step_client;
 
@@ -166,6 +167,8 @@ void PickName(AGENT agent, std::string obj_name)
     move_pose_target(agent, obj_pose);
 
     /* GRAB OBJ */
+    set_mass_obj(obj_name, false);
+    adjust_obj_pose(agent, obj_name, obj_pose);
     grab_obj(agent, obj_name);
 
     /* HOME POSITION */
@@ -188,8 +191,10 @@ void PlacePose(AGENT agent, geometry_msgs::Pose pose)
     move_pose_target(agent, pose);
 
     /* DROP OBJ */
-    drop(agent, g_holding[agent]);
-    adjust_obj_pose(agent, g_holding[agent], pose);
+    std::string obj_name = g_holding[agent];
+    drop(agent, obj_name);
+    adjust_obj_pose(agent, obj_name, pose);
+    set_mass_obj(obj_name, true);
 
     /* HOME POSITION */
     move_home(agent);
@@ -234,7 +239,7 @@ geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.
 geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(3.48 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
 geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(5.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
 
-geometry_msgs::Pose hand_pose_far = make_pose(make_point(0,0,10), make_quaternion_RPY(0,0,0));
+geometry_msgs::Pose hand_pose_far = make_pose(make_point(0,0,-1), make_quaternion_RPY(0,0,0));
 
 void TurnAround()
 {
@@ -263,11 +268,6 @@ void TurnAround()
             break;}
     }    
 
-    // hand disapear 
-    gazebo_msgs::SetLinkState link_state;
-	link_state.request.link_state.link_name = "human_hand_link";
-	link_state.request.link_state.pose = hand_pose_far;
-    set_link_state_client.call(link_state);
 
     // Turn human body
     std_msgs::Int32 msg_body;
@@ -279,18 +279,8 @@ void TurnAround()
     msg.data = 0;
     h_control_camera_pub.publish(msg);
 
-    sleep(1.9);
-
-    for(int i=0; i<2; i++)
-    {
-        ROS_INFO("move hand");
-        // move hand 
-        link_state.request.link_state.link_name = "human_hand_link";
-        link_state.request.link_state.pose = new_hand_pose;
-        set_link_state_client.call(link_state);
-
-        sleep(0.1);
-    }
+    // Move hand
+    move_pose_target(AGENT::HUMAN, new_hand_pose, false, 3);
 
 }
 
@@ -311,11 +301,6 @@ void MoveForward()
             break;}
     }
 
-    // hand disapear 
-    gazebo_msgs::SetLinkState link_state;
-	link_state.request.link_state.link_name = "human_hand_link";
-	link_state.request.link_state.pose = hand_pose_far;
-    set_link_state_client.call(link_state);
 
     // Move human body
     std_msgs::Int32 msg_body;
@@ -327,17 +312,8 @@ void MoveForward()
     msg.data = 1;
     h_control_camera_pub.publish(msg);
 
-    sleep(3.4);
-
-    for(int i=0; i<2; i++)
-    {
-        // move hand 
-        link_state.request.link_state.link_name = "human_hand_link";
-        link_state.request.link_state.pose = new_hand_pose;
-        set_link_state_client.call(link_state);
-
-        sleep(0.1);
-    }
+    // Move hand
+    move_pose_target(AGENT::HUMAN, new_hand_pose, false, 2);
 
 }
 
@@ -493,13 +469,15 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 
 
 // ************************* LOW LEVEL ACTIONS **************************** //
-void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool human_home /* = false */)
+void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool human_home /* = false */, int hand_speed /* = 1 */)
 {
     ROS_INFO_STREAM("\t\t" << get_agent_str(agent).c_str() << std::setprecision(4) << " MOVE_POSE_TARGET START (" 
         << pose_target.position.x << ", " << pose_target.position.y << ", " << pose_target.position.z << ")" <<
         " (" << pose_target.orientation.x << ", " << pose_target.orientation.y << ", " << pose_target.orientation.z << ", " << pose_target.orientation.w << ")");
     sim_msgs::MoveArm srv;
     srv.request.pose_target = pose_target;
+
+    srv.request.hand_speed = hand_speed;
 
     /* OFFSET POSE if human and not home */
     if (!isRobot(agent) && !human_home)
@@ -585,7 +563,7 @@ void grab_obj(AGENT agent, const std::string &object)
         srv.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
     }
     srv.request.model_name_2 = object;
-    srv.request.link_name_2 = "link";
+    srv.request.link_name_2 = object+"_link";
     if (!attach_plg_client[agent].call(srv) || !srv.response.ok)
         throw ros::Exception("Calling service attach_plg_client failed...");
 
@@ -615,10 +593,12 @@ void drop(AGENT agent, const std::string &object)
         srv.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
     }
     srv.request.model_name_2 = object;
-    srv.request.link_name_2 = "link";
+    srv.request.link_name_2 = object+"_link";
     std::cout << agent << " " << srv.request.model_name_1 << " " << srv.request.link_name_1 << " " << srv.request.model_name_2 << " " << srv.request.link_name_2 << std::endl;
     if (!detach_plg_client[agent].call(srv) || !srv.response.ok)
         throw ros::Exception("Calling service detach_plg_client failed...");
+
+    g_holding[agent] = "";
 
     ROS_INFO("\t\t%s DROP END", get_agent_str(agent).c_str());
 }
@@ -707,6 +687,31 @@ void robot_head_follow_stack(AGENT agent)
         msg.type = sim_msgs::HeadCmd::FOLLOW_STACK;
         head_cmd_pub.publish(msg);
     }
+}
+
+void set_mass_obj(std::string obj_name, bool enable)
+{
+    gazebo_msgs::SetLinkProperties srv;
+    srv.request.link_name = obj_name+"_link";
+
+    if(enable)
+    {
+        srv.request.gravity_mode = true;
+        srv.request.mass = 0.1;
+        srv.request.ixx = 0.001;
+        srv.request.iyy = 0.001;
+        srv.request.izz = 0.001;
+    }
+    else
+    {
+        srv.request.gravity_mode = false;
+        srv.request.mass = 0.000001;
+        srv.request.ixx = 0.000001;
+        srv.request.iyy = 0.000001;
+        srv.request.izz = 0.000001;
+    }
+
+    set_link_properties_client.call(srv);
 }
 
 // ****************************** UTILS ******************************* //
@@ -850,7 +855,7 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
 
         // Detach obj from robot
         srv_attach.request.model_name_2 = obj_name;
-        srv_attach.request.link_name_2 = "link";
+        srv_attach.request.link_name_2 = obj_name+"_link";
         srv_attach.request.model_name_1 = ROBOT_ATTACH_MODEL_NAME;
         srv_attach.request.link_name_1 = ROBOT_ATTACH_LINK_NAME;
         detach_plg_client[AGENT::ROBOT].call(srv_attach);
@@ -1039,6 +1044,8 @@ int main(int argc, char **argv)
     visual_signals_pub[AGENT::HUMAN] = node_handle.advertise<sim_msgs::Signal>("/human_visual_signals", 10);
 
 	set_link_state_client = node_handle.serviceClient<gazebo_msgs::SetLinkState>("/gazebo/set_link_state");
+	
+    set_link_properties_client = node_handle.serviceClient<gazebo_msgs::SetLinkProperties>("/gazebo/set_link_properties");
 
     ros::Publisher step_over_pub = node_handle.advertise<std_msgs::Empty>("/step_over", 10);
     std_msgs::Empty empty_msg;

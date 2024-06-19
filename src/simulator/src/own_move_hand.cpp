@@ -85,6 +85,7 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
 	get_link_state_client.call(get_link_state);
 	geometry_msgs::Pose start_pose = get_link_state.response.link_state.pose;
 	// std::cout << "start hand pose : " << start_pose.position.x <<","<< start_pose.position.y <<","<< start_pose.position.z << std::endl;
+	// ROS_INFO("\t Start hand: (%f, %f, %f)", round(start_pose.position.x*100)/100, round(start_pose.position.y*100)/100, round(start_pose.position.z*100)/100);
 
 	// Set goal pose
 	geometry_msgs::Pose goal_pose;
@@ -114,9 +115,30 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
 	dir_vec.position.y /= norm;
 	dir_vec.position.z /= norm;
 	// std::cout << "dir vec normalized : " << dir_vec.position.x <<","<< dir_vec.position.y <<","<< dir_vec.position.z << std::endl;
+	// ROS_INFO("\t dir vec normalized: (%f, %f, %f)", round(dir_vec.position.x*100)/100, round(dir_vec.position.y*100)/100, round(dir_vec.position.z*100)/100);
 
 	// Define speed
-	double desired_speed = 0.25; // m/s
+	double desired_speed=0.25;
+	switch(req.hand_speed)
+	{
+		// Pick&Place
+		case 1:
+			ROS_WARN("speed 1");
+			desired_speed = 0.25;
+			break;
+		// Move
+		case 2:
+			ROS_WARN("speed 2");
+			desired_speed = 0.31;
+			break;
+		// Turn
+		case 3:
+			ROS_WARN("speed 3");
+			desired_speed = 0.67;
+			break;
+		default:
+			break;
+	}
 	ros::Rate loop(50); // Hz
 	double step = desired_speed * loop.expectedCycleTime().toSec();
 	// std::cout << "step : " << step << std::endl;
@@ -138,13 +160,16 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
 		curr_pose.position.y += dir_vec.position.y * step;
 		curr_pose.position.z += dir_vec.position.z * step;
 
+		// ROS_INFO("\t Step hand +: (%f, %f, %f)", round(curr_pose.position.x*100)/100, round(curr_pose.position.y*100)/100, round(curr_pose.position.z*100)/100);
+
+
 		// check if the goal pose is reached or passed
-		goal_reached = dir_vec.position.x>=0 && curr_pose.position.x>=goal_pose.position.x
-					|| dir_vec.position.y>=0 && curr_pose.position.y>=goal_pose.position.y
-					|| dir_vec.position.z>=0 && curr_pose.position.z>=goal_pose.position.z
-					|| dir_vec.position.x<=0 && curr_pose.position.x<=goal_pose.position.x
-					|| dir_vec.position.y<=0 && curr_pose.position.y<=goal_pose.position.y
-					|| dir_vec.position.z<=0 && curr_pose.position.z<=goal_pose.position.z;
+		goal_reached = (dir_vec.position.x>=0 && curr_pose.position.x>=goal_pose.position.x
+					|| dir_vec.position.x<=0 && curr_pose.position.x<=goal_pose.position.x)
+					&& (dir_vec.position.y>=0 && curr_pose.position.y>=goal_pose.position.y
+					|| dir_vec.position.y<=0 && curr_pose.position.y<=goal_pose.position.y)
+					&& (dir_vec.position.z>=0 && curr_pose.position.z>=goal_pose.position.z
+					|| dir_vec.position.z<=0 && curr_pose.position.z<=goal_pose.position.z);
 
 		// backtrack if passed the goal
 		if(goal_reached)
@@ -154,12 +179,19 @@ bool move_pose_target_server(sim_msgs::MoveArmRequest &req, sim_msgs::MoveArmRes
 		link_state.request.link_state.pose = curr_pose;
 		set_link_state_client.call(link_state);
 
+		// ROS_INFO("\t Step hand end: (%f, %f, %f)", round(curr_pose.position.x*100)/100, round(curr_pose.position.y*100)/100, round(curr_pose.position.z*100)/100);
+
 		loop.sleep();
 	}
 
-	// move hand link
-	link_state.request.link_state.pose = goal_pose;
-	set_link_state_client.call(link_state);
+	// Stabilize goal ??
+	for(int i=0; i<5; i++)
+	{
+		// move hand link
+		link_state.request.link_state.pose = goal_pose;
+		set_link_state_client.call(link_state);
+		loop.sleep();
+	}
 
 	return true;
 }

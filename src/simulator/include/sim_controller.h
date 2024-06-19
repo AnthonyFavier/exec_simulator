@@ -24,6 +24,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include "gazebo_ros_link_attacher/Attach.h"
 #include "gazebo_msgs/SetLinkState.h"
+#include "gazebo_msgs/SetLinkProperties.h"
 #include "sim_msgs/HeadCmd.h"
 #include "sim_msgs/SetBoxCover.h"
 
@@ -36,7 +37,7 @@
 enum AGENT{ROBOT, HUMAN};
 
 // ************************* LOW LEVEL ACTIONS **************************** //
-void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool human_home = false);
+void move_pose_target(AGENT agent, const geometry_msgs::Pose &pose_target, bool human_home = false, int hand_speed = 1);
 void move_location_target(AGENT agent, const std::string &loc_name);
 void move_obj_target(AGENT agent, const std::string &obj_name);
 void move_home(AGENT agent);
@@ -61,6 +62,7 @@ geometry_msgs::Pose make_pose(geometry_msgs::Point p, geometry_msgs::Quaternion 
 void show_pose(geometry_msgs::Pose pose);
 std::string get_agent_str(AGENT agent);
 bool isRobot(AGENT agent);
+void set_mass_obj(std::string obj_name, bool enable);
 
 
 // ****************************** CALLBACKS ******************************* //

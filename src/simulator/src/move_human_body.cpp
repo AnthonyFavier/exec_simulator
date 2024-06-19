@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 					yaw -= 2*M_PI;
 				q2.setRPY(roll, pitch, yaw);
 
-				ROS_WARN("yaw = %f", yaw);
+				// ROS_WARN("yaw = %f", yaw);
 
 				current_human_pose.orientation = tf2::toMsg(q2);
 

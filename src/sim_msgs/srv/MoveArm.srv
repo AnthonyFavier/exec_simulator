@@ -1,4 +1,5 @@
 geometry_msgs/Pose pose_target
 string named_target
+int32 hand_speed
 ---
 bool success
