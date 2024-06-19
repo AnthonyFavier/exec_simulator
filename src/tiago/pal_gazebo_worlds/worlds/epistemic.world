@@ -22,7 +22,7 @@
       </camera>
     </gui>
 
-    <model name="bird_camera">
+    <!-- <model name="bird_camera">
       <static>false</static>
       <pose>-3 0 8 0 1 0</pose>
       <link name="bird_camera_link">
@@ -60,7 +60,7 @@
           </plugin>
         </sensor>
       </link>
-    </model>
+    </model> -->
     
 
 

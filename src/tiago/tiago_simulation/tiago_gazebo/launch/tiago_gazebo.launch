@@ -73,9 +73,8 @@
   <node name="init_planning_scene" pkg="simulator" type="init_static_scene" args="$(arg world)" respawn="false" output="screen" />
   <node pkg="tf" type="static_transform_publisher" name="odom_world_tf" args="0 0 0 0 0 0 /world /odom 20"/>
 
-  <node name="saving_bird_camera" pkg="simulator" type="saving_bird_camera.py" respawn="false" output="screen" />
-  
-  <node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" args="/bird_camera/image_raw" respawn="false" output="screen" />
+  <!-- <node name="saving_bird_camera" pkg="simulator" type="saving_bird_camera.py" respawn="false" output="screen" /> -->
+  <!-- <node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" args="/bird_camera/image_raw" respawn="false" output="screen" /> -->
 
 
 <!-- ######################################################## -->
