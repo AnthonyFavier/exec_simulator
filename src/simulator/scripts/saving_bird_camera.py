@@ -21,5 +21,5 @@ def image_callback(msg):
 if __name__ == '__main__':
     rospy.init_node('camera_listener', anonymous=True)
     bridge = CvBridge()
-    rospy.Subscriber("/bird_camera/image_raw", Image, image_callback, queue_size=1)
+    rospy.Subscriber("/bird_camera/rgb/image_raw", Image, image_callback, queue_size=1)
     rospy.spin()
