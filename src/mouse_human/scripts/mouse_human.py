@@ -255,7 +255,6 @@ def reset_auto_pass_cb(msg):
     global AUTO_PASS
     AUTO_PASS = False
 
-
 def show_turn_buttons(req = None):
     srv = SetModelStateRequest()
     srv.model_state.model_name="move_button_main"
@@ -285,6 +284,57 @@ def hide_move_buttons(req = None):
     srv.model_state.model_name="move_button_main"
     g_set_model_state_client(srv)
     srv.model_state.model_name="move_button_side"
+    g_set_model_state_client(srv)
+    return EmptyResponse()
+
+Q1_pose = Pose(Point(1.2, 0.53, 1.33), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
+Q2_pose = Pose(Point(1.2, 0.68, 1.33), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
+Q3_pose = Pose(Point(1.2, 0.83, 1.33), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
+Q4_pose = Pose(Point(1.3, 0.67, 1.22), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
+Q5_pose = Pose(Point(1.3, 0.82, 1.22), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
+
+def show_question_buttons(req = None):
+    hide_question_buttons()
+    if req==None:
+        nb = 5
+    else:
+        nb = req.data
+    srv = SetModelStateRequest()
+    srv.model_state.reference_frame = "world"
+    if nb>0:
+        srv.model_state.model_name="q1"
+        srv.model_state.pose = Q1_pose
+        g_set_model_state_client(srv)
+    if nb>1:
+        srv.model_state.model_name="q2"
+        srv.model_state.pose = Q2_pose
+        g_set_model_state_client(srv)
+    if nb>2:
+        srv.model_state.model_name="q3"
+        srv.model_state.pose = Q3_pose
+        g_set_model_state_client(srv)
+    if nb>3:
+        srv.model_state.model_name="q4"
+        srv.model_state.pose = Q4_pose
+        g_set_model_state_client(srv)
+    if nb>4:
+        srv.model_state.model_name="q5"
+        srv.model_state.pose = Q5_pose
+        g_set_model_state_client(srv)
+    return IntResponse()
+def hide_question_buttons(req = None):
+    srv = SetModelStateRequest()
+    srv.model_state.pose = g_far_zone_pose
+    srv.model_state.reference_frame = "world"
+    srv.model_state.model_name="q1"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="q2"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="q3"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="q4"
+    g_set_model_state_client(srv)
+    srv.model_state.model_name="q5"
     g_set_model_state_client(srv)
     return EmptyResponse()
 
@@ -402,6 +452,8 @@ def main():
     show_turn_buttons_service = rospy.Service("show_turn_buttons", EmptyS, show_turn_buttons)
     show_move_buttons_service = rospy.Service("show_move_buttons", EmptyS, show_move_buttons)
     hide_move_buttons_service = rospy.Service("hide_move_buttons", EmptyS, hide_move_buttons)
+    show_question_buttons_service = rospy.Service("show_question_buttons", Int, show_question_buttons)
+    hide_question_buttons_service = rospy.Service("hide_question_buttons", EmptyS, hide_question_buttons)
 
     auto_pass_pub = rospy.Publisher("/auto_pass_state", Bool, queue_size=1)
 
@@ -417,12 +469,12 @@ def main():
 
     # SPAWNING #
     rospy.wait_for_service('gazebo/spawn_sdf_model')
+    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
 
     # spawn prompt button
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/prompt_button.sdf','r')
     sdff = f.read()
     f.close()
-    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"prompt_button", sdff, "", g_far_zone_pose, "world")
     print(f"prompt_button spawned")
 
@@ -430,39 +482,55 @@ def main():
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/move_button.sdf','r')
     sdff = f.read()
     f.close()
-    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"move_button_main", sdff, "", g_far_zone_pose, "world")
     print(f"move_button main spawned")
     spawn_model_prox(f"move_button_side", sdff, "", g_far_zone_pose, "world")
     print(f"move_button side spawned")
 
+    # spawn question buttons
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/q1.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox(f"q1", sdff, "", g_far_zone_pose, "world")
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/q2.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox(f"q2", sdff, "", g_far_zone_pose, "world")
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/q3.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox(f"q3", sdff, "", g_far_zone_pose, "world")
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/q4.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox(f"q4", sdff, "", g_far_zone_pose, "world")
+    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/q5.sdf','r')
+    sdff = f.read()
+    f.close()
+    spawn_model_prox(f"q5", sdff, "", g_far_zone_pose, "world")
+
     # spawn tuto zones
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t1.sdf','r')
     sdff = f.read()
     f.close()
-    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t1", sdff, "", g_far_zone_pose, "world")
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t2.sdf','r')
     sdff = f.read()
     f.close()
-    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t2", sdff, "", g_far_zone_pose, "world")
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t3.sdf','r')
     sdff = f.read()
     f.close()
-    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t3", sdff, "", g_far_zone_pose, "world")
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t4.sdf','r')
     sdff = f.read()
     f.close()
-    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t4", sdff, "", g_far_zone_pose, "world")
 
     # spawn auto_click indicator
     f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/auto_pass_indicator.sdf','r')
     sdff = f.read()
     f.close()
-    spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"auto_pass_indicator", sdff, "", g_far_zone_pose, "world")
 
     ##################
