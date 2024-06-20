@@ -20,7 +20,11 @@ def image_callback(msg):
         rospy.logerr(f"Could not convert image: {e}")
 
 if __name__ == '__main__':
-    os.mkdir("/tmp/camera_save_tutorial")
+
+    try:
+        os.mkdir("/tmp/camera_save_tutorial")
+    except:
+        pass
 
     rospy.init_node('camera_listener', anonymous=True)
     bridge = CvBridge()

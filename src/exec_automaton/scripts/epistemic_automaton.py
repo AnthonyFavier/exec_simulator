@@ -162,7 +162,7 @@ def get_actions_until_copresence(s: ConM.Step):
         if not p.human_action.is_passive():
             HAs.append(p.human_action)
 
-        s = p.next[0].in_human_option.in_step
+        s = s.comp_best_choice
 
     return HAs, RAs
 
@@ -216,16 +216,6 @@ def exec_epistemic(init_step):
                 # Extract Possible human actions
                 g_possible_human_actions = get_possible_human_actions(curr_step)
 
-                # If can ask question, prompt and expect question
-                # questions = []
-                # for ha in g_possible_human_actions:
-                #     if ha.name == "communicate_if_cube_can_be_put":
-                #         questions.append(ha)
-
-                # if len(questions):
-                #     # send to prompt 
-                
-                
                 # Send NS + HAs to HMI
                 send_NS(VHA.NS)
                 send_vha(g_possible_human_actions, VHA.NS, timeout=0.0)
@@ -875,6 +865,11 @@ def compute_msg_action_epistemic(a):
     elif a.is_passive():
         msg.type=Action.PASSIVE
 
+    elif "communicate_if_cube_can_be_put"==a.name:
+        msg.type=Action.ASK
+        msg.obj_name=a.parameters[0]
+        msg.location=a.parameters[1]
+
     if msg.type==-1:
         raise Exception("Unknown action")
     
@@ -1390,7 +1385,7 @@ def main_exec():
 
     # CONSTANTS #
     #   Delays 
-    TIMEOUT_DELAY               = 20.0
+    TIMEOUT_DELAY               = 99.0
     TRAINING_TIMEOUT_DELAY      = 3.0 #4.0
     ESTIMATED_R_REACTION_TIME   = 0.3
     ID_DELAY                    = 0.6

@@ -109,13 +109,18 @@ def create_zone(id, x, y, w, h, list_actions):
     g_zones[id].setPixelCoords(x, y, x+w, y+h)
 
 if DOMAIN_NAME=="epistemic":
-    create_zone(0,      0,0,500,1080,       ["change_focus_towards"])
-    create_zone(1,      0,0,1920,300,       ["move_to_table"])
-    create_zone(2,      1211,561,104,116,   ["pick"])
-    create_zone(3,      634,374,312,378,    ["place_1('w1', 'box_1')"])
-    create_zone(4,      973,374,312,378,    ["place_1('w1', 'box_2')"])
-    create_zone(5,      0,0,0,0,            ["communicate_if_cube_can_be_put"])
-    create_zone(6,      1371,820,228,217,   ["PASS"])
+    create_zone(0,      0,0,500,1080,           ["change_focus_towards"])
+    create_zone(1,      0,0,1920,300,           ["move_to_table"])
+    create_zone(2,      1211,561,104,116,       ["pick"])
+    create_zone(3,      634,374,312,378,        ["place_1('w1', 'box_1')"])
+    create_zone(4,      973,374,312,378,        ["place_1('w1', 'box_2')"])
+    create_zone(5,      0,0,0,0,                ["communicate_if_cube_can_be_put"])
+    create_zone(6,      1371,820,228,217,       ["PASS"])
+    create_zone(7,      1476, 296, 110, 109,    ["q1"])
+    create_zone(8,      1638,296,110,109,       ["q2"])
+    create_zone(9,      1800,296,108,108,       ["q3"])
+    create_zone(10,     1640,452,109,110,       ["q4"])
+    create_zone(11,     1804,452,110,109,       ["q5"])
 else:
     raise Exception("Domain_name unknown...")
 
@@ -126,30 +131,13 @@ for z in g_zones.values():
 g_z_pass = z
 g_z_pass.is_pass = True
 
-def hide_all_zones(req = None):
-    # srv = SetModelStateRequest()
+def disable_zones(req = None):
     # first disable zone fast
     for z in g_zones.values():
         z.current_action_id = -10
-    # Then move them away
-    # for z in g_zones.values():
-    #     srv.model_state.model_name = f"z{z.id}"
-    #     srv.model_state.pose = g_far_zone_pose
-    #     srv.model_state.reference_frame = "world" 
-    #     g_set_model_state_client(srv)
 
     hide_move_buttons()
 
-    return EmptyResponse()
-
-def show_all_zones(req = None):
-    # print("showing zones")
-    # srv = SetModelStateRequest()
-    # for z in g_zones.values():
-    #     srv.model_state.model_name = f"z{z.id}"
-    #     srv.model_state.pose = z.world_pose
-    #     srv.model_state.reference_frame = "world" 
-    #     g_set_model_state_client(srv)
     return EmptyResponse()
 
 g_prompt_button_shown = False
@@ -292,7 +280,6 @@ Q2_pose = Pose(Point(1.2, 0.68, 1.33), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
 Q3_pose = Pose(Point(1.2, 0.83, 1.33), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
 Q4_pose = Pose(Point(1.3, 0.67, 1.22), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
 Q5_pose = Pose(Point(1.3, 0.82, 1.22), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
-
 def show_question_buttons(req = None):
     hide_question_buttons()
     if req==None:
@@ -350,8 +337,13 @@ def incoming_vha_cb(msg: VHA):
     g_vha = msg
     g_vha_received = True
 
+    # Reset all zones
+    for z in g_zones.values():
+        if z.is_pass:
+            continue
+        z.current_action_id = -10
+
     # Update pass zone
-    # print(g_vha)
     if g_vha.type==VHA.NS:
         g_z_pass.current_action_id = -1
         g_z_pass.ready_activate_auto_pass = False
@@ -365,25 +357,48 @@ def incoming_vha_cb(msg: VHA):
         g_z_pass.ready_activate_auto_pass = True
         g_z_pass.ns_idle = False
 
-    # Update action zones
-    for z in g_zones.values():
-        if z.is_pass:
+    lines = []
+    nb_question = 0
+    for i,ha in enumerate(g_vha.valid_human_actions):
+
+        # Questions
+        if ha[:len("communicate_if_cube_can_be_put")] == "communicate_if_cube_can_be_put":
+            nb_question+=1
+            lines.append(f"Can I put my cube in box {ha[ha.find('box_')+len('box_')]}")
+            if nb_question==1:
+                g_zones[7].current_action_id = i+1
+            elif nb_question==2:
+                g_zones[8].current_action_id = i+1
+            elif nb_question==3:
+                g_zones[9].current_action_id = i+1
+            elif nb_question==4:
+                g_zones[10].current_action_id = i+1
+            elif nb_question==5:
+                g_zones[11].current_action_id = i+1
             continue
-        z.current_action_id = -10
-        for i,ha in enumerate(g_vha.valid_human_actions):
+
+        # Regular actions
+        for z in g_zones.values():
             for z_a in z.valid_actions:
                 if z_a == ha[:len(z_a)]: # ha starts with z_a
                     z.current_action_id = i+1
-
                     # If turn or move actions, show buttons
                     if z_a == "change_focus_towards":
                         show_turn_buttons()
                     elif z_a =="move_to_table":
                         show_move_buttons()
-
                     break
+            # If found corresponding zone, stop current loop
             if z.current_action_id != -10:
                 break
+
+    # Prompt questions and show question buttons
+    s = IntRequest(nb_question)
+    show_question_buttons(s)
+    if nb_question!=0:
+        rospy.logwarn("Questions:")
+        for i,l in enumerate(lines):
+            rospy.logwarn(f"{i+1}- {l}")
 
     if g_vha.valid_human_actions==[]:
         # hide_can_click_indicator()
@@ -400,7 +415,7 @@ def incoming_vha_cb(msg: VHA):
             if not decision_sent:
                 rospy.loginfo("timeout reached")
                 rospy.loginfo("start hiding zones")
-                hide_all_zones()
+                disable_zones()
                 # hide_can_click_indicator()
                 rospy.loginfo("done hiding zones")
             else:
@@ -419,7 +434,7 @@ def reset_last_click(req = None):
     return EmptyResponse()
 
 def TO_reached_cb(msg: EmptyM):
-    hide_all_zones()
+    disable_zones()
     # hide_can_click_indicator()
 
 ##########
@@ -441,8 +456,7 @@ def main():
 
     timeout_max_service = rospy.Service("hmi_timeout_max", Int, lambda req: IntResponse())
     r_idle_service = rospy.Service("hmi_r_idle", SetBool, lambda req: SetBoolResponse())
-    show_zones_service = rospy.Service("show_zones", EmptyS, show_all_zones)
-    hide_zones_service = rospy.Service("hide_zones", EmptyS, hide_all_zones)
+    disable_zones_service = rospy.Service("disbale_zones", EmptyS, disable_zones)
     show_prompt_button_service = rospy.Service("show_prompt_button", EmptyS, show_prompt_button)
     hide_prompt_button_service = rospy.Service("hide_prompt_button", EmptyS, hide_prompt_button)
     show_tuto_zones_service = rospy.Service("show_tuto_zones", EmptyS, show_tuto_zones)
@@ -570,7 +584,7 @@ def main():
                         decision_sent = True
                         rospy.loginfo(f"zone clicked: {z}")
                         g_start_human_action_prox(z.current_action_id)
-                        hide_all_zones()
+                        disable_zones()
                         rospy.loginfo("human decision sent")
                         reset_last_click()
                         break
@@ -589,7 +603,7 @@ def main():
                 elif g_z_pass.isActive():
                     decision_sent = True
                     g_start_human_action_prox(g_z_pass.current_action_id)
-                    hide_all_zones()
+                    disable_zones()
                     reset_last_click()
 
                 # Human should act, even in AUTO_PASS
@@ -599,7 +613,7 @@ def main():
                             decision_sent = True
                             rospy.loginfo(f"zone clicked: {z}")
                             g_start_human_action_prox(z.current_action_id)
-                            hide_all_zones()
+                            disable_zones()
                             rospy.loginfo("human decision sent")
                             reset_last_click()
                             break

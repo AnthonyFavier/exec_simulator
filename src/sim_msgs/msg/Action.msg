@@ -11,6 +11,7 @@ uint8 PICK_OBJ_NAME     =   6   # obj_name
 uint8 PLACE_OBJ_NAME    =   7   # obj_name, location
 uint8 TURN_AROUND       =   8
 uint8 MOVE_FORWARD      =   9
+uint8 ASK               =   10  # obj_name, location
 
 
 # PARAMS:

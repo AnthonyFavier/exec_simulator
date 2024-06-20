@@ -319,6 +319,14 @@ void MoveForward()
 
 }
 
+void Ask(std::string obj_name, std::string location)
+{
+    // Do Nohting for human ?
+
+    // Then show robot answer
+    // wait some delay
+}
+
 //  MANAGE ACTIONS + EVENTS + SIGNALS  //
 std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start)
 {
@@ -427,6 +435,20 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             ROS_INFO("Start signal SENT");
             
             MoveForward();
+
+            send_visual_signal_action_over(agent, action);
+            action_done[agent] = true;
+        }
+        else if(sim_msgs::Action::ASK == action.type)
+        {
+            action_received[agent] = true;
+            sim_msgs::Signal sgl;
+            sgl.id = action.id;
+            sgl.type = sim_msgs::Signal::S_HA;
+            visual_signals_pub[agent].publish(sgl);
+            ROS_INFO("Start signal SENT");
+
+            Ask(action.obj_name, action.location);
 
             send_visual_signal_action_over(agent, action);
             action_done[agent] = true;
