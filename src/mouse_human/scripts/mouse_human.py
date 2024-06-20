@@ -10,7 +10,7 @@ import logging as lg
 import logging.config
 import rospy
 from sim_msgs.msg import Action, VHA
-from std_msgs.msg import Int32, Bool, Float64
+from std_msgs.msg import Int32, Bool, Float64, String
 from std_msgs.msg import Empty as EmptyM
 from sim_msgs.srv import Int, IntResponse, IntRequest
 from std_srvs.srv import Empty as EmptyS
@@ -399,6 +399,11 @@ def incoming_vha_cb(msg: VHA):
         rospy.logwarn("Questions:")
         for i,l in enumerate(lines):
             rospy.logwarn(f"{i+1}- {l}")
+        msg_questions = String()
+        msg_questions.data = "Questions:\n"
+        for i,l in enumerate(lines):
+            msg_questions.data += f"{i+1}- {l}\n"
+        g_prompt_pub.publish(msg_questions)
 
     if g_vha.valid_human_actions==[]:
         # hide_can_click_indicator()
@@ -443,7 +448,7 @@ def TO_reached_cb(msg: EmptyM):
 
 def main():
     global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_human_choice_pub, g_set_model_state_client, g_start_human_action_prox
-    global g_prompt_button_pressed_pub
+    global g_prompt_button_pressed_pub, g_prompt_pub
     global decision_sent
     global AUTO_PASS
 
@@ -468,6 +473,9 @@ def main():
     hide_move_buttons_service = rospy.Service("hide_move_buttons", EmptyS, hide_move_buttons)
     show_question_buttons_service = rospy.Service("show_question_buttons", Int, show_question_buttons)
     hide_question_buttons_service = rospy.Service("hide_question_buttons", EmptyS, hide_question_buttons)
+
+    g_prompt_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
+    
 
     auto_pass_pub = rospy.Publisher("/auto_pass_state", Bool, queue_size=1)
 
