@@ -64,7 +64,6 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),     make_quaternion())},
 };
 
-
 // Deprecated for epistemic
 class DropZone
 {
@@ -133,7 +132,7 @@ void init_cubes()
     g_cubes.push_back(Cube("r1"));
 }
 
-//  HIGH LEVEL ACTIONS  //
+// ************************* HIGH LEVEL ACTIONS **************************** //
 void PickName(AGENT agent, std::string obj_name)
 {
     ROS_INFO("\t%s PICK START %s", get_agent_str(agent).c_str(), obj_name.c_str());
@@ -234,7 +233,6 @@ void BePassive(AGENT agent)
     }
 }
 
-
 enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SIDE_LOOK_MAIN};
 HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
 geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
@@ -326,6 +324,8 @@ void Ask(std::string obj_name, std::string location)
 
     // Then show robot answer
     // wait some delay
+
+
 }
 
 //  MANAGE ACTIONS + EVENTS + SIGNALS  //
@@ -994,34 +994,35 @@ bool set_synchro_step_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolRes
     return true;
 }
 
-bool set_box_cover_server(sim_msgs::SetBoxCoverRequest &req, sim_msgs::SetBoxCoverResponse &res)
+// Box type (OPAQUE / TRANSPARENT)
+sim_msgs::BoxTypes g_box_types;
+bool set_box_types_server(sim_msgs::SetBoxTypesRequest &req, sim_msgs::SetBoxTypesResponse &res)
 {
     gazebo_msgs::SetModelState srv_set;
     geometry_msgs::Pose far_pose = make_pose(make_point(0, 0, -1), make_quaternion_RPY(0,0,0));
 
+    g_box_types = req.types;
+
     /* Box 1 */
     srv_set.request.model_state.model_name = "box_1_cover";
-    if(req.box_1)
-        srv_set.request.model_state.pose = init_poses["box_1_cover"];
-    else
-        srv_set.request.model_state.pose = far_pose;
+    srv_set.request.model_state.pose = (req.types.box_1==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_1_cover"] : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     /* Box 2 */
     srv_set.request.model_state.model_name = "box_2_cover";
-    if(req.box_2)
-        srv_set.request.model_state.pose = init_poses["box_2_cover"];
-    else
-        srv_set.request.model_state.pose = far_pose;
+    srv_set.request.model_state.pose = (req.types.box_2==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_2_cover"] : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     /* Box 3 */
     srv_set.request.model_state.model_name = "box_3_cover";
-    if(req.box_3)
-        srv_set.request.model_state.pose = init_poses["box_3_cover"];
-    else
-        srv_set.request.model_state.pose = far_pose;
+    srv_set.request.model_state.pose = (req.types.box_3==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_3_cover"] : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    return true;
+}
+bool get_box_types_server(sim_msgs::GetBoxTypesRequest &req, sim_msgs::GetBoxTypesResponse &res)
+{
+    res.types = g_box_types;
 
     return true;
 }
@@ -1107,7 +1108,8 @@ int main(int argc, char **argv)
     // set_synchro_step_client = node_handle.serviceClient<std_srvs::SetBool>("/set_synchro_step");
     ros::ServiceServer set_synchro_step_service = node_handle.advertiseService("set_synchro_step", set_synchro_step_server);
     
-    ros::ServiceServer set_box_cover_service = node_handle.advertiseService("set_box_cover", set_box_cover_server);
+    ros::ServiceServer set_box_types_service = node_handle.advertiseService("set_box_types", set_box_types_server);
+    ros::ServiceServer get_box_types_service = node_handle.advertiseService("get_box_types", get_box_types_server);
 
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);

@@ -23,6 +23,9 @@ from sim_msgs.msg import EventLog
 from sim_msgs.srv import Int, IntResponse, IntRequest
 from sim_msgs.msg import Signal
 from sim_msgs.msg import HeadCmd
+from sim_msgs.msg import BoxTypes
+from sim_msgs.srv import SetBoxTypes, SetBoxTypesRequest, SetBoxTypesResponse
+from sim_msgs.srv import GetBoxTypes, GetBoxTypesRequest, GetBoxTypesResponse
 import simpleaudio as sa
 import numpy as np
 
@@ -1414,12 +1417,13 @@ def main_exec():
     ## LOADING ## # pstates
     init_step = load("/home/afavier/EHATP-EHDA/last_dom_n_sol_tt.p")
 
+    # Set box types
+    req = SetBoxTypesRequest()
+    req.types.box_1 = BoxTypes.OPAQUE
+    req.types.box_2 = BoxTypes.OPAQUE
+    req.types.box_3 = BoxTypes.OPAQUE
+    g_set_box_types_client.call(req)
 
-    # if g_domain_name!=DOMAIN_NAME:
-    #     raise Exception("Missmatching domain names CONSTANT and loaded")
-    # robots = {
-    #     "test" : ("Epistemic", "epi", init_step, "epi"), # Finish task early
-    # }
 
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
@@ -1555,6 +1559,10 @@ if __name__ == "__main__":
 
     robot_action_done = rospy.Subscriber('/robot_action_done', EmptyM, robot_action_done_cb)
     human_action_done = rospy.Subscriber('/human_action_done', EmptyM, human_action_done_cb)
+
+    g_set_box_types_client = rospy.ServiceProxy("/set_box_types", SetBoxTypes)
+    g_get_box_types_client = rospy.ServiceProxy("/get_box_types", GetBoxTypes)
+
 
     # Wait for publisher init
     time.sleep(0.1)
