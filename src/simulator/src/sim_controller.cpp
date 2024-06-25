@@ -339,9 +339,9 @@ void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers a
     // Prompt answer 
     std_msgs::String prompt_msg;
     if(answer)
-        prompt_msg.data = "Yes, you can place it in " + location + ".";
+        prompt_msg.data = " Yes, you can place it in " + location + ".";
     else
-        prompt_msg.data = "No, you can't place it in " + location + "...";
+        prompt_msg.data = " No, you can't place it in " + location + "...";
 
     ROS_WARN("%s", prompt_msg.data.c_str());
 
