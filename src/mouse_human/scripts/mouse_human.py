@@ -48,8 +48,10 @@ TURN_BUTTON_POSE_SIDE = Pose( Point(5.2, 0.35, 1.63), quaternion_msgs_from_rpy(0
 MOVE_BUTTON_POSE_SIDE = Pose( Point(3.8, 0, 1.75), quaternion_msgs_from_rpy(1.57, -0.6, 0))
 
 class Zone:
-    def __init__(self, id, pose, valid_actions) -> None:
-        self.id = id
+    _ID = 0
+    def __init__(self, pose, valid_actions) -> None:
+        self.id = Zone._ID
+        Zone._ID+=1
     
         # Right-Upper corner (x1,y1)
         self.x1 = -1
@@ -105,25 +107,20 @@ g_prompt_button_pose = Pose(Point(1.3, 0.71, 1.37), q_all)
 g_can_click_indicator_pose = Pose(Point(1.87, 0.0, 1.44), q_all)
 
 # Create zones
-g_zones = {}
-def create_zone(id, x, y, w, h, list_actions):
+g_zones = []
+def create_zone(x, y, w, h, list_actions):
     global g_zones
-    g_zones[id] = Zone(id, None, list_actions)
-    g_zones[id].setPixelCoords(x, y, x+w, y+h)
+    new_zone = Zone(None, list_actions)
+    new_zone.setPixelCoords(x, y, x+w, y+h)
+    g_zones.append(new_zone)
 
 if DOMAIN_NAME=="epistemic":
-    create_zone(0,      0,0,500,1080,           ["change_focus_towards"])
-    create_zone(1,      0,0,1920,300,           ["move_to_table"])
-    create_zone(2,      1211,561,104,116,       ["pick"])
-    create_zone(3,      634,374,312,378,        ["place_1('w1', 'box_1')"])
-    create_zone(4,      973,374,312,378,        ["place_1('w1', 'box_2')"])
-    create_zone(5,      0,0,0,0,                ["communicate_if_cube_can_be_put"])
-    create_zone(6,      1371,820,228,217,       ["PASS"])
-    create_zone(7,      1476, 296, 110, 109,    ["q1"])
-    create_zone(8,      1638,296,110,109,       ["q2"])
-    create_zone(9,      1800,296,108,108,       ["q3"])
-    create_zone(10,     1640,452,109,110,       ["q4"])
-    create_zone(11,     1804,452,110,109,       ["q5"])
+    create_zone(0,0,500,1080,           ["change_focus_towards"])
+    create_zone(0,0,1920,300,           ["move_to_table"])
+    create_zone(1211,561,104,116,       ["pick"])
+    create_zone(634,374,312,378,        ["place_1('w1', 'box_1')"])
+    create_zone(973,374,312,378,        ["place_1('w1', 'box_2')"])
+    create_zone(1371,820,228,217,       ["PASS"])
 else:
     raise Exception("Domain_name unknown...")
 
@@ -144,7 +141,7 @@ def disable_zones(req = None):
     return EmptyResponse()
 
 g_prompt_button_shown = False
-g_prompt_button_zone = Zone(-20, g_prompt_button_pose, None)
+g_prompt_button_zone = Zone(g_prompt_button_pose, None)
 g_prompt_button_zone.setPixelCoords(1664, 299, 1899, 417)
 def show_prompt_button(req = None):
     global g_prompt_button_shown
@@ -341,9 +338,7 @@ def incoming_vha_cb(msg: VHA):
     g_vha_received = True
 
     # Reset all zones
-    for z in g_zones.values():
-        if z.is_pass:
-            continue
+    for z in g_zones:
         z.current_action_id = -10
 
     # Update pass zone
@@ -381,7 +376,7 @@ def incoming_vha_cb(msg: VHA):
             continue
 
         # Regular actions
-        for z in g_zones.values():
+        for z in g_zones:
             for z_a in z.valid_actions:
                 if z_a == ha[:len(z_a)]: # ha starts with z_a
                     z.current_action_id = i+1
@@ -583,57 +578,16 @@ def main():
                 reset_last_click()
 
         else:
-
-            if AUTO_PASS==False:
-                # Check if AUTO_PASS being activated
-                if g_z_pass.ready_activate_auto_pass and g_z_pass.clickIn(g_last_click):
-                    rospy.logwarn("Activating AUTO_PASS")
-                    AUTO_PASS = True
-                    auto_pass_pub.publish(True)
-                    reset_last_click()
-                    show_auto_pass_indicator()
-
-                # ACTION ZONES
-                for z in g_zones.values():
-                    if z.isActive() and z.clickIn(g_last_click):
-                        decision_sent = True
-                        rospy.loginfo(f"zone clicked: {z}")
-                        g_start_human_action_prox(z.current_action_id)
-                        disable_zones()
-                        rospy.loginfo("human decision sent")
-                        reset_last_click()
-                        break
-            
-            if AUTO_PASS==True:
-
-                # Check if AUTO_PASS is being disabled
-                if g_z_pass.clickIn(g_last_click):
-                    rospy.logwarn("Disactivating AUTO_PASS")
-                    AUTO_PASS = False
-                    auto_pass_pub.publish(False)
-                    reset_last_click()
-                    hide_auto_pass_indicator()
-
-                # Make auto pass if possible
-                elif g_z_pass.isActive():
+            # ACTION ZONES
+            for z in g_zones:
+                if z.isActive() and z.clickIn(g_last_click):
                     decision_sent = True
-                    g_start_human_action_prox(g_z_pass.current_action_id)
+                    rospy.loginfo(f"zone clicked: {z}")
+                    g_start_human_action_prox(z.current_action_id)
                     disable_zones()
+                    rospy.loginfo("human decision sent")
                     reset_last_click()
-
-                # Human should act, even in AUTO_PASS
-                elif g_z_pass.ns_idle:
-                    for z in g_zones.values():
-                        if z.isActive() and z.clickIn(g_last_click):
-                            decision_sent = True
-                            rospy.loginfo(f"zone clicked: {z}")
-                            g_start_human_action_prox(z.current_action_id)
-                            disable_zones()
-                            rospy.loginfo("human decision sent")
-                            reset_last_click()
-                            break
-
-        # TODO: Sound click was ineffective
+                    break
 
         time.sleep(0.01)
             
