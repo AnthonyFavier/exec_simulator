@@ -1527,29 +1527,31 @@ def main_exec():
     ## LOADING ## # pstates
     init_step = load("/home/afavier/EHATP-EHDA/last_dom_n_sol_tt.p")
 
-    # Set box types
+    # Define box types
     req = SetBoxTypesRequest()
     req.types.box_1 = BoxTypes.OPAQUE
     req.types.box_2 = BoxTypes.OPAQUE
     req.types.box_3 = BoxTypes.OPAQUE
-    g_set_box_types_client.call(req)
+    
 
+    rospy.loginfo("Wait for set_box_types service to be started...")
+    rospy.wait_for_service("set_box_types")
+    rospy.loginfo("\tset_box_types service ready!")
 
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
-    rospy.loginfo("hmi started!")
+    rospy.loginfo("\thmi started!")
     g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
 
     rospy.loginfo("Waiting for reset_world service to be started...")
     rospy.wait_for_service("reset_world")
-    rospy.loginfo("reset_world service started")
+    rospy.loginfo("\treset_world service started")
 
     rospy.loginfo("Waiting prompt to be started...")
     rospy.wait_for_service("prompt_started")
-    rospy.loginfo("prompt started")
+    rospy.loginfo("\tprompt started")
 
     exec_regime = None
-
 
     LANG = "EN" # 'FR' | 'EN'
 
@@ -1566,6 +1568,9 @@ def main_exec():
         # Reset world
         prompt("reset_world")
         g_reset_world_client()
+
+        # Set box types
+        g_set_box_types_client.call(req)
 
         # Wait for Start Signal from Prompt Window
         wait_start_signal()
