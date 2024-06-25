@@ -251,7 +251,7 @@ def process_questions(s: ConM.Step):
             # Update step
             new_human_options = ConM.arrange_pairs_in_HumanOption(s.get_pairs()+new_pairs)
             s.init(new_human_options, s.from_pair)
-            s.with_additional_questions
+            s.with_additional_questions = True
 
         # else:
         #     # find additional questions (pairs) to remove
