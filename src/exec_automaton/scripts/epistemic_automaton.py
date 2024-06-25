@@ -378,10 +378,14 @@ def exec_epistemic(init_step):
                 if g_human_action_done:
                     if len(HAs):
                         sound_ns.play()
-                        HA = HAs.pop(0)
-                        g_possible_human_actions = [HA]
-                        send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
-                        g_human_action_done = False
+
+                        is_come_back = HAs[0].name=="move_to_table" and HAs[0].parameters[1]=="table"
+
+                        if (not is_come_back) or (is_come_back and robot_done):
+                            HA = HAs.pop(0)
+                            g_possible_human_actions = [HA]
+                            send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
+                            g_human_action_done = False
                     else:   
                         human_done = True
 
