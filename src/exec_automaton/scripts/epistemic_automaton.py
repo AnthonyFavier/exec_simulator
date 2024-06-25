@@ -148,7 +148,7 @@ def get_possible_human_actions(s: ConM.Step):
     has = []
 
     for ho in s.human_options:
-        if ho.human_action.is_passive:
+        if ho.human_action.is_passive():
             has = has + [ho.human_action]
         else:
             has = [ho.human_action] + has
