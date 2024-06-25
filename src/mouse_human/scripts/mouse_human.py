@@ -475,7 +475,6 @@ def TO_reached_cb(msg: EmptyM):
 def main():
     global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_human_choice_pub, g_set_model_state_client, g_start_human_action_prox
     global g_prompt_button_pressed_pub, g_prompt_pub
-    global g_set_box_types_client, g_get_box_types_client
     global decision_sent
     global AUTO_PASS
 
@@ -499,9 +498,6 @@ def main():
     show_move_buttons_service = rospy.Service("show_move_buttons", EmptyS, show_move_buttons)
     hide_move_buttons_service = rospy.Service("hide_move_buttons", EmptyS, hide_move_buttons)
     set_question_buttons_service = rospy.Service("set_question_buttons", SetQuestionButtons, set_question_buttons)
-
-    g_set_box_types_client = rospy.ServiceProxy("/set_box_types", SetBoxTypes)
-    g_get_box_types_client = rospy.ServiceProxy("/get_box_types", GetBoxTypes)
 
     g_prompt_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
     
