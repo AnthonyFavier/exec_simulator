@@ -35,7 +35,7 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import filedialog
 
-path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
+path = "/home/sshekhar/Desktop/HATPEHDA-concurrent-org/domains_and_results/"
 sys.path.insert(0, path)
 import ConcurrentModule as ConM
 import CommonModule as CM
@@ -815,7 +815,7 @@ if __name__ == "__main__":
     record = sys.argv[1] == "record"
     edit = sys.argv[1] == "edit"
 
-    path = "/home/afavier/new_exec_sim_ws/events/"
+    path = "/home/sshekhar/exec_simulator/events/"
 
     # ROS Startup
     rospy.init_node('timelog')

@@ -11,7 +11,7 @@ import logging.config
 import time
 from enum import Enum
 import matplotlib.pyplot as plt
-sys.path.insert(0, "/home/afavier/new_exec_sim_ws/src/progress/")
+sys.path.insert(0, "/home/sshekhar/exec_simulator/src/progress/")
 from progress.bar import IncrementalBar, StrBar, IncrementalBarStr
 from std_msgs.msg import Int32, Bool
 from std_msgs.msg import Empty as EmptyM
@@ -38,7 +38,7 @@ INPUT = True
 # DEBUG = True
 # INPUT = True
 
-path = "/home/afavier/EHATP-EHDA/domains_and_results/"
+path = "/home/sshekhar/Desktop/HATPEHDA-concurrent-org/domains_and_results"
 sys.path.insert(0, path)
 import ConcurrentModule as ConM
 import CommonModule as CM
@@ -49,7 +49,7 @@ class WrongException(Exception):
     pass
 
 ## LOGGER ##
-logging.config.fileConfig(path + 'log.conf')
+# logging.config.fileConfig(path + 'log.conf')
 
 
 #############
@@ -136,7 +136,7 @@ def build_expected_ha(name, parameters):
 
     return HA
 
-sound_finished = sa.WaveObject.from_wave_file("/home/afavier/new_exec_sim_ws/src/exec_automaton/scripts/finished_70.wav")
+sound_finished = sa.WaveObject.from_wave_file("/home/sshekhar/exec_simulator/src/exec_automaton/scripts/finished_70.wav")
 
 def check_copresence(s: ConM.Step):
     return s.from_pair.copresence
@@ -350,7 +350,7 @@ def send_NS_update_HAs(ps: CM.PState, type, timeout=0.0, only_has=None):
     #             break
     # g_best_human_action_pub.publish(best_ha)
 
-sound_ns = sa.WaveObject.from_wave_file("/home/afavier/new_exec_sim_ws/src/exec_automaton/scripts/sound.wav")
+sound_ns = sa.WaveObject.from_wave_file("/home/sshekhar/exec_simulator/src/exec_automaton/scripts/sound.wav")
 def send_NS(type, turn=None):
     sgl = Signal()
     if type==VHA.NS:
@@ -1412,7 +1412,7 @@ def main_exec():
     default_robot_passive_action = CM.Action.create_passive("R", "PASS")
 
     ## LOADING ## # pstates
-    init_step = load("/home/afavier/EHATP-EHDA/last_dom_n_sol_tt.p")
+    init_step = load("/home/sshekhar/Downloads/last_dom_n_sol_tt.p")
 
 
     # if g_domain_name!=DOMAIN_NAME:

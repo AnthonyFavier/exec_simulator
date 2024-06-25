@@ -125,7 +125,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
-          <mesh filename="/home/afavier/new_exec_sim_ws/src/simulator/meshes/tiago_eyes.dae" scale="1 1 1"/>
+          <mesh filename="/home/sshekhar/exec_simulator/src/simulator/meshes/tiago_eyes.dae" scale="1 1 1"/>
         </geometry>
         <material name="Black" />
       </visual>
