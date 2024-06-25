@@ -33,7 +33,7 @@ ros::ServiceClient set_link_properties_client;
 ros::ServiceClient set_synchro_step_client;
 
 ros::ServiceClient hide_move_buttons_client;
-ros::ServiceClient hide_question_buttons_client;
+ros::ServiceClient set_question_buttons_client;
 
 bool g_step_synchro_on = true;
 
@@ -43,6 +43,8 @@ const double z_offset_grasp = 0.05;
 
 bool g_h_start_moving = false;
 bool g_r_start_moving = false;
+
+sim_msgs::BoxTypes g_box_types;
 
 
 //  DOMAIN DESCRIPTION  //
@@ -318,14 +320,42 @@ void MoveForward()
 
 }
 
-void Ask(std::string obj_name, std::string location)
+void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers answers)
 {
-    // Do Nohting for human ?
+    // Look at human
+    robot_head_follow_human(AGENT::ROBOT);
 
-    // Then show robot answer
-    // wait some delay
+    // Retrieve answer
+    bool answer;
+    if(location=="box_1")
+        answer = answers.box_1;
+    else if(location=="box_2")
+        answer = answers.box_2;
+    else if(location=="box_3")
+        answer = answers.box_3;
+    else
+        ROS_ERROR("WEIRD...");
 
+    // Prompt answer 
+    std_msgs::String prompt_msg;
+    if(answer)
+        prompt_msg.data = "Yes, you can place it in " + location + ".";
+    else
+        prompt_msg.data = "No, you can't place it in " + location + "...";
 
+    ROS_WARN("%s", prompt_msg.data.c_str());
+
+    // Delay
+    ROS_WARN("Waiting 5 seconds (10s sim time)...");
+    ros::Rate loop(2);
+    ros::Time start = ros::Time::now();
+    while(ros::Time::now() - start < ros::Duration(4*2))
+    {
+        prompt_pub.publish(prompt_msg);
+        loop.sleep();
+    }
+
+    ROS_WARN("Done !");
 }
 
 //  MANAGE ACTIONS + EVENTS + SIGNALS  //
@@ -447,9 +477,12 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             sgl.id = action.id;
             sgl.type = sim_msgs::Signal::S_HA;
             visual_signals_pub[agent].publish(sgl);
-            ROS_INFO("Start signal SENT");
+            ROS_INFO("Start signal SENT for ASKING");
 
-            Ask(action.obj_name, action.location);
+            ros::Duration(0.2).sleep();
+
+            Ask(action.obj_name, action.location, action.answers);
+
 
             send_visual_signal_action_over(agent, action);
             action_done[agent] = true;
@@ -922,7 +955,13 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
 
     // Reset Question buttons
     ROS_INFO("\tReset question buttons");
-    hide_question_buttons_client.call(empty_srv);
+    sim_msgs::SetQuestionButtons srv_question;
+    srv_question.request.q1 = false; 
+    srv_question.request.q2 = false; 
+    srv_question.request.q3 = false; 
+    srv_question.request.q4 = false; 
+    srv_question.request.q5 = false; 
+    set_question_buttons_client.call(srv_question);
 
     // Reset Camera
     ROS_INFO("\tReset camera");
@@ -995,7 +1034,6 @@ bool set_synchro_step_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolRes
 }
 
 // Box type (OPAQUE / TRANSPARENT)
-sim_msgs::BoxTypes g_box_types;
 bool set_box_types_server(sim_msgs::SetBoxTypesRequest &req, sim_msgs::SetBoxTypesResponse &res)
 {
     gazebo_msgs::SetModelState srv_set;
@@ -1100,7 +1138,7 @@ int main(int argc, char **argv)
     move_human_body_pub = node_handle.advertise<std_msgs::Int32>("/move_human_body", 1);
     
     hide_move_buttons_client = node_handle.serviceClient<std_srvs::Empty>("/hide_move_buttons");
-    hide_question_buttons_client = node_handle.serviceClient<std_srvs::Empty>("/hide_question_buttons");
+    set_question_buttons_client = node_handle.serviceClient<sim_msgs::SetQuestionButtons>("/set_question_buttons");
 
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");

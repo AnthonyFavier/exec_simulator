@@ -15,6 +15,7 @@ add_message_files(
   Signal.msg
   HeadCmd.msg
   BoxTypes.msg
+  CanPlaceAnswers.msg
 )
 add_service_files(
   FILES
@@ -23,6 +24,7 @@ add_service_files(
   Int.srv
   SetBoxTypes.srv
   GetBoxTypes.srv
+  SetQuestionButtons.srv
 )
 
 generate_messages(

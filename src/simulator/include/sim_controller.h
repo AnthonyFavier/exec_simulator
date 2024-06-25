@@ -29,6 +29,7 @@
 #include "sim_msgs/BoxTypes.h"
 #include "sim_msgs/SetBoxTypes.h"
 #include "sim_msgs/GetBoxTypes.h"
+#include "sim_msgs/SetQuestionButtons.h"
 
 #define ROBOT_ATTACH_MODEL_NAME "tiago"
 #define ROBOT_ATTACH_LINK_NAME "arm_7_link"

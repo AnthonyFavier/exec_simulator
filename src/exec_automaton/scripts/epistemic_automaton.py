@@ -26,6 +26,7 @@ from sim_msgs.msg import HeadCmd
 from sim_msgs.msg import BoxTypes
 from sim_msgs.srv import SetBoxTypes, SetBoxTypesRequest, SetBoxTypesResponse
 from sim_msgs.srv import GetBoxTypes, GetBoxTypesRequest, GetBoxTypesResponse
+from sim_msgs.msg import CanPlaceAnswers
 import simpleaudio as sa
 import numpy as np
 
@@ -186,6 +187,105 @@ def human_action_done_cb(m: EmptyM):
     g_human_action_done = True
     print("BAZABF H DONE")
 
+def presence_of_questions_in_step(s: ConM.Step):
+    for p in s.get_pairs():
+        if p.human_action.name == "communicate_if_cube_can_be_put":
+            return True
+    return False
+
+def step_flagged_already_with_additional_questions(s: ConM.Step):
+    try:
+        s.with_addtional_questions
+        return True
+    except AttributeError:
+        return False
+    
+def com_flagged_as_additional_question(a: CM.Action):
+    try:
+        a.is_additional_question
+        return True
+    except AttributeError:
+        return False
+
+g_answer_boxes = CanPlaceAnswers()
+def process_questions(s: ConM.Step):
+    global g_answer_boxes
+
+    # If there are questions in current step
+    if presence_of_questions_in_step(s):
+
+        # If no flag "without_additional_question"
+        if not step_flagged_already_with_additional_questions(s):
+
+            """ add additional questions with "no" answer according to opaque boxes """
+
+            # Get box types
+            res = g_get_box_types_client() # type: GetBoxTypesResponse
+
+            # For each of the three box
+            new_pairs = []
+            for n_box in range(1,4):
+                box_type = res.types.__getattribute__(f"box_{n_box}")
+                if box_type==BoxTypes.OPAQUE:
+                    # Look for corresponding question, and if additional question needed
+                    must_add_question = True
+                    for p in s.get_pairs():
+                        if p.human_action.name=="communicate_if_cube_can_be_put" and p.human_action.parameters[1]==f"box_{n_box}":
+                            must_add_question = False
+                            break
+                    
+                    if must_add_question:
+
+                        # Identify object held
+                        for p in s.get_pairs():
+                            if p.human_action.name=="communicate_if_cube_can_be_put":
+                                obj_held = p.human_action.parameters[0]
+
+                        # Create new question in pair
+                        h_com_action = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", [obj_held, f"box_{n_box}"], None, 0, "H"), 0, None)
+                        h_com_action.is_additional_question = True
+                        r_wait_turn = s.get_pairs()[0].robot_action
+                        new_pair = ConM.ActionPair(h_com_action, r_wait_turn, None, None)
+                        new_pairs.append(new_pair)
+            
+            # Update step
+            new_human_options = ConM.arrange_pairs_in_HumanOption(s.get_pairs()+new_pairs)
+            s.init(new_human_options, s.from_pair)
+            s.with_additional_questions
+
+        # else:
+        #     # find additional questions (pairs) to remove
+        #     p_to_remove = []
+        #     for p in s.get_pairs():
+        #         if p.human_action.name=="communicate_if_cube_can_be_put":
+        #             if com_flagged_as_additional_question(p.human_action):
+        #                 p_to_remove.append(p)
+
+        #     # remove pairs
+        #     new_pairs = s.get_pairs()
+        #     for p in p_to_remove:
+        #         new_pairs.remove(p)
+
+        #     # Update step
+        #     new_human_options = ConM.arrange_pairs_in_HumanOption(new_pairs)
+        #     s.init(new_human_options, s.from_pair)
+        
+        # Updates answers
+        g_answer_boxes.box_1 = False
+        g_answer_boxes.box_2 = False
+        g_answer_boxes.box_3 = False
+        for p in s.get_pairs():
+            if p.human_action.name=="communicate_if_cube_can_be_put":
+                if p.human_action.parameters[1]=="box_1":
+                    if not com_flagged_as_additional_question(p.human_action):
+                        g_answer_boxes.box_1 = True
+                if p.human_action.parameters[1]=="box_2":
+                    if not com_flagged_as_additional_question(p.human_action):
+                        g_answer_boxes.box_2 = True
+                if p.human_action.parameters[1]=="box_3":
+                    if not com_flagged_as_additional_question(p.human_action):
+                        g_answer_boxes.box_3 = True
+
 def exec_epistemic(init_step):
     
     """
@@ -208,6 +308,9 @@ def exec_epistemic(init_step):
 
         # if Co-present
         if check_copresence(curr_step):
+
+            # Manage addtional questions
+            process_questions(curr_step)
 
             # Identify Agent Turn
             human_turn = curr_step.get_pairs()[0].robot_action.is_wait_turn()
@@ -583,7 +686,7 @@ def wait_step_end():
     log_event("R_S_WAIT_STEP_END")
     rospy.loginfo("Waiting step end...")
     while not rospy.is_shutdown() and not step_over:
-        if not g_robot_acting:
+        if not g_robot_acting and g_new_human_decision.name!="communicate_if_cube_can_be_put":
             prompt("wait_end_ha")
         time.sleep(0.1)
 
@@ -632,7 +735,6 @@ def update_hmi_timeout_progress(elapsed):
 
 def get_next_step(s: ConM.Step, HA: CM.Action, RA: CM.Action):
     executed_pair = None
-
     for p in s.get_pairs():
         if CM.Action.are_similar(p.robot_action, RA) and CM.Action.are_similar(p.human_action, HA):
             executed_pair = p
@@ -644,6 +746,11 @@ def get_next_step(s: ConM.Step, HA: CM.Action, RA: CM.Action):
     if not s.id==1:
         if executed_pair.is_passive() and s.from_pair.is_passive():
             return s.from_pair.in_human_option.in_step
+        
+    # Check if excecuted pair includes an "additional_question"
+    if com_flagged_as_additional_question(executed_pair.human_action):
+        # If so, next step is the same 
+        return s
 
     return executed_pair.next[0].in_human_option.in_step
 
@@ -874,6 +981,7 @@ def compute_msg_action_epistemic(a):
         msg.type=Action.ASK
         msg.obj_name=a.parameters[0]
         msg.location=a.parameters[1]
+        msg.answers = g_answer_boxes
 
     if msg.type==-1:
         raise Exception("Unknown action")
