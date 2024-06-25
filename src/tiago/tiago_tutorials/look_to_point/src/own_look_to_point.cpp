@@ -299,7 +299,7 @@ void test_reset_head(geometry_msgs::Point p)
 
 void cmd_cb(sim_msgs::HeadCmd cmd)
 {
-  ROS_INFO("Head Cmd received.");
+  // ROS_INFO("Head Cmd received.");
   new_cmd = true;
 
   switch (cmd.type)

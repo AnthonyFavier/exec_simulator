@@ -10,7 +10,7 @@ import logging as lg
 import logging.config
 import rospy
 from sim_msgs.msg import Action, VHA
-from std_msgs.msg import Int32, Bool, Float64
+from std_msgs.msg import Int32, Bool, Float64, String
 from std_msgs.msg import Empty as EmptyM
 from sim_msgs.srv import Int, IntResponse, IntRequest
 from std_srvs.srv import Empty as EmptyS
@@ -24,6 +24,10 @@ from gazebo_msgs.srv import SpawnModel
 from geometry_msgs.msg import Pose, Twist, Point, Quaternion
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import time
+from sim_msgs.msg import BoxTypes
+from sim_msgs.srv import SetBoxTypes, SetBoxTypesRequest, SetBoxTypesResponse
+from sim_msgs.srv import GetBoxTypes, GetBoxTypesRequest, GetBoxTypesResponse
+from sim_msgs.srv import SetQuestionButtons, SetQuestionButtonsRequest, SetQuestionButtonsResponse
 
 DOMAIN_NAME = "epistemic"
 
@@ -45,8 +49,10 @@ TURN_BUTTON_POSE_SIDE = Pose( Point(5.2, 0.35, 1.63), quaternion_msgs_from_rpy(0
 MOVE_BUTTON_POSE_SIDE = Pose( Point(3.8, 0, 1.75), quaternion_msgs_from_rpy(1.57, -0.6, 0))
 
 class Zone:
-    def __init__(self, id, pose, valid_actions) -> None:
-        self.id = id
+    _ID = 0
+    def __init__(self, pose, valid_actions) -> None:
+        self.id = Zone._ID
+        Zone._ID+=1
     
         # Right-Upper corner (x1,y1)
         self.x1 = -1
@@ -102,38 +108,48 @@ g_prompt_button_pose = Pose(Point(1.3, 0.71, 1.37), q_all)
 g_can_click_indicator_pose = Pose(Point(1.87, 0.0, 1.44), q_all)
 
 # Create zones
-g_zones = {}
-def create_zone(id, x, y, w, h, list_actions):
+g_zones = []
+def create_zone(x, y, w, h, list_actions):
     global g_zones
-    g_zones[id] = Zone(id, None, list_actions)
-    g_zones[id].setPixelCoords(x, y, x+w, y+h)
+    new_zone = Zone(None, list_actions)
+    new_zone.setPixelCoords(x, y, x+w, y+h)
+    g_zones.append(new_zone)
 
 if DOMAIN_NAME=="epistemic":
-    create_zone(0,      0,0,500,1080,           ["change_focus_towards"])
-    create_zone(1,      0,0,1920,300,           ["move_to_table"])
-    create_zone(2,      1211,561,104,116,       ["pick"])
-    create_zone(3,      634,374,312,378,        ["place_1('w1', 'box_1')"])
-    create_zone(4,      973,374,312,378,        ["place_1('w1', 'box_2')"])
-    create_zone(5,      0,0,0,0,                ["communicate_if_cube_can_be_put"])
-    create_zone(6,      1371,820,228,217,       ["PASS"])
-    create_zone(7,      1476, 296, 110, 109,    ["q1"])
-    create_zone(8,      1638,296,110,109,       ["q2"])
-    create_zone(9,      1800,296,108,108,       ["q3"])
-    create_zone(10,     1640,452,109,110,       ["q4"])
-    create_zone(11,     1804,452,110,109,       ["q5"])
+    create_zone(0,0,500,1080,           ["change_focus_towards"])
+    create_zone(0,0,1920,300,           ["move_to_table"])
+    create_zone(1211,561,104,116,       ["pick"])
+    create_zone(634,374,312,378,        ["place_1('w1', 'box_1')"])
+    create_zone(973,374,312,378,        ["place_1('w1', 'box_2')"])
+    create_zone(1371,820,228,217,       ["PASS"])
+    create_zone(1476, 296, 110, 109,    ["q1"])
+    create_zone(1638,296,110,109,       ["q2"])
+    create_zone(1800,296,108,108,       ["q3"])
+    create_zone(1640,452,109,110,       ["q4"])
+    create_zone(1804,452,110,109,       ["q5"])
 else:
     raise Exception("Domain_name unknown...")
 
-# Detect PASS zone
-for z in g_zones.values():
+
+# Detect Special zones
+for z in g_zones:
     if z.valid_actions==["PASS"]:
-        break
-g_z_pass = z
-g_z_pass.is_pass = True
+        g_z_pass = z
+        g_z_pass.is_pass = True
+    elif z.valid_actions==["q1"]:
+        g_z_q1 = z
+    elif z.valid_actions==["q2"]:
+        g_z_q2 = z
+    elif z.valid_actions==["q3"]:
+        g_z_q3 = z
+    elif z.valid_actions==["q4"]:
+        g_z_q4 = z
+    elif z.valid_actions==["q5"]:
+        g_z_q5 = z
 
 def disable_zones(req = None):
     # first disable zone fast
-    for z in g_zones.values():
+    for z in g_zones:
         z.current_action_id = -10
 
     hide_move_buttons()
@@ -141,7 +157,7 @@ def disable_zones(req = None):
     return EmptyResponse()
 
 g_prompt_button_shown = False
-g_prompt_button_zone = Zone(-20, g_prompt_button_pose, None)
+g_prompt_button_zone = Zone(g_prompt_button_pose, None)
 g_prompt_button_zone.setPixelCoords(1664, 299, 1899, 417)
 def show_prompt_button(req = None):
     global g_prompt_button_shown
@@ -280,50 +296,40 @@ Q2_pose = Pose(Point(1.2, 0.68, 1.33), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
 Q3_pose = Pose(Point(1.2, 0.83, 1.33), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
 Q4_pose = Pose(Point(1.3, 0.67, 1.22), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
 Q5_pose = Pose(Point(1.3, 0.82, 1.22), quaternion_msgs_from_rpy(-0.6, 0, 1.57))
-def show_question_buttons(req = None):
-    hide_question_buttons()
+def set_question_buttons(req = None):
+
     if req==None:
-        nb = 5
-    else:
-        nb = req.data
+        req = SetQuestionButtonsRequest()
+        req.q1 = True
+        req.q2 = True
+        req.q3 = True
+        req.q4 = True
+        req.q5 = True
+    
     srv = SetModelStateRequest()
     srv.model_state.reference_frame = "world"
-    if nb>0:
-        srv.model_state.model_name="q1"
-        srv.model_state.pose = Q1_pose
-        g_set_model_state_client(srv)
-    if nb>1:
-        srv.model_state.model_name="q2"
-        srv.model_state.pose = Q2_pose
-        g_set_model_state_client(srv)
-    if nb>2:
-        srv.model_state.model_name="q3"
-        srv.model_state.pose = Q3_pose
-        g_set_model_state_client(srv)
-    if nb>3:
-        srv.model_state.model_name="q4"
-        srv.model_state.pose = Q4_pose
-        g_set_model_state_client(srv)
-    if nb>4:
-        srv.model_state.model_name="q5"
-        srv.model_state.pose = Q5_pose
-        g_set_model_state_client(srv)
-    return IntResponse()
-def hide_question_buttons(req = None):
-    srv = SetModelStateRequest()
-    srv.model_state.pose = g_far_zone_pose
-    srv.model_state.reference_frame = "world"
+
     srv.model_state.model_name="q1"
+    srv.model_state.pose = Q1_pose if req.q1 else g_far_zone_pose
     g_set_model_state_client(srv)
+    
     srv.model_state.model_name="q2"
+    srv.model_state.pose = Q2_pose if req.q2 else g_far_zone_pose
     g_set_model_state_client(srv)
+    
     srv.model_state.model_name="q3"
+    srv.model_state.pose = Q3_pose if req.q3 else g_far_zone_pose
     g_set_model_state_client(srv)
+    
     srv.model_state.model_name="q4"
+    srv.model_state.pose = Q4_pose if req.q4 else g_far_zone_pose
     g_set_model_state_client(srv)
+    
     srv.model_state.model_name="q5"
+    srv.model_state.pose = Q5_pose if req.q5 else g_far_zone_pose
     g_set_model_state_client(srv)
-    return EmptyResponse()
+
+    return SetQuestionButtonsResponse()
 
 #########
 ## ROS ##
@@ -338,9 +344,7 @@ def incoming_vha_cb(msg: VHA):
     g_vha_received = True
 
     # Reset all zones
-    for z in g_zones.values():
-        if z.is_pass:
-            continue
+    for z in g_zones:
         z.current_action_id = -10
 
     # Update pass zone
@@ -357,28 +361,25 @@ def incoming_vha_cb(msg: VHA):
         g_z_pass.ready_activate_auto_pass = True
         g_z_pass.ns_idle = False
 
-    lines = []
-    nb_question = 0
     for i,ha in enumerate(g_vha.valid_human_actions):
 
         # Questions
         if ha[:len("communicate_if_cube_can_be_put")] == "communicate_if_cube_can_be_put":
-            nb_question+=1
-            lines.append(f"Can I put my cube in box {ha[ha.find('box_')+len('box_')]}")
-            if nb_question==1:
-                g_zones[7].current_action_id = i+1
-            elif nb_question==2:
-                g_zones[8].current_action_id = i+1
-            elif nb_question==3:
-                g_zones[9].current_action_id = i+1
-            elif nb_question==4:
-                g_zones[10].current_action_id = i+1
-            elif nb_question==5:
-                g_zones[11].current_action_id = i+1
+            n_box = int(ha[ha.find('box_')+len('box_')])
+            if n_box==1:
+                g_z_q1.current_action_id = i+1
+            elif n_box==2:
+                g_z_q2.current_action_id = i+1
+            elif n_box==3:
+                g_z_q3.current_action_id = i+1
+            elif n_box==4:
+                g_z_q4.current_action_id = i+1
+            elif n_box==5:
+                g_z_q5.current_action_id = i+1
             continue
 
         # Regular actions
-        for z in g_zones.values():
+        for z in g_zones:
             for z_a in z.valid_actions:
                 if z_a == ha[:len(z_a)]: # ha starts with z_a
                     z.current_action_id = i+1
@@ -392,13 +393,43 @@ def incoming_vha_cb(msg: VHA):
             if z.current_action_id != -10:
                 break
 
-    # Prompt questions and show question buttons
-    s = IntRequest(nb_question)
-    show_question_buttons(s)
-    if nb_question!=0:
+
+    lines = []
+    srv_set_q_buttons = SetQuestionButtonsRequest()
+    srv_set_q_buttons.q1 = False
+    srv_set_q_buttons.q2 = False
+    srv_set_q_buttons.q3 = False
+    srv_set_q_buttons.q4 = False
+    srv_set_q_buttons.q5 = False
+    if g_z_q1.current_action_id != -10:
+        lines.append("1- Can I put my cube in box 1?")
+        srv_set_q_buttons.q1 = True
+    if g_z_q2.current_action_id != -10:
+        lines.append("2- Can I put my cube in box 2?")
+        srv_set_q_buttons.q2 = True
+    if g_z_q3.current_action_id != -10:
+        lines.append("3- Can I put my cube in box 3?")
+        srv_set_q_buttons.q3 = True
+    if g_z_q4.current_action_id != -10:
+        lines.append("4- Can I put my cube in box 4?")
+        srv_set_q_buttons.q4 = True
+    if g_z_q5.current_action_id != -10:
+        lines.append("5- Can I put my cube in box 5?")
+        srv_set_q_buttons.q5 = True
+
+    set_question_buttons(srv_set_q_buttons)
+    if len(lines):
+        # print in shell
         rospy.logwarn("Questions:")
-        for i,l in enumerate(lines):
-            rospy.logwarn(f"{i+1}- {l}")
+        for l in lines:
+            rospy.logwarn(l)
+
+        # in prompt window
+        msg_questions = String()
+        msg_questions.data = "Questions:\n"
+        for l in lines:
+            msg_questions.data += f"{l}\n"
+        g_prompt_pub.publish(msg_questions)
 
     if g_vha.valid_human_actions==[]:
         # hide_can_click_indicator()
@@ -443,7 +474,7 @@ def TO_reached_cb(msg: EmptyM):
 
 def main():
     global g_vha, g_vha_received, g_step_over, g_timeout_max, g_best_human_action, g_human_choice_pub, g_set_model_state_client, g_start_human_action_prox
-    global g_prompt_button_pressed_pub
+    global g_prompt_button_pressed_pub, g_prompt_pub
     global decision_sent
     global AUTO_PASS
 
@@ -466,8 +497,10 @@ def main():
     show_turn_buttons_service = rospy.Service("show_turn_buttons", EmptyS, show_turn_buttons)
     show_move_buttons_service = rospy.Service("show_move_buttons", EmptyS, show_move_buttons)
     hide_move_buttons_service = rospy.Service("hide_move_buttons", EmptyS, hide_move_buttons)
-    show_question_buttons_service = rospy.Service("show_question_buttons", Int, show_question_buttons)
-    hide_question_buttons_service = rospy.Service("hide_question_buttons", EmptyS, hide_question_buttons)
+    set_question_buttons_service = rospy.Service("set_question_buttons", SetQuestionButtons, set_question_buttons)
+
+    g_prompt_pub = rospy.Publisher("/simu_prompt", String, queue_size=1)
+    
 
     auto_pass_pub = rospy.Publisher("/auto_pass_state", Bool, queue_size=1)
 
@@ -568,57 +601,16 @@ def main():
                 reset_last_click()
 
         else:
-
-            if AUTO_PASS==False:
-                # Check if AUTO_PASS being activated
-                if g_z_pass.ready_activate_auto_pass and g_z_pass.clickIn(g_last_click):
-                    rospy.logwarn("Activating AUTO_PASS")
-                    AUTO_PASS = True
-                    auto_pass_pub.publish(True)
-                    reset_last_click()
-                    show_auto_pass_indicator()
-
-                # ACTION ZONES
-                for z in g_zones.values():
-                    if z.isActive() and z.clickIn(g_last_click):
-                        decision_sent = True
-                        rospy.loginfo(f"zone clicked: {z}")
-                        g_start_human_action_prox(z.current_action_id)
-                        disable_zones()
-                        rospy.loginfo("human decision sent")
-                        reset_last_click()
-                        break
-            
-            if AUTO_PASS==True:
-
-                # Check if AUTO_PASS is being disabled
-                if g_z_pass.clickIn(g_last_click):
-                    rospy.logwarn("Disactivating AUTO_PASS")
-                    AUTO_PASS = False
-                    auto_pass_pub.publish(False)
-                    reset_last_click()
-                    hide_auto_pass_indicator()
-
-                # Make auto pass if possible
-                elif g_z_pass.isActive():
+            # ACTION ZONES
+            for z in g_zones:
+                if z.isActive() and z.clickIn(g_last_click):
                     decision_sent = True
-                    g_start_human_action_prox(g_z_pass.current_action_id)
+                    rospy.loginfo(f"zone clicked: {z}")
+                    g_start_human_action_prox(z.current_action_id)
                     disable_zones()
+                    rospy.loginfo("human decision sent")
                     reset_last_click()
-
-                # Human should act, even in AUTO_PASS
-                elif g_z_pass.ns_idle:
-                    for z in g_zones.values():
-                        if z.isActive() and z.clickIn(g_last_click):
-                            decision_sent = True
-                            rospy.loginfo(f"zone clicked: {z}")
-                            g_start_human_action_prox(z.current_action_id)
-                            disable_zones()
-                            rospy.loginfo("human decision sent")
-                            reset_last_click()
-                            break
-
-        # TODO: Sound click was ineffective
+                    break
 
         time.sleep(0.01)
             

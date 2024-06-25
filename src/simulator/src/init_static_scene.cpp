@@ -41,103 +41,68 @@ void init_scene_epistemic()
   planning_scene_interface.applyCollisionObject(collision_object_1);
 
 
-  /* Box 1 */
 
-  moveit_msgs::CollisionObject box_1;
-  box_1.id = "box_1";
+  /* Boxes */
+  moveit_msgs::CollisionObject box_1, box_2, box_3;
+  box_1.operation = box_1.ADD;
   box_1.header.frame_id = "world";
 
   /* Define the primitive and its dimensions. */
   box_1.primitives.resize(1);
   box_1.primitives[0].type = box_1.primitives[0].BOX;
   box_1.primitives[0].dimensions.resize(3);
-  box_1.primitives[0].dimensions[0] = 0.42;
-  box_1.primitives[0].dimensions[1] = 0.42;
+  box_1.primitives[0].dimensions[0] = 0.53;
+  box_1.primitives[0].dimensions[1] = 0.53;
   box_1.primitives[0].dimensions[2] = 0.38;
 
   /* Define the pose of the object. */
-  box_1.primitive_poses.resize(1);  
+  box_1.primitive_poses.resize(1);
   box_1.primitive_poses[0].position.x = 0.85;
   box_1.primitive_poses[0].position.y = -0.25;
   box_1.primitive_poses[0].position.z = 0.89;
   box_1.primitive_poses[0].orientation.w = 1.0;
 
-  box_1.operation = box_1.ADD;
+  box_1.id = "box_1";
   planning_scene_interface.applyCollisionObject(box_1);
 
-  
-  /* Box 2 */
-
-  moveit_msgs::CollisionObject box_2;
+  box_2 = box_1;
   box_2.id = "box_2";
-  box_2.header.frame_id = "world";
-
-  /* Define the primitive and its dimensions. */
-  box_2.primitives.resize(1);
-  box_2.primitives[0].type = box_2.primitives[0].BOX;
-  box_2.primitives[0].dimensions.resize(3);
-  box_2.primitives[0].dimensions[0] = 0.42;
-  box_2.primitives[0].dimensions[1] = 0.42;
-  box_2.primitives[0].dimensions[2] = 0.38;
-
-  /* Define the pose of the object. */
-  box_2.primitive_poses.resize(1);  
   box_2.primitive_poses[0].position.x = 0.85;
   box_2.primitive_poses[0].position.y = 0.1;
   box_2.primitive_poses[0].position.z = 0.89;
-  box_2.primitive_poses[0].orientation.w = 1.0;
-
-  box_2.operation = box_2.ADD;
   planning_scene_interface.applyCollisionObject(box_2);
 
-    /* Box 3 */
-
-  moveit_msgs::CollisionObject box_3;
+  box_3 = box_1;
   box_3.id = "box_3";
-  box_3.header.frame_id = "world";
-
-  /* Define the primitive and its dimensions. */
-  box_3.primitives.resize(1);
-  box_3.primitives[0].type = box_3.primitives[0].BOX;
-  box_3.primitives[0].dimensions.resize(3);
-  box_3.primitives[0].dimensions[0] = 0.42;
-  box_3.primitives[0].dimensions[1] = 0.42;
-  box_3.primitives[0].dimensions[2] = 0.38;
-
-  /* Define the pose of the object. */
-  box_3.primitive_poses.resize(1);  
   box_3.primitive_poses[0].position.x = 0.85;
   box_3.primitive_poses[0].position.y = 0.45;
   box_3.primitive_poses[0].position.z = 0.89;
-  box_3.primitive_poses[0].orientation.w = 1.0;
-
-  box_3.operation = box_3.ADD;
   planning_scene_interface.applyCollisionObject(box_3);
 
 
-  /* cube */
+  /* cube r1 */
 
-  moveit_msgs::CollisionObject cube;
-  cube.id = "cube";
-  cube.header.frame_id = "world";
+  moveit_msgs::CollisionObject r1;
+  r1.id = "r1";
+  r1.header.frame_id = "world";
 
   /* Define the primitive and its dimensions. */
-  cube.primitives.resize(1);
-  cube.primitives[0].type = cube.primitives[0].BOX;
-  cube.primitives[0].dimensions.resize(3);
-  cube.primitives[0].dimensions[0] = 0.12;
-  cube.primitives[0].dimensions[1] = 0.12;
-  cube.primitives[0].dimensions[2] = 0.12;
+  r1.primitives.resize(1);
+  r1.primitives[0].type = r1.primitives[0].BOX;
+  r1.primitives[0].dimensions.resize(3);
+  r1.primitives[0].dimensions[0] = 0.10;
+  r1.primitives[0].dimensions[1] = 0.10;
+  r1.primitives[0].dimensions[2] = 0.10;
 
   /* Define the pose of the object. */
-  cube.primitive_poses.resize(1);  
-  cube.primitive_poses[0].position.x = 0.5;
-  cube.primitive_poses[0].position.y = -0.5;
-  cube.primitive_poses[0].position.z = 0.76;
-  cube.primitive_poses[0].orientation.w = 1.0;
+  r1.primitive_poses.resize(1);  
+  r1.primitive_poses[0].position.x = 0.5;
+  r1.primitive_poses[0].position.y = -0.6;
+  r1.primitive_poses[0].position.z = 0.75;
+  r1.primitive_poses[0].orientation.w = 1.0;
 
-  cube.operation = cube.ADD;
-  planning_scene_interface.applyCollisionObject(cube);
+  r1.operation = r1.ADD;
+  planning_scene_interface.applyCollisionObject(r1);
 }
 
 void init_scene_stack_empiler_2()

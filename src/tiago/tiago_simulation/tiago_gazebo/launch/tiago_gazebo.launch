@@ -69,6 +69,7 @@
 
   <param name="move_group/trajectory_execution/allowed_execution_duration_scaling" value="4.0" />
   <param name="move_group/trajectory_execution/execution_duration_monitoring" value="false" />
+  <param name="move_group/trajectory_execution/allowed_start_tolerance" value="0.0" />
 
   <node name="init_planning_scene" pkg="simulator" type="init_static_scene" args="$(arg world)" respawn="false" output="screen" />
   <node pkg="tf" type="static_transform_publisher" name="odom_world_tf" args="0 0 0 0 0 0 /world /odom 20"/>

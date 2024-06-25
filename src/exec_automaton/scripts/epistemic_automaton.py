@@ -23,6 +23,10 @@ from sim_msgs.msg import EventLog
 from sim_msgs.srv import Int, IntResponse, IntRequest
 from sim_msgs.msg import Signal
 from sim_msgs.msg import HeadCmd
+from sim_msgs.msg import BoxTypes
+from sim_msgs.srv import SetBoxTypes, SetBoxTypesRequest, SetBoxTypesResponse
+from sim_msgs.srv import GetBoxTypes, GetBoxTypesRequest, GetBoxTypesResponse
+from sim_msgs.msg import CanPlaceAnswers
 import simpleaudio as sa
 import numpy as np
 
@@ -145,7 +149,7 @@ def get_possible_human_actions(s: ConM.Step):
     has = []
 
     for ho in s.human_options:
-        if ho.human_action.is_passive:
+        if ho.human_action.is_passive():
             has = has + [ho.human_action]
         else:
             has = [ho.human_action] + has
@@ -183,6 +187,105 @@ def human_action_done_cb(m: EmptyM):
     g_human_action_done = True
     print("BAZABF H DONE")
 
+def presence_of_questions_in_step(s: ConM.Step):
+    for p in s.get_pairs():
+        if p.human_action.name == "communicate_if_cube_can_be_put":
+            return True
+    return False
+
+def step_flagged_already_with_additional_questions(s: ConM.Step):
+    try:
+        s.with_addtional_questions
+        return True
+    except AttributeError:
+        return False
+    
+def com_flagged_as_additional_question(a: CM.Action):
+    try:
+        a.is_additional_question
+        return True
+    except AttributeError:
+        return False
+
+g_answer_boxes = CanPlaceAnswers()
+def process_questions(s: ConM.Step):
+    global g_answer_boxes
+
+    # If there are questions in current step
+    if presence_of_questions_in_step(s):
+
+        # If no flag "without_additional_question"
+        if not step_flagged_already_with_additional_questions(s):
+
+            """ add additional questions with "no" answer according to opaque boxes """
+
+            # Get box types
+            res = g_get_box_types_client() # type: GetBoxTypesResponse
+
+            # For each of the three box
+            new_pairs = []
+            for n_box in range(1,4):
+                box_type = res.types.__getattribute__(f"box_{n_box}")
+                if box_type==BoxTypes.OPAQUE:
+                    # Look for corresponding question, and if additional question needed
+                    must_add_question = True
+                    for p in s.get_pairs():
+                        if p.human_action.name=="communicate_if_cube_can_be_put" and p.human_action.parameters[1]==f"box_{n_box}":
+                            must_add_question = False
+                            break
+                    
+                    if must_add_question:
+
+                        # Identify object held
+                        for p in s.get_pairs():
+                            if p.human_action.name=="communicate_if_cube_can_be_put":
+                                obj_held = p.human_action.parameters[0]
+
+                        # Create new question in pair
+                        h_com_action = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", [obj_held, f"box_{n_box}"], None, 0, "H"), 0, None)
+                        h_com_action.is_additional_question = True
+                        r_wait_turn = s.get_pairs()[0].robot_action
+                        new_pair = ConM.ActionPair(h_com_action, r_wait_turn, None, None)
+                        new_pairs.append(new_pair)
+            
+            # Update step
+            new_human_options = ConM.arrange_pairs_in_HumanOption(s.get_pairs()+new_pairs)
+            s.init(new_human_options, s.from_pair)
+            s.with_additional_questions = True
+
+        # else:
+        #     # find additional questions (pairs) to remove
+        #     p_to_remove = []
+        #     for p in s.get_pairs():
+        #         if p.human_action.name=="communicate_if_cube_can_be_put":
+        #             if com_flagged_as_additional_question(p.human_action):
+        #                 p_to_remove.append(p)
+
+        #     # remove pairs
+        #     new_pairs = s.get_pairs()
+        #     for p in p_to_remove:
+        #         new_pairs.remove(p)
+
+        #     # Update step
+        #     new_human_options = ConM.arrange_pairs_in_HumanOption(new_pairs)
+        #     s.init(new_human_options, s.from_pair)
+        
+        # Updates answers
+        g_answer_boxes.box_1 = False
+        g_answer_boxes.box_2 = False
+        g_answer_boxes.box_3 = False
+        for p in s.get_pairs():
+            if p.human_action.name=="communicate_if_cube_can_be_put":
+                if p.human_action.parameters[1]=="box_1":
+                    if not com_flagged_as_additional_question(p.human_action):
+                        g_answer_boxes.box_1 = True
+                if p.human_action.parameters[1]=="box_2":
+                    if not com_flagged_as_additional_question(p.human_action):
+                        g_answer_boxes.box_2 = True
+                if p.human_action.parameters[1]=="box_3":
+                    if not com_flagged_as_additional_question(p.human_action):
+                        g_answer_boxes.box_3 = True
+
 def exec_epistemic(init_step):
     
     """
@@ -205,6 +308,9 @@ def exec_epistemic(init_step):
 
         # if Co-present
         if check_copresence(curr_step):
+
+            # Manage addtional questions
+            process_questions(curr_step)
 
             # Identify Agent Turn
             human_turn = curr_step.get_pairs()[0].robot_action.is_wait_turn()
@@ -554,6 +660,8 @@ def wait_human_decision(s: ConM.Step):
                     time.sleep(0.01)
             rospy.loginfo("end wait reaction time")
         else:
+            str_bar.finish()
+            g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
             rospy.loginfo("end loop")
     
     # If Timeout Reached
@@ -578,7 +686,7 @@ def wait_step_end():
     log_event("R_S_WAIT_STEP_END")
     rospy.loginfo("Waiting step end...")
     while not rospy.is_shutdown() and not step_over:
-        if not g_robot_acting:
+        if not g_robot_acting and g_new_human_decision.name!="communicate_if_cube_can_be_put":
             prompt("wait_end_ha")
         time.sleep(0.1)
 
@@ -627,7 +735,6 @@ def update_hmi_timeout_progress(elapsed):
 
 def get_next_step(s: ConM.Step, HA: CM.Action, RA: CM.Action):
     executed_pair = None
-
     for p in s.get_pairs():
         if CM.Action.are_similar(p.robot_action, RA) and CM.Action.are_similar(p.human_action, HA):
             executed_pair = p
@@ -639,6 +746,11 @@ def get_next_step(s: ConM.Step, HA: CM.Action, RA: CM.Action):
     if not s.id==1:
         if executed_pair.is_passive() and s.from_pair.is_passive():
             return s.from_pair.in_human_option.in_step
+        
+    # Check if excecuted pair includes an "additional_question"
+    if com_flagged_as_additional_question(executed_pair.human_action):
+        # If so, next step is the same 
+        return s
 
     return executed_pair.next[0].in_human_option.in_step
 
@@ -842,18 +954,11 @@ def compute_msg_action_epistemic(a):
 
     if "pick"==a.name:
         msg.type=Action.PICK_OBJ_NAME
-        if a.parameters[0]=='w1':
-            msg.obj_name='b1'
-        else:
-            msg.obj_name=a.parameters[0]
+        msg.obj_name=a.parameters[0]
 
     elif "place_1"==a.name:
         msg.type=Action.PLACE_OBJ_NAME
-        if a.parameters[0]=='w1':
-            msg.obj_name='b1'
-        else:
-            msg.obj_name=a.parameters[0]
-
+        msg.obj_name=a.parameters[0]
         msg.location = a.parameters[1] + "_" + a.agent
 
     elif "change_focus_towards"==a.name:
@@ -869,6 +974,7 @@ def compute_msg_action_epistemic(a):
         msg.type=Action.ASK
         msg.obj_name=a.parameters[0]
         msg.location=a.parameters[1]
+        msg.answers = g_answer_boxes
 
     if msg.type==-1:
         raise Exception("Unknown action")
@@ -1392,7 +1498,7 @@ def main_exec():
     ASSESS_DELAY                = 0.2
     TT_R_PASSIVE_DELAY          = 1.0
     START_SIMU_DELAY            = 2.0
-    INCREMENTAL_BAR_STR_WIDTH   = 31
+    INCREMENTAL_BAR_STR_WIDTH   = 30
     #   Proba
     P_SUCCESS_ID_PHASE          = 1.0
 
@@ -1414,28 +1520,31 @@ def main_exec():
     ## LOADING ## # pstates
     init_step = load("/home/sshekhar/Downloads/last_dom_n_sol_tt.p")
 
+    # Define box types
+    req = SetBoxTypesRequest()
+    req.types.box_1 = BoxTypes.OPAQUE
+    req.types.box_2 = BoxTypes.OPAQUE
+    req.types.box_3 = BoxTypes.OPAQUE
+    
 
-    # if g_domain_name!=DOMAIN_NAME:
-    #     raise Exception("Missmatching domain names CONSTANT and loaded")
-    # robots = {
-    #     "test" : ("Epistemic", "epi", init_step, "epi"), # Finish task early
-    # }
+    rospy.loginfo("Wait for set_box_types service to be started...")
+    rospy.wait_for_service("set_box_types")
+    rospy.loginfo("\tset_box_types service ready!")
 
     rospy.loginfo("Wait for hmi to be started...")
     rospy.wait_for_service("hmi_started")
-    rospy.loginfo("hmi started!")
+    rospy.loginfo("\thmi started!")
     g_hmi_timeout_max_client(int(TIMEOUT_DELAY))
 
     rospy.loginfo("Waiting for reset_world service to be started...")
     rospy.wait_for_service("reset_world")
-    rospy.loginfo("reset_world service started")
+    rospy.loginfo("\treset_world service started")
 
     rospy.loginfo("Waiting prompt to be started...")
     rospy.wait_for_service("prompt_started")
-    rospy.loginfo("prompt started")
+    rospy.loginfo("\tprompt started")
 
     exec_regime = None
-
 
     LANG = "EN" # 'FR' | 'EN'
 
@@ -1452,6 +1561,9 @@ def main_exec():
         # Reset world
         prompt("reset_world")
         g_reset_world_client()
+
+        # Set box types
+        g_set_box_types_client.call(req)
 
         # Wait for Start Signal from Prompt Window
         wait_start_signal()
@@ -1555,6 +1667,10 @@ if __name__ == "__main__":
 
     robot_action_done = rospy.Subscriber('/robot_action_done', EmptyM, robot_action_done_cb)
     human_action_done = rospy.Subscriber('/human_action_done', EmptyM, human_action_done_cb)
+
+    g_set_box_types_client = rospy.ServiceProxy("/set_box_types", SetBoxTypes)
+    g_get_box_types_client = rospy.ServiceProxy("/get_box_types", GetBoxTypes)
+
 
     # Wait for publisher init
     time.sleep(0.1)

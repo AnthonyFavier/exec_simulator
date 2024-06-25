@@ -14,13 +14,17 @@ add_message_files(
   EventLog.msg
   Signal.msg
   HeadCmd.msg
+  BoxTypes.msg
+  CanPlaceAnswers.msg
 )
 add_service_files(
   FILES
   MoveArm.srv
   AttachObj.srv
   Int.srv
-  SetBoxCover.srv
+  SetBoxTypes.srv
+  GetBoxTypes.srv
+  SetQuestionButtons.srv
 )
 
 generate_messages(

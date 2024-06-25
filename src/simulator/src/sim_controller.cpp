@@ -33,6 +33,7 @@ ros::ServiceClient set_link_properties_client;
 ros::ServiceClient set_synchro_step_client;
 
 ros::ServiceClient hide_move_buttons_client;
+ros::ServiceClient set_question_buttons_client;
 
 bool g_step_synchro_on = true;
 
@@ -42,6 +43,8 @@ const double z_offset_grasp = 0.05;
 
 bool g_h_start_moving = false;
 bool g_r_start_moving = false;
+
+sim_msgs::BoxTypes g_box_types;
 
 
 //  DOMAIN DESCRIPTION  //
@@ -59,10 +62,9 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"box_1_cover",       make_pose(make_point(0.85, -0.25, 0.7),     make_quaternion())},
         {"box_2_cover",       make_pose(make_point(0.85, 0.1, 0.7),       make_quaternion())},
         {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),      make_quaternion())},
-        {"b1",                make_pose(make_point(6.4, -0.4, 0.75),         make_quaternion())},
+        {"w1",                make_pose(make_point(6.4, -0.4, 0.75),      make_quaternion())},
         {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),     make_quaternion())},
 };
-
 
 // Deprecated for epistemic
 class DropZone
@@ -128,11 +130,11 @@ private:
 std::vector<Cube> g_cubes;
 void init_cubes()
 {
-    g_cubes.push_back(Cube("b1"));
+    g_cubes.push_back(Cube("w1"));
     g_cubes.push_back(Cube("r1"));
 }
 
-//  HIGH LEVEL ACTIONS  //
+// ************************* HIGH LEVEL ACTIONS **************************** //
 void PickName(AGENT agent, std::string obj_name)
 {
     ROS_INFO("\t%s PICK START %s", get_agent_str(agent).c_str(), obj_name.c_str());
@@ -233,7 +235,6 @@ void BePassive(AGENT agent)
     }
 }
 
-
 enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SIDE_LOOK_MAIN};
 HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
 geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
@@ -319,12 +320,42 @@ void MoveForward()
 
 }
 
-void Ask(std::string obj_name, std::string location)
+void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers answers)
 {
-    // Do Nohting for human ?
+    // Look at human
+    robot_head_follow_human(AGENT::ROBOT);
 
-    // Then show robot answer
-    // wait some delay
+    // Retrieve answer
+    bool answer;
+    if(location=="box_1")
+        answer = answers.box_1;
+    else if(location=="box_2")
+        answer = answers.box_2;
+    else if(location=="box_3")
+        answer = answers.box_3;
+    else
+        ROS_ERROR("WEIRD...");
+
+    // Prompt answer 
+    std_msgs::String prompt_msg;
+    if(answer)
+        prompt_msg.data = " Yes, you can place it in " + location + ".";
+    else
+        prompt_msg.data = " No, you can't place it in " + location + "...";
+
+    ROS_WARN("%s", prompt_msg.data.c_str());
+
+    // Delay
+    ROS_WARN("Waiting 5 seconds (10s sim time)...");
+    ros::Rate loop(2);
+    ros::Time start = ros::Time::now();
+    while(ros::Time::now() - start < ros::Duration(4*2))
+    {
+        prompt_pub.publish(prompt_msg);
+        loop.sleep();
+    }
+
+    ROS_WARN("Done !");
 }
 
 //  MANAGE ACTIONS + EVENTS + SIGNALS  //
@@ -391,6 +422,60 @@ void send_visual_signal_action_start(AGENT agent, sim_msgs::Action action)
     ROS_INFO("Start signal SENT");
 }
 
+std::string get_str_agent(AGENT agent)
+{
+    if(agent==AGENT::ROBOT)
+        return "R";
+    else if(agent==AGENT::HUMAN)
+        return "H";
+    else
+        return "";
+}
+
+std::string get_str_action(int type)
+{
+    switch(type)
+    {
+        case 0:
+            return "PASSIVE";
+            break;
+        case 1:
+            return "PICK_OBJ";
+            break;
+        case 2:
+            return "PLACE_OBJ";
+            break;
+        case 3:
+            return "PUSH";
+            break;
+        case 4:
+            return "OPEN_BOX";
+            break;
+        case 5:
+            return "DROP";
+            break;
+        case 6:
+            return "PICK_OBJ_NAME";
+            break;
+        case 7:
+            return "PLACE_OBJ_NAME";
+            break;
+        case 8:
+            return "TURN_AROUND";
+            break;
+        case 9:
+            return "MOVE_FORWARD";
+            break;
+        case 10:
+            return "ASK";
+            break;
+
+        default:
+            return "";
+            break;
+    }
+}
+
 void manage_action(AGENT agent, const sim_msgs::Action &action)
 {
     if (action_received[agent])
@@ -405,7 +490,8 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         }
 
         std_msgs::String str_msg;
-        ROS_INFO("%d type=%d", agent, action.type);
+        // ROS_INFO("Manage %s action %s", get_str_agent(agent), get_str_action(action.type));
+        ROS_INFO_STREAM("Manage " << get_str_agent(agent) << " action " << get_str_action(action.type) << ".");
 
         if (sim_msgs::Action::PASSIVE == action.type)
             BePassive(agent);
@@ -446,9 +532,12 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
             sgl.id = action.id;
             sgl.type = sim_msgs::Signal::S_HA;
             visual_signals_pub[agent].publish(sgl);
-            ROS_INFO("Start signal SENT");
+            ROS_INFO("Start signal SENT for ASKING");
 
-            Ask(action.obj_name, action.location);
+            ros::Duration(0.2).sleep();
+
+            Ask(action.obj_name, action.location, action.answers);
+
 
             send_visual_signal_action_over(agent, action);
             action_done[agent] = true;
@@ -915,9 +1004,19 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     prompt_pub.publish(prompt_msg);
 
     // Reset move buttons
-    ROS_INFO("\tReset move buttions");
+    ROS_INFO("\tReset move buttons");
     std_srvs::Empty empty_srv;
     hide_move_buttons_client.call(empty_srv);
+
+    // Reset Question buttons
+    ROS_INFO("\tReset question buttons");
+    sim_msgs::SetQuestionButtons srv_question;
+    srv_question.request.q1 = false; 
+    srv_question.request.q2 = false; 
+    srv_question.request.q3 = false; 
+    srv_question.request.q4 = false; 
+    srv_question.request.q5 = false; 
+    set_question_buttons_client.call(srv_question);
 
     // Reset Camera
     ROS_INFO("\tReset camera");
@@ -989,34 +1088,34 @@ bool set_synchro_step_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolRes
     return true;
 }
 
-bool set_box_cover_server(sim_msgs::SetBoxCoverRequest &req, sim_msgs::SetBoxCoverResponse &res)
+// Box type (OPAQUE / TRANSPARENT)
+bool set_box_types_server(sim_msgs::SetBoxTypesRequest &req, sim_msgs::SetBoxTypesResponse &res)
 {
     gazebo_msgs::SetModelState srv_set;
     geometry_msgs::Pose far_pose = make_pose(make_point(0, 0, -1), make_quaternion_RPY(0,0,0));
 
+    g_box_types = req.types;
+
     /* Box 1 */
     srv_set.request.model_state.model_name = "box_1_cover";
-    if(req.box_1)
-        srv_set.request.model_state.pose = init_poses["box_1_cover"];
-    else
-        srv_set.request.model_state.pose = far_pose;
+    srv_set.request.model_state.pose = (req.types.box_1==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_1_cover"] : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     /* Box 2 */
     srv_set.request.model_state.model_name = "box_2_cover";
-    if(req.box_2)
-        srv_set.request.model_state.pose = init_poses["box_2_cover"];
-    else
-        srv_set.request.model_state.pose = far_pose;
+    srv_set.request.model_state.pose = (req.types.box_2==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_2_cover"] : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     /* Box 3 */
     srv_set.request.model_state.model_name = "box_3_cover";
-    if(req.box_3)
-        srv_set.request.model_state.pose = init_poses["box_3_cover"];
-    else
-        srv_set.request.model_state.pose = far_pose;
+    srv_set.request.model_state.pose = (req.types.box_3==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_3_cover"] : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    return true;
+}
+bool get_box_types_server(sim_msgs::GetBoxTypesRequest &req, sim_msgs::GetBoxTypesResponse &res)
+{
+    res.types = g_box_types;
 
     return true;
 }
@@ -1094,6 +1193,7 @@ int main(int argc, char **argv)
     move_human_body_pub = node_handle.advertise<std_msgs::Int32>("/move_human_body", 1);
     
     hide_move_buttons_client = node_handle.serviceClient<std_srvs::Empty>("/hide_move_buttons");
+    set_question_buttons_client = node_handle.serviceClient<sim_msgs::SetQuestionButtons>("/set_question_buttons");
 
 
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
@@ -1101,7 +1201,8 @@ int main(int argc, char **argv)
     // set_synchro_step_client = node_handle.serviceClient<std_srvs::SetBool>("/set_synchro_step");
     ros::ServiceServer set_synchro_step_service = node_handle.advertiseService("set_synchro_step", set_synchro_step_server);
     
-    ros::ServiceServer set_box_cover_service = node_handle.advertiseService("set_box_cover", set_box_cover_server);
+    ros::ServiceServer set_box_types_service = node_handle.advertiseService("set_box_types", set_box_types_server);
+    ros::ServiceServer get_box_types_service = node_handle.advertiseService("get_box_types", get_box_types_server);
 
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);
