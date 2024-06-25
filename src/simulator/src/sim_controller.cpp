@@ -62,7 +62,7 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"box_1_cover",       make_pose(make_point(0.85, -0.25, 0.7),     make_quaternion())},
         {"box_2_cover",       make_pose(make_point(0.85, 0.1, 0.7),       make_quaternion())},
         {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),      make_quaternion())},
-        {"b1",                make_pose(make_point(6.4, -0.4, 0.75),         make_quaternion())},
+        {"w1",                make_pose(make_point(6.4, -0.4, 0.75),      make_quaternion())},
         {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),     make_quaternion())},
 };
 
@@ -130,7 +130,7 @@ private:
 std::vector<Cube> g_cubes;
 void init_cubes()
 {
-    g_cubes.push_back(Cube("b1"));
+    g_cubes.push_back(Cube("w1"));
     g_cubes.push_back(Cube("r1"));
 }
 

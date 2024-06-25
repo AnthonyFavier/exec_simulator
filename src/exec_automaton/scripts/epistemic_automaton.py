@@ -954,18 +954,11 @@ def compute_msg_action_epistemic(a):
 
     if "pick"==a.name:
         msg.type=Action.PICK_OBJ_NAME
-        if a.parameters[0]=='w1':
-            msg.obj_name='b1'
-        else:
-            msg.obj_name=a.parameters[0]
+        msg.obj_name=a.parameters[0]
 
     elif "place_1"==a.name:
         msg.type=Action.PLACE_OBJ_NAME
-        if a.parameters[0]=='w1':
-            msg.obj_name='b1'
-        else:
-            msg.obj_name=a.parameters[0]
-
+        msg.obj_name=a.parameters[0]
         msg.location = a.parameters[1] + "_" + a.agent
 
     elif "change_focus_towards"==a.name:
