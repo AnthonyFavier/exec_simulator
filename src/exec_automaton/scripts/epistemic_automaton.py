@@ -557,6 +557,8 @@ def wait_human_decision(s: ConM.Step):
                     time.sleep(0.01)
             rospy.loginfo("end wait reaction time")
         else:
+            str_bar.finish()
+            g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
             rospy.loginfo("end loop")
     
     # If Timeout Reached
