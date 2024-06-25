@@ -422,6 +422,60 @@ void send_visual_signal_action_start(AGENT agent, sim_msgs::Action action)
     ROS_INFO("Start signal SENT");
 }
 
+std::string get_str_agent(AGENT agent)
+{
+    if(agent==AGENT::ROBOT)
+        return "R";
+    else if(agent==AGENT::HUMAN)
+        return "H";
+    else
+        return "";
+}
+
+std::string get_str_action(int type)
+{
+    switch(type)
+    {
+        case 0:
+            return "PASSIVE";
+            break;
+        case 1:
+            return "PICK_OBJ";
+            break;
+        case 2:
+            return "PLACE_OBJ";
+            break;
+        case 3:
+            return "PUSH";
+            break;
+        case 4:
+            return "OPEN_BOX";
+            break;
+        case 5:
+            return "DROP";
+            break;
+        case 6:
+            return "PICK_OBJ_NAME";
+            break;
+        case 7:
+            return "PLACE_OBJ_NAME";
+            break;
+        case 8:
+            return "TURN_AROUND";
+            break;
+        case 9:
+            return "MOVE_FORWARD";
+            break;
+        case 10:
+            return "ASK";
+            break;
+
+        default:
+            return "";
+            break;
+    }
+}
+
 void manage_action(AGENT agent, const sim_msgs::Action &action)
 {
     if (action_received[agent])
@@ -436,7 +490,8 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
         }
 
         std_msgs::String str_msg;
-        ROS_INFO("%d type=%d", agent, action.type);
+        // ROS_INFO("Manage %s action %s", get_str_agent(agent), get_str_action(action.type));
+        ROS_INFO_STREAM("Manage " << get_str_agent(agent) << " action " << get_str_action(action.type) << ".");
 
         if (sim_msgs::Action::PASSIVE == action.type)
             BePassive(agent);
