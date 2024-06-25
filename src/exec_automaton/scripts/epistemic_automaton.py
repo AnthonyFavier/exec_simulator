@@ -1397,7 +1397,7 @@ def main_exec():
     ASSESS_DELAY                = 0.2
     TT_R_PASSIVE_DELAY          = 1.0
     START_SIMU_DELAY            = 2.0
-    INCREMENTAL_BAR_STR_WIDTH   = 31
+    INCREMENTAL_BAR_STR_WIDTH   = 30
     #   Proba
     P_SUCCESS_ID_PHASE          = 1.0
 
