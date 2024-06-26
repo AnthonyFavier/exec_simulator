@@ -144,7 +144,7 @@
 
     <!-- Spot Turn SIDE -->
     <light name='spot_turn_side' type='spot'>
-      <pose>4.55 0.35 2.15 0 -0.95 0</pose>
+      <pose>5.05 0.35 2.15 0 -0.95 0</pose>
       <diffuse>0.2 0.2 0.2 1</diffuse>
       <specular>0.1 0.1 0.1 1</specular>
       <direction>0 0 -1</direction>
@@ -184,7 +184,7 @@
 
     <!-- Spot Move SIDE -->
     <light name='spot_move_side' type='spot'>
-      <pose>4.4 0 2.25 0 0.95 0</pose>
+      <pose>4.9 0 2.25 0 0.95 0</pose>
       <diffuse>0.2 0.2 0.2 1</diffuse>
       <specular>0.1 0.1 0.1 1</specular>
       <direction>0 0 -1</direction>
