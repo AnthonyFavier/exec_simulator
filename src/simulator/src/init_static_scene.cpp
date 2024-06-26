@@ -103,6 +103,30 @@ void init_scene_epistemic()
 
   r1.operation = r1.ADD;
   planning_scene_interface.applyCollisionObject(r1);
+
+  /* cube y1 */
+
+  moveit_msgs::CollisionObject y1;
+  y1.id = "y1";
+  y1.header.frame_id = "world";
+
+  /* Define the primitive and its dimensions. */
+  y1.primitives.resize(1);
+  y1.primitives[0].type = y1.primitives[0].BOX;
+  y1.primitives[0].dimensions.resize(3);
+  y1.primitives[0].dimensions[0] = 0.10;
+  y1.primitives[0].dimensions[1] = 0.10;
+  y1.primitives[0].dimensions[2] = 0.10;
+
+  /* Define the pose of the object. */
+  y1.primitive_poses.resize(1);  
+  y1.primitive_poses[0].position.x = 0.5;
+  y1.primitive_poses[0].position.y = -0.75;
+  y1.primitive_poses[0].position.z = 0.75;
+  y1.primitive_poses[0].orientation.w = 1.0;
+
+  y1.operation = y1.ADD;
+  planning_scene_interface.applyCollisionObject(y1);
 }
 
 void init_scene_stack_empiler_2()

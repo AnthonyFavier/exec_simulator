@@ -64,6 +64,7 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),      make_quaternion())},
         {"w1",                make_pose(make_point(6.9, -0.4, 0.75),      make_quaternion())},
         {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),     make_quaternion())},
+        {"y1",                make_pose(make_point(0.5,  -0.75, 0.75),     make_quaternion())},
 };
 
 // Deprecated for epistemic
@@ -132,6 +133,7 @@ void init_cubes()
 {
     g_cubes.push_back(Cube("w1"));
     g_cubes.push_back(Cube("r1"));
+    g_cubes.push_back(Cube("y1"));
 }
 
 // ************************* HIGH LEVEL ACTIONS **************************** //
