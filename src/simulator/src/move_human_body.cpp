@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 				break;}
 
 			case MOVE_FORWARD:{
-				double delta_x = 2.0;
+				double delta_x = 2.5;
 
 				double c = current_human_pose.position.x;
 				bool direction_positive = yaw<0.01 && yaw>-0.01;

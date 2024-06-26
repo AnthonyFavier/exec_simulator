@@ -697,7 +697,7 @@
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>6.5 0 0.7 0 0 0</pose>
+      <pose>7.0 0 0.7 0 0 0</pose>
     </model>
 
     <!-- w1 -->
@@ -757,7 +757,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>6.4 -0.4 0.75  0 0 0</pose>
+      <pose>6.9 -0.4 0.75  0 0 0</pose>
     </model>
 
     <!-- r1 -->

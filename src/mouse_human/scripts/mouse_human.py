@@ -45,8 +45,8 @@ def quaternion_msgs_from_rpy(r,p,y):
 TURN_BUTTON_POSE_MAIN = Pose( Point(2.0, -0.35, 1.63), quaternion_msgs_from_rpy(3.14159, -0.6, 0))
 MOVE_BUTTON_POSE_MAIN = Pose( Point(3.4, 0, 1.75), quaternion_msgs_from_rpy(1.57, 0.6, 0))
 
-TURN_BUTTON_POSE_SIDE = Pose( Point(5.2, 0.35, 1.63), quaternion_msgs_from_rpy(0, 0.6, 0))
-MOVE_BUTTON_POSE_SIDE = Pose( Point(3.8, 0, 1.75), quaternion_msgs_from_rpy(1.57, -0.6, 0))
+TURN_BUTTON_POSE_SIDE = Pose( Point(5.7, 0.35, 1.63), quaternion_msgs_from_rpy(0, 0.6, 0))
+MOVE_BUTTON_POSE_SIDE = Pose( Point(4.3, 0, 1.75), quaternion_msgs_from_rpy(1.57, -0.6, 0))
 
 class Zone:
     _ID = 0
