@@ -50,9 +50,9 @@ sim_msgs::BoxTypes g_box_types;
 //  DOMAIN DESCRIPTION  //
 std::map<std::string, geometry_msgs::Pose> locations =
     {
-        {"box_1_R",     make_pose(make_point(0.72, -0.2, 1.15),     make_quaternion())},
-        {"box_2_R",     make_pose(make_point(0.72, 0.1, 1.15),      make_quaternion())},
-        {"box_3_R",     make_pose(make_point(0.72, 0.4, 1.15),      make_quaternion())},
+        {"box_1_R",     make_pose(make_point(0.72, -0.2, 1.15),     make_quaternion_RPY(0,0,0.15))},
+        {"box_2_R",     make_pose(make_point(0.72, 0.1, 1.15),      make_quaternion_RPY(0,0,0.15))},
+        {"box_3_R",     make_pose(make_point(0.72, 0.4, 1.15),      make_quaternion_RPY(0,0,0.15))},
         {"box_1_H",     make_pose(make_point(0.98, -0.2, 1.15),     make_quaternion())},
         {"box_2_H",     make_pose(make_point(0.98, 0.1, 1.15),      make_quaternion())},
         {"box_3_H",     make_pose(make_point(0.98, 0.4, 1.15),      make_quaternion())},
@@ -172,7 +172,7 @@ void PickName(AGENT agent, std::string obj_name)
 
     /* GRAB OBJ */
     set_mass_obj(obj_name, false);
-    adjust_obj_pose(agent, obj_name, obj_pose);
+    set_obj_pose(agent, obj_name, obj_pose);
     grab_obj(agent, obj_name);
 
     /* HOME POSITION */
@@ -197,7 +197,7 @@ void PlacePose(AGENT agent, geometry_msgs::Pose pose)
     /* DROP OBJ */
     std::string obj_name = g_holding[agent];
     drop(agent, obj_name);
-    adjust_obj_pose(agent, obj_name, pose);
+    set_obj_pose(agent, obj_name, pose);
     set_mass_obj(obj_name, true);
 
     /* HOME POSITION */
@@ -734,18 +734,25 @@ void set_obj_rpy(AGENT agent, std::string obj_name, float r, float p, float y)
     set_model_state_client[agent].call(srv_set);
 }
 
+void set_obj_position(AGENT agent, std::string obj_name, geometry_msgs::Pose pose)
+{
+    gazebo_msgs::GetModelState srv_get;
+    srv_get.request.model_name = obj_name;
+    get_model_state_client[agent].call(srv_get);
+
+    gazebo_msgs::SetModelState srv;
+    srv.request.model_state.model_name = obj_name;
+    srv.request.model_state.pose.position = pose.position;
+    srv.request.model_state.pose.orientation = srv_get.response.pose.orientation;
+    set_model_state_client[agent].call(srv);
+}
+
 void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose)
 {
     gazebo_msgs::SetModelState srv;
     srv.request.model_state.model_name = obj_name;
     srv.request.model_state.pose = pose;
     set_model_state_client[agent].call(srv);
-}
-
-void adjust_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose)
-{
-    set_obj_rpy(agent, obj_name, 0, 0, 0);
-    set_obj_pose(agent, obj_name, pose);
 }
 
 void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta_move)
