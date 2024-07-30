@@ -1606,6 +1606,9 @@ def main_exec():
             req.types.box_3 = BoxTypes.OPAQUE
         g_set_box_types_client.call(req)
 
+        # Green Cube (4th Cube)
+        g_set_green_cube_client(run[2]=="4cubes")
+
         # Wait for Start Signal from Prompt Window
         wait_start_signal()
 
@@ -1711,7 +1714,8 @@ if __name__ == "__main__":
 
     g_set_box_types_client = rospy.ServiceProxy("/set_box_types", SetBoxTypes)
     g_get_box_types_client = rospy.ServiceProxy("/get_box_types", GetBoxTypes)
-
+    
+    g_set_green_cube_client = rospy.ServiceProxy("/set_green_cube", SetBool)
 
     # Wait for publisher init
     time.sleep(0.1)
