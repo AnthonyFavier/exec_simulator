@@ -179,13 +179,14 @@ int main(int argc, char **argv)
 
 			case MOVE_FORWARD:{
 				double delta_x = 4.0;
+				double move_incr = 0.011;
 
 				double c = current_human_pose.position.x;
 				bool direction_positive = yaw<0.01 && yaw>-0.01;
 
 				if(direction_positive)
 				{
-					current_human_pose.position.x += 0.01;
+					current_human_pose.position.x += move_incr;
 
 					if(c>=init_x+delta_x)
 					{
@@ -195,7 +196,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					current_human_pose.position.x -= 0.01;
+					current_human_pose.position.x -= move_incr;
 
 					if(c<=init_x-delta_x)
 					{

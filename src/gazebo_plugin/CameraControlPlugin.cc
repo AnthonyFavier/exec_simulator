@@ -56,7 +56,7 @@ namespace gazebo
             m_init_pose_camera = ignition::math::Pose3d(2.6, 0, 2.0, 0, 0.56, M_PI);
             m_current_pose = m_init_pose_camera;
             m_rotation_incr = 0.03;
-            m_move_incr = 0.01;
+            m_move_incr = 0.009;
 
             ROS_INFO("Plugin: Camera Control Loaded !");
         }
