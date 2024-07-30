@@ -380,10 +380,12 @@ def incoming_vha_cb(msg: VHA):
             continue
 
         # Regular actions
+        found = False
         for z in g_zones:
             for z_a in z.valid_actions:
                 if z_a == ha[:len(z_a)]: # ha starts with z_a
                     z.current_action_id = i+1
+                    found = True
                     # If turn or move actions, show buttons
                     if z_a == "change_focus_towards":
                         show_turn_buttons()
@@ -391,7 +393,7 @@ def incoming_vha_cb(msg: VHA):
                         show_move_buttons()
                     break
             # If found corresponding zone, stop current loop
-            if z.current_action_id != -10:
+            if found:
                 break
 
 
