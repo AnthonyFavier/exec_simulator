@@ -1544,27 +1544,19 @@ def main_exec():
 
     default_human_passive_action = CM.Action.create_passive("H", "PASS")
     default_robot_passive_action = CM.Action.create_passive("R", "PASS")
+
+
     runs = {
-        "1": ("baseline",               "OOT",      "3cubes"),
-        "2": ("baseline",               "OOO",      "3cubes"),
-        "3": ("baseline",               "OOO",      "4cubes"),
-        "4": ("approach_com",           "OOT",      "3cubes"),
-        "5": ("approach_com",           "OOO",      "3cubes"),
-        "6": ("approach_com",           "OOO",      "4cubes"),
-        "7": ("approach_wait_act",      "OOT",      "3cubes"),
-        "8": ("approach_wait_act",      "OOO",      "3cubes"),
-        "9": ("approach_wait_act",      "OOO",      "4cubes"),
+        1: ("baseline",               "OOT",      "3cubes",   None),
+        2: ("baseline",               "OOO",      "3cubes",   None),
+        3: ("baseline",               "OOO",      "4cubes",   None),
+        4: ("approach_com",           "OOT",      "3cubes",   None),
+        5: ("approach_com",           "OOO",      "3cubes",   None),
+        6: ("approach_com",           "OOO",      "4cubes",   None),
+        7: ("approach_wait_act",      "OOT",      "3cubes",   None),
+        8: ("approach_wait_act",      "OOO",      "3cubes",   load("/home/afavier/EHATP-EHDA/dom_n_sol_tt--3opaq.p")),
+        9: ("approach_wait_act",      "OOO",      "4cubes",   load("/home/afavier/EHATP-EHDA/dom_n_sol_tt--3opaq.p")),
     }
-
-    ## LOADING ## # pstates
-    init_step = load("/home/afavier/EHATP-EHDA/dom_n_sol_tt--3opaq.p")
-
-    # Define box types
-    req = SetBoxTypesRequest()
-    req.types.box_1 = BoxTypes.OPAQUE
-    req.types.box_2 = BoxTypes.OPAQUE
-    req.types.box_3 = BoxTypes.OPAQUE
-    
 
     rospy.loginfo("Wait for set_box_types service to be started...")
     rospy.wait_for_service("set_box_types")
@@ -1588,20 +1580,30 @@ def main_exec():
     LANG = "EN" # 'FR' | 'EN'
 
     # given order
-    order = ['test']
+    order = [8,9]
     i = 7-len(order) # N° scenario
-    order = [str(o) for o in order]
     while order!=[]:
         
         print("Order = ", order)
-        robot_name = order.pop(0)
-        # exec_regime, policy_name, policy, h_instructions = robots[robot_name]
+
+        run = runs[order.pop(0)]
+
+        init_step = run[3]
 
         # Reset world
         prompt("reset_world")
         g_reset_world_client()
 
         # Set box types
+        req = SetBoxTypesRequest()
+        if run[1]=="OOT":
+            req.types.box_1 = BoxTypes.OPAQUE
+            req.types.box_2 = BoxTypes.TRANSPARENT
+            req.types.box_3 = BoxTypes.OPAQUE
+        elif run[1]=="OOO":
+            req.types.box_1 = BoxTypes.OPAQUE
+            req.types.box_2 = BoxTypes.OPAQUE
+            req.types.box_3 = BoxTypes.OPAQUE
         g_set_box_types_client.call(req)
 
         # Wait for Start Signal from Prompt Window
