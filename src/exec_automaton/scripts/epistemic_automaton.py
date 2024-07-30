@@ -1544,6 +1544,17 @@ def main_exec():
 
     default_human_passive_action = CM.Action.create_passive("H", "PASS")
     default_robot_passive_action = CM.Action.create_passive("R", "PASS")
+    runs = {
+        "1": ("baseline",               "OOT",      "3cubes"),
+        "2": ("baseline",               "OOO",      "3cubes"),
+        "3": ("baseline",               "OOO",      "4cubes"),
+        "4": ("approach_com",           "OOT",      "3cubes"),
+        "5": ("approach_com",           "OOO",      "3cubes"),
+        "6": ("approach_com",           "OOO",      "4cubes"),
+        "7": ("approach_wait_act",      "OOT",      "3cubes"),
+        "8": ("approach_wait_act",      "OOO",      "3cubes"),
+        "9": ("approach_wait_act",      "OOO",      "4cubes"),
+    }
 
     ## LOADING ## # pstates
     init_step = load("/home/sshekhar/Desktop/HATPEHDA-concurrent-org/dlgp/dom_n_sol_tt.p")
