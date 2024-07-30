@@ -405,19 +405,19 @@ def incoming_vha_cb(msg: VHA):
     srv_set_q_buttons.q4 = False
     srv_set_q_buttons.q5 = False
     if g_z_q1.current_action_id != -10:
-        lines.append("1- Can I put my cube in box 1?")
+        lines.append("1- Is box 1 empty?")
         srv_set_q_buttons.q1 = True
     if g_z_q2.current_action_id != -10:
-        lines.append("2- Can I put my cube in box 2?")
+        lines.append("2- Is box 2 empty?")
         srv_set_q_buttons.q2 = True
     if g_z_q3.current_action_id != -10:
-        lines.append("3- Can I put my cube in box 3?")
+        lines.append("3- Is box 3 empty?")
         srv_set_q_buttons.q3 = True
     if g_z_q4.current_action_id != -10:
-        lines.append("4- Can I put my cube in box 4?")
+        lines.append("4- Is box 4 empty?")
         srv_set_q_buttons.q4 = True
     if g_z_q5.current_action_id != -10:
-        lines.append("5- Can I put my cube in box 5?")
+        lines.append("5- Is box 5 empty?")
         srv_set_q_buttons.q5 = True
 
     set_question_buttons(srv_set_q_buttons)

@@ -360,17 +360,18 @@ void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers a
     // Prompt answer 
     std_msgs::String prompt_msg;
     if(answer)
-        prompt_msg.data = " Yes, you can place it in " + location + ".";
+        prompt_msg.data = " Yes, " + location + " is empty.";
     else
-        prompt_msg.data = " No, you can't place it in " + location + "...";
+        prompt_msg.data = " No, " + location + " is full...";
 
     ROS_WARN("%s", prompt_msg.data.c_str());
 
     // Delay
-    ROS_WARN("Waiting 5 seconds (10s sim time)...");
+    ROS_WARN("Waiting N seconds (N*2s sim time)...");
+    float N = 2;
     ros::Rate loop(2);
     ros::Time start = ros::Time::now();
-    while(ros::Time::now() - start < ros::Duration(4*2))
+    while(ros::Time::now() - start < ros::Duration(N*2))
     {
         prompt_pub.publish(prompt_msg);
         loop.sleep();
