@@ -24,7 +24,7 @@
 
     <model name="bird_camera">
       <static>true</static>
-      <pose>3.3 0 7 0 1.57 1.57</pose>
+      <pose>4.3 -2.5 8.0 0 1.27 1.57</pose>
       <link name="bird_camera_link">
         <gravity>0</gravity>
         <visual name='visual'>
