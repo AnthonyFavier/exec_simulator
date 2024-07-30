@@ -45,8 +45,8 @@ def quaternion_msgs_from_rpy(r,p,y):
 TURN_BUTTON_POSE_MAIN = Pose( Point(2.0, -0.35, 1.63), quaternion_msgs_from_rpy(3.14159, -0.6, 0))
 MOVE_BUTTON_POSE_MAIN = Pose( Point(3.4, 0, 1.75), quaternion_msgs_from_rpy(1.57, 0.6, 0))
 
-TURN_BUTTON_POSE_SIDE = Pose( Point(5.7, 0.35, 1.63), quaternion_msgs_from_rpy(0, 0.6, 0))
-MOVE_BUTTON_POSE_SIDE = Pose( Point(4.3, 0, 1.75), quaternion_msgs_from_rpy(1.57, -0.6, 0))
+TURN_BUTTON_POSE_SIDE = Pose( Point(7.2, 0.35, 1.63), quaternion_msgs_from_rpy(0, 0.6, 0))
+MOVE_BUTTON_POSE_SIDE = Pose( Point(5.8, 0, 1.75), quaternion_msgs_from_rpy(1.57, -0.6, 0))
 
 class Zone:
     _ID = 0
@@ -118,7 +118,7 @@ def create_zone(x, y, w, h, list_actions):
 if DOMAIN_NAME=="epistemic":
     create_zone(0,0,500,1080,           ["change_focus_towards"])
     create_zone(0,0,1920,300,           ["move_to_table"])
-    create_zone(1211,561,104,116,       ["pick"])
+    create_zone(1206,519,100,115,       ["pick"])
     create_zone(589,387,312,365,        ["place_1('w1', 'box_1')"])
     create_zone(897,387,298,365,        ["place_1('w1', 'box_2')"])
     create_zone(1193,381,289,374,       ["place_1('w1', 'box_3')"])

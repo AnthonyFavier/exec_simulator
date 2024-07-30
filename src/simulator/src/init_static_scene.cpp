@@ -26,13 +26,13 @@ void init_scene_epistemic()
   collision_object_1.primitives[0].type = collision_object_1.primitives[0].BOX;
   collision_object_1.primitives[0].dimensions.resize(3);
   collision_object_1.primitives[0].dimensions[0] = 0.969;
-  collision_object_1.primitives[0].dimensions[1] = 1.59;
+  collision_object_1.primitives[0].dimensions[1] = 1.91;
   collision_object_1.primitives[0].dimensions[2] = 0.7;
 
   /* Define the pose of the table. */
   collision_object_1.primitive_poses.resize(1);  
   collision_object_1.primitive_poses[0].position.x = 0.85;
-  collision_object_1.primitive_poses[0].position.y = 0.0;
+  collision_object_1.primitive_poses[0].position.y = -0.07;
   collision_object_1.primitive_poses[0].position.z = collision_object_1.primitives[0].dimensions[2]/2;
   collision_object_1.primitive_poses[0].orientation.w = 1.0;
 
@@ -121,7 +121,7 @@ void init_scene_epistemic()
   /* Define the pose of the object. */
   y1.primitive_poses.resize(1);  
   y1.primitive_poses[0].position.x = 0.5;
-  y1.primitive_poses[0].position.y = -0.75;
+  y1.primitive_poses[0].position.y = -0.85;
   y1.primitive_poses[0].position.z = 0.75;
   y1.primitive_poses[0].orientation.w = 1.0;
 
