@@ -161,7 +161,7 @@ namespace gazebo
 
                 case MOVE_FORWARD:{
 
-                    double delta_x = 2.5;
+                    double delta_x = 4.0;
 
                     // ROS_INFO_STREAM("2 X = " << m_current_pose.X());
 

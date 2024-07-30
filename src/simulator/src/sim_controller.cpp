@@ -62,9 +62,9 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"box_1_cover",       make_pose(make_point(0.85, -0.25, 0.7),     make_quaternion())},
         {"box_2_cover",       make_pose(make_point(0.85, 0.1, 0.7),       make_quaternion())},
         {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),      make_quaternion())},
-        {"w1",                make_pose(make_point(6.9, -0.4, 0.75),      make_quaternion())},
+        {"w1",                make_pose(make_point(8.5, -0.4, 0.75),      make_quaternion())},
         {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),     make_quaternion())},
-        {"y1",                make_pose(make_point(0.5,  -0.75, 0.75),     make_quaternion())},
+        {"y1",                make_pose(make_point(0.5,  -0.85, 0.75),     make_quaternion())},
 };
 
 // Deprecated for epistemic
@@ -241,8 +241,8 @@ enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SID
 HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
 geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
 geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
-geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(3.98 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
-geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(6.22, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(5.48 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(7.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
 
 geometry_msgs::Pose hand_pose_far = make_pose(make_point(0,0,-1), make_quaternion_RPY(0,0,0));
 

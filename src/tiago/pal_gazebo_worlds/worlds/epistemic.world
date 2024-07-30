@@ -144,7 +144,7 @@
 
     <!-- Spot Turn SIDE -->
     <light name='spot_turn_side' type='spot'>
-      <pose>5.05 0.35 2.15 0 -0.95 0</pose>
+      <pose>6.55 0.35 2.15 0 -0.95 0</pose>
       <diffuse>0.2 0.2 0.2 1</diffuse>
       <specular>0.1 0.1 0.1 1</specular>
       <direction>0 0 -1</direction>
@@ -184,7 +184,7 @@
 
     <!-- Spot Move SIDE -->
     <light name='spot_move_side' type='spot'>
-      <pose>4.9 0 2.25 0 0.95 0</pose>
+      <pose>6.4 0 2.25 0 0.95 0</pose>
       <diffuse>0.2 0.2 0.2 1</diffuse>
       <specular>0.1 0.1 0.1 1</specular>
       <direction>0 0 -1</direction>
@@ -267,6 +267,17 @@
           <transparency>0</transparency>
           <cast_shadows>0</cast_shadows>
         </visual>
+        <collision name='collision'>
+          <laser_retro>0</laser_retro>
+          <max_contacts>10</max_contacts>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/epistemic_scene.dae</uri>
+              <scale>1.0 1.0 1.0</scale>
+            </mesh>
+          </geometry>
+        </collision>
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
@@ -348,7 +359,7 @@
     </model>
 
     <!-- box_1 -->
-    <model name='box_1'>
+    <!-- <model name='box_1'>
       <link name='box_1_link'>
         <inertial>
           <mass>1000</mass>
@@ -393,7 +404,7 @@
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.85 -0.25 0.7  0 0 0</pose>
-    </model>
+    </model> -->
 
     <!-- box_1_cover -->
     <model name='box_1_cover'>
@@ -433,7 +444,7 @@
     </model>
 
     <!-- box_2 -->
-    <model name='box_2'>
+    <!-- <model name='box_2'>
       <link name='box_2_link'>
         <inertial>
           <mass>1000</mass>
@@ -449,7 +460,7 @@
         </inertial>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic1>0</kinematic>
         <pose>0 0 0 0 -0 0</pose>
         <gravity>0</gravity>
         <visual name='visual'>
@@ -478,7 +489,7 @@
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.85 0.1 0.7  0 0 0</pose>
-    </model>
+    </model> -->
 
     <!-- box_2_cover -->
     <model name='box_2_cover'>
@@ -518,7 +529,7 @@
     </model>
 
     <!-- box_3 -->
-    <model name='box_3'>
+    <!-- <model name='box_3'>
       <link name='box_3_link'>
         <inertial>
           <mass>1000</mass>
@@ -563,7 +574,7 @@
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.85 0.45 0.7  0 0 0</pose>
-    </model>
+    </model> -->
 
     <!-- box_3_cover -->
     <model name='box_3_cover'>
@@ -602,10 +613,8 @@
       <pose>0.85 0.45 0.7  0 0 0</pose>
     </model>
 
-
-
     <!-- main_table -->
-    <model name='main_table'>
+    <!-- <model name='main_table'>
       <link name='main_table_link'>
         <inertial>
           <mass>1</mass>
@@ -650,7 +659,7 @@
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
       <pose>0.852639 0 0.7 0 0 0</pose>
-    </model>
+    </model> -->
 
     <!-- side_table -->
     <model name='side_table'>
@@ -675,7 +684,7 @@
         <visual name='side_table_link'>
           <geometry>
             <mesh>
-              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/main_table.dae</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/table.dae</uri>
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
@@ -689,7 +698,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/main_table.dae</uri>
+              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/table.dae</uri>
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
@@ -697,7 +706,7 @@
       </link>
       <static>1</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>7.0 0 0.7 0 0 0</pose>
+      <pose>8.5 0 0.0 0 0 0</pose>
     </model>
 
     <!-- w1 -->
@@ -757,7 +766,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>6.9 -0.4 0.75  0 0 0</pose>
+      <pose>8.5 -0.4 0.75  0 0 0</pose>
     </model>
 
     <!-- r1 -->
@@ -877,7 +886,7 @@
       </link>
       <static>0</static>
       <allow_auto_disable>1</allow_auto_disable>
-      <pose>0.5 -0.75 0.75  0 0 0</pose>
+      <pose>0.5 -0.85 0.75  0 0 0</pose>
     </model>
 
   </world>
