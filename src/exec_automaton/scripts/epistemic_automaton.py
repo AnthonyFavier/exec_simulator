@@ -156,23 +156,39 @@ def get_possible_human_actions(s: ConM.Step):
 
     return has
 
+def get_possible_robot_actions(s: ConM.Step):
+    has = []
+
+    for ho in s.robot_options:
+        if ho.robot_action.is_passive():
+            has = has + [ho.robot_action]
+        else:
+            has = [ho.robot_action] + has
+
+    return has
+
 def get_actions_until_copresence(s: ConM.Step):
     HAs = []
     RAs = []
     while not s.from_pair.copresence:
         p = s.comp_best_choice.from_pair
+        # 
+        # p = s.children[0].from_pair
+
         if not p.robot_action.is_passive():
             RAs.append(p.robot_action)
         if not p.human_action.is_passive():
             HAs.append(p.human_action)
 
         s = s.comp_best_choice
+        # s = s.children[0]
 
     return HAs, RAs
 
 def get_next_step_after_concurrent(s: ConM.Step):
     while not s.from_pair.copresence:
         s = s.comp_best_choice
+        # s = s.children[0]
     return s
 
 g_robot_action_done = True
@@ -342,6 +358,11 @@ def exec_epistemic(init_step):
 
                 # Extract best robot action (com_best_choice.from_pair)
                 RA = curr_step.comp_best_choice.from_pair.robot_action
+
+                # RA = get_possible_robot_actions(curr_step)
+
+                random_integer = random.randint(0, len(curr_step.children)-1)
+                # RA = curr_step.children[random_integer].from_pair.robot_action
 
                 # Execute RA
                 start_execute_RA(RA)
@@ -966,6 +987,9 @@ def compute_msg_action_epistemic(a):
         msg.location = a.parameters[1] + "_" + a.agent
 
     elif "change_focus_towards"==a.name:
+        msg.type=Action.TURN_AROUND
+
+    elif "change_table_context"==a.name:
         msg.type=Action.TURN_AROUND
         
     elif "move_to_table"==a.name:
