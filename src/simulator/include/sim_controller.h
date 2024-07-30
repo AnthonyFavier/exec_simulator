@@ -30,6 +30,7 @@
 #include "sim_msgs/SetBoxTypes.h"
 #include "sim_msgs/GetBoxTypes.h"
 #include "sim_msgs/SetQuestionButtons.h"
+#include "std_srvs/SetBool.h"
 
 #define ROBOT_ATTACH_MODEL_NAME "tiago"
 #define ROBOT_ATTACH_LINK_NAME "arm_7_link"
@@ -67,6 +68,7 @@ void show_pose(geometry_msgs::Pose pose);
 std::string get_agent_str(AGENT agent);
 bool isRobot(AGENT agent);
 void set_mass_obj(std::string obj_name, bool enable);
+void set_green_cube(bool d);
 
 
 // ****************************** CALLBACKS ******************************* //

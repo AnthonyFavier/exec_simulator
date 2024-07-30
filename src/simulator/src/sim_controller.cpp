@@ -63,8 +63,8 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"box_2_cover",       make_pose(make_point(0.85, 0.1, 0.7),     make_quaternion())},
         {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),    make_quaternion())},
         {"w1",                make_pose(make_point(8.5, -0.4, 0.75),    make_quaternion())},
-        {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),   make_quaternion())},
-        {"y1",                make_pose(make_point(0.5,  -0.85, 0.75),  make_quaternion())},
+        {"r1",                make_pose(make_point(0.5, -0.6, 0.75),    make_quaternion())},
+        {"y1",                make_pose(make_point(0.5, -0.85, 0.75),   make_quaternion())},
 };
 
 std::map<std::string, int> nb_dropped_box = 
@@ -1066,6 +1066,9 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     nb_dropped_box["box_2_R"] =0;  
     nb_dropped_box["box_3_R"] =0; 
 
+    // Green cube
+    set_green_cube(false);
+
     ROS_INFO("World reset ok");
 
     return true;
@@ -1154,6 +1157,25 @@ bool get_box_types_server(sim_msgs::GetBoxTypesRequest &req, sim_msgs::GetBoxTyp
     return true;
 }
 
+bool set_green_cube_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolResponse &res)
+{
+    gazebo_msgs::SetModelState srv_set;
+    geometry_msgs::Pose far_pose = make_pose(make_point(0.0, 6.0, 0.05), make_quaternion());
+    geometry_msgs::Pose shown_pose = make_pose(make_point(1.2, -0.6, 0.75), make_quaternion());
+
+    srv_set.request.model_state.model_name = "g1";
+    srv_set.request.model_state.pose = req.data ? shown_pose : far_pose;
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    return true;
+}
+void set_green_cube(bool d)
+{
+    std_srvs::SetBool srv;
+    srv.request.data = d;
+    set_green_cube_server(srv.request, srv.response);
+}
+
 int main(int argc, char **argv)
 {
     init_cubes();
@@ -1229,7 +1251,6 @@ int main(int argc, char **argv)
     hide_move_buttons_client = node_handle.serviceClient<std_srvs::Empty>("/hide_move_buttons");
     set_question_buttons_client = node_handle.serviceClient<sim_msgs::SetQuestionButtons>("/set_question_buttons");
 
-
     ros::ServiceClient gazebo_start_client = node_handle.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
 
     // set_synchro_step_client = node_handle.serviceClient<std_srvs::SetBool>("/set_synchro_step");
@@ -1237,6 +1258,8 @@ int main(int argc, char **argv)
     
     ros::ServiceServer set_box_types_service = node_handle.advertiseService("set_box_types", set_box_types_server);
     ros::ServiceServer get_box_types_service = node_handle.advertiseService("get_box_types", get_box_types_server);
+    
+    ros::ServiceServer set_green_cube_service = node_handle.advertiseService("/set_green_cube", set_green_cube_server); 
 
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);
