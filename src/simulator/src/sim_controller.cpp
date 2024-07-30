@@ -1061,6 +1061,11 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     msg_body.data = -1;
     move_human_body_pub.publish(msg_body);
 
+    // Reset nb_dropped
+    nb_dropped_box["box_1_R"] =0;  
+    nb_dropped_box["box_2_R"] =0;  
+    nb_dropped_box["box_3_R"] =0; 
+
     ROS_INFO("World reset ok");
 
     return true;

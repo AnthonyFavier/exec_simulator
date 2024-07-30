@@ -865,7 +865,7 @@
             <shader type='pixel'>
               <normal_map>__default__</normal_map>
             </shader>
-            <ambient>1 1 0 1</ambient>
+            <ambient>1 0 0 1</ambient>
             <diffuse>0.8 0.8 0.8 1</diffuse>
             <specular>0.1 0.1 0.1 1</specular>
             <emissive>0 0 0 1</emissive>
