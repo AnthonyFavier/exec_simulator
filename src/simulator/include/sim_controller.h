@@ -49,6 +49,7 @@ void grab_obj(AGENT agent, const std::string &object);
 void drop(AGENT agent, const std::string &object);
 void set_obj_rpy(AGENT agent, std::string obj_name, float r, float p, float y);
 void set_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose);
+void set_obj_position(AGENT agent, std::string obj_name, geometry_msgs::Pose pose);
 void adjust_obj_pose(AGENT agent, std::string obj_name, geometry_msgs::Pose pose);
 void delta_move_obj(AGENT agent, std::string obj_name, geometry_msgs::Pose delta_move);
 void robot_head_follow_pose(AGENT agent, geometry_msgs::Point pose);
