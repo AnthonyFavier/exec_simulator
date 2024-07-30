@@ -273,7 +273,7 @@
           <pose>0 0 0 0 -0 0</pose>
           <geometry>
             <mesh>
-              <uri>/home/afavier/new_exec_sim_ws/src/simulator/meshes/epistemic_scene.dae</uri>
+              <uri>/home/sshekhar/exec_simulator/src/simulator/meshes/epistemic_scene.dae</uri>
               <scale>1.0 1.0 1.0</scale>
             </mesh>
           </geometry>
