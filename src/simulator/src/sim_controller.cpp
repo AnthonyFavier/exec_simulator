@@ -158,13 +158,16 @@ void PickName(AGENT agent, std::string obj_name)
 
     // std::cout << "Agent " << agent << " is now holding " << g_holding[agent].c_str() << std::endl;
 
+    set_obj_position(agent, obj_name, init_poses[obj_name]);
+    geometry_msgs::Pose obj_pose = init_poses[obj_name];
+
     /* GET OBJ POSE */
-    gazebo_msgs::GetModelState srv;
-    srv.request.model_name = obj_name;
-    if (!get_model_state_client[agent].call(srv) || !srv.response.success)
-        throw ros::Exception("Calling service get_model_state failed...");
-    geometry_msgs::Pose obj_pose = srv.response.pose;
-    show_pose(obj_pose);
+    // gazebo_msgs::GetModelState srv;
+    // srv.request.model_name = obj_name;
+    // if (!get_model_state_client[agent].call(srv) || !srv.response.success)
+    //     throw ros::Exception("Calling service get_model_state failed...");
+    // geometry_msgs::Pose obj_pose = srv.response.pose;
+    // show_pose(obj_pose);
 
     /* MOVE ROBOT HEAD */
     robot_head_follow_obj(agent, obj_name);
