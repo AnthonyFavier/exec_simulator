@@ -1546,7 +1546,7 @@ def main_exec():
     default_robot_passive_action = CM.Action.create_passive("R", "PASS")
 
     ## LOADING ## # pstates
-    init_step = load("/home/sshekhar/Downloads/last_dom_n_sol_tt.p")
+    init_step = load("/home/sshekhar/Desktop/HATPEHDA-concurrent-org/dlgp/dom_n_sol_tt.p")
 
     # Define box types
     req = SetBoxTypesRequest()
