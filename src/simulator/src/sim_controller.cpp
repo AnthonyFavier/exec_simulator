@@ -50,21 +50,28 @@ sim_msgs::BoxTypes g_box_types;
 //  DOMAIN DESCRIPTION  //
 std::map<std::string, geometry_msgs::Pose> locations =
     {
-        {"box_1_R",     make_pose(make_point(0.72, -0.2, 1.15),     make_quaternion_RPY(0,0,0.15))},
-        {"box_2_R",     make_pose(make_point(0.72, 0.1, 1.15),      make_quaternion_RPY(0,0,0.15))},
-        {"box_3_R",     make_pose(make_point(0.72, 0.4, 1.15),      make_quaternion_RPY(0,0,0.15))},
+        {"box_1_R",     make_pose(make_point(0.71, -0.33, 1.15),    make_quaternion())},
+        {"box_2_R",     make_pose(make_point(0.71, 0.03, 1.15),     make_quaternion())},
+        {"box_3_R",     make_pose(make_point(0.71, 0.38, 1.15),     make_quaternion())},
         {"box_1_H",     make_pose(make_point(0.98, -0.2, 1.15),     make_quaternion())},
         {"box_2_H",     make_pose(make_point(0.98, 0.1, 1.15),      make_quaternion())},
         {"box_3_H",     make_pose(make_point(0.98, 0.4, 1.15),      make_quaternion())},
 };
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
-        {"box_1_cover",       make_pose(make_point(0.85, -0.25, 0.7),     make_quaternion())},
-        {"box_2_cover",       make_pose(make_point(0.85, 0.1, 0.7),       make_quaternion())},
-        {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),      make_quaternion())},
-        {"w1",                make_pose(make_point(8.5, -0.4, 0.75),      make_quaternion())},
-        {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),     make_quaternion())},
-        {"y1",                make_pose(make_point(0.5,  -0.85, 0.75),     make_quaternion())},
+        {"box_1_cover",       make_pose(make_point(0.85, -0.25, 0.7),   make_quaternion())},
+        {"box_2_cover",       make_pose(make_point(0.85, 0.1, 0.7),     make_quaternion())},
+        {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),    make_quaternion())},
+        {"w1",                make_pose(make_point(8.5, -0.4, 0.75),    make_quaternion())},
+        {"r1",                make_pose(make_point(0.5,  -0.6, 0.75),   make_quaternion())},
+        {"y1",                make_pose(make_point(0.5,  -0.85, 0.75),  make_quaternion())},
+};
+
+std::map<std::string, int> nb_dropped_box = 
+{
+    {"box_1_R", 0},  
+    {"box_2_R", 0},  
+    {"box_3_R", 0},  
 };
 
 // Deprecated for epistemic
@@ -216,7 +223,16 @@ void PlacePose(AGENT agent, geometry_msgs::Pose pose)
 
 void PlaceLocation(AGENT agent, std::string location)
 {
-    PlacePose(agent, locations[location]);
+    geometry_msgs::Pose pose = locations[location];
+
+    if(agent==AGENT::ROBOT)
+    {
+        if(nb_dropped_box[location]!=0)
+            pose.position.y += 0.15;
+        nb_dropped_box[location]++;
+    }
+
+    PlacePose(agent, pose);
 }
 
 void BePassive(AGENT agent)
