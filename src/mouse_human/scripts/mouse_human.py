@@ -456,14 +456,14 @@ def incoming_vha_cb(msg: VHA):
                 rospy.loginfo("timeout canceled")
 
 decision_sent = False
-g_last_click = None # type: None | Click
+g_last_click = Click(Point(-1,-1,-1),-1) # type: Click
 def mouse_pressed_cb(msg: Point):
     global g_last_click
     g_last_click = Click(msg, time.time())
     rospy.loginfo(f"click: {msg.x},{msg.y}")
 def reset_last_click(req = None):
     global g_last_click
-    g_last_click = None
+    g_last_click = Click(Point(-1,-1,-1),-1)
     rospy.loginfo("click reset")
     return EmptyResponse()
 
@@ -594,6 +594,9 @@ def main():
     AUTO_PASS = False
 
     while not rospy.is_shutdown():
+
+        if time.time()-g_last_click.time>2.0:
+            continue
 
         # PROMPT BUTTON
         if g_prompt_button_shown:
