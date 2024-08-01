@@ -711,7 +711,7 @@ def wait_step_end():
     log_event("R_S_WAIT_STEP_END")
     rospy.loginfo("Waiting step end...")
     while not rospy.is_shutdown() and not step_over:
-        if not g_robot_acting and g_new_human_decision.name!="communicate_if_cube_can_be_put":
+        if not g_robot_acting and (g_new_human_decision==None or g_new_human_decision.name!="communicate_if_cube_can_be_put"):
             prompt("wait_end_ha")
         time.sleep(0.1)
 
