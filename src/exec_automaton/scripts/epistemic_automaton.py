@@ -1566,7 +1566,7 @@ def main_exec():
         6: ("approach_com",           "OOO",      "4cubes",   None),
         7: ("approach_wait_act",      "OOT",      "3cubes",   None),
         8: ("approach_wait_act",      "OOO",      "3cubes",   load("/home/sshekhar/Desktop/HATPEHDA-concurrent-org/dlgp/dom_n_sol_tt.p")),
-        9: ("approach_wait_act",      "OOO",      "4cubes",   None)),
+        9: ("approach_wait_act",      "OOO",      "4cubes",   None),
     }
 
     rospy.loginfo("Wait for set_box_types service to be started...")
