@@ -302,6 +302,7 @@ def process_questions(s: ConM.Step):
                     if not com_flagged_as_additional_question(p.human_action):
                         g_answer_boxes.box_3 = True
 
+g_copresent = True
 def exec_epistemic(init_step):
     
     """
@@ -309,8 +310,8 @@ def exec_epistemic(init_step):
     """
     global g_new_human_decision
     global g_possible_human_actions
-
     global g_robot_action_done, g_human_action_done
+    global g_copresent
 
     curr_step = init_step.children[0]
 
@@ -324,6 +325,7 @@ def exec_epistemic(init_step):
 
         # if Co-present
         if check_copresence(curr_step):
+            g_copresent = True
 
             # Manage addtional questions
             process_questions(curr_step)
@@ -375,6 +377,7 @@ def exec_epistemic(init_step):
 
         # if NOT co-present (Human is deterministic)
         else:
+            g_copresent = False
 
             # Extract Action list until co-presence
             HAs, RAs = get_actions_until_copresence(curr_step)
@@ -382,6 +385,9 @@ def exec_epistemic(init_step):
             # Start concurrent execution (disable step syncho...)
             # disable step synchro
             g_set_synchro_step_client(False)
+
+            # Prompt
+            g_prompt_pub.publish(String(format_txt("Let's progress separately and meet later.")))
 
             # Monitor if RA/HA done, and send new one to exec until both lists are done
             robot_done = False
@@ -1177,6 +1183,8 @@ def reset_permanent_prompt_line():
     global g_permanent_prompt
     g_permanent_prompt = ""
 def prompt(msg_id: str, extra="", from_training=False):
+    if not g_copresent:
+        return
     if not TRAINING_PROMPT_ONLY or (TRAINING_PROMPT_ONLY and from_training):
         g_prompt_pub.publish(String( g_permanent_prompt + g_prompt_start_extra + g_prompt_messages[msg_id][LANG] + extra ))
 g_prompt_messages = {
@@ -1456,6 +1464,9 @@ def asking_robot(robots):
 
 def wait_start_signal():
     rospy.loginfo("READY TO START, waiting for start signal...")
+
+
+    g_prompt_pub.publish(String("     Click the button to start."))
 
     # if robot_name=="t":
     #     g_prompt_pub.publish(String( g_prompt_messages["tuto_wait_start"][LANG] ))
