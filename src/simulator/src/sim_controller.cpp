@@ -35,6 +35,8 @@ ros::ServiceClient set_synchro_step_client;
 ros::ServiceClient hide_move_buttons_client;
 ros::ServiceClient set_question_buttons_client;
 
+ros::Publisher sound_player_pub;
+
 bool g_step_synchro_on = true;
 
 
@@ -74,6 +76,15 @@ std::map<std::string, int> nb_dropped_box =
     {"box_3_R", 0},  
 };
 
+
+enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SIDE_LOOK_MAIN};
+HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
+geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
+geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(5.48 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(7.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
+
+
 // Deprecated for epistemic
 class DropZone
 {
@@ -110,76 +121,39 @@ void init_drop_zones()
     g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.50, 0.75)) );
 }
 
-class Cube
-{
-public:
-    Cube(std::string name)
-    {
-        m_name = name;
-        m_on_table = true;
-    }
-    std::string getName()
-    {
-        return m_name;
-    }
-    bool getOnTable()
-    {
-        return m_on_table;
-    }
-    void setOnTable(bool v)
-    {
-        m_on_table = v;
-    }
-
-private:
-    std::string m_name;
-    bool m_on_table;
-};
-std::vector<Cube> g_cubes;
-void init_cubes()
-{
-    g_cubes.push_back(Cube("w1"));
-    g_cubes.push_back(Cube("r1"));
-    g_cubes.push_back(Cube("y1"));
-}
 
 // ************************* HIGH LEVEL ACTIONS **************************** //
 void PickName(AGENT agent, std::string obj_name)
 {
     ROS_INFO("\t%s PICK START %s", get_agent_str(agent).c_str(), obj_name.c_str());
 
-    /* FIND OBJ NAME & UPDATE CUBES */
-    bool found = false;
-    for (unsigned int i = 0; i < g_cubes.size(); i++)
+    g_holding[agent] = obj_name;
+
+    geometry_msgs::Pose obj_pose;
+    if(init_poses.find(obj_name)!=init_poses.end())
     {
-        if (g_cubes[i].getName() == obj_name)
-        {
-            found = true;
-            g_cubes[i].setOnTable(false);
-            g_holding[agent] = obj_name;
-            break;
-        }
+        set_obj_position(agent, obj_name, init_poses[obj_name]);
+        obj_pose = init_poses[obj_name];
     }
-    if (!found)
-        throw ros::Exception(agent + " PICK " + obj_name + " not found...");
-
-    // std::cout << "Agent " << agent << " is now holding " << g_holding[agent].c_str() << std::endl;
-
-    set_obj_position(agent, obj_name, init_poses[obj_name]);
-    geometry_msgs::Pose obj_pose = init_poses[obj_name];
-
-    /* GET OBJ POSE */
-    // gazebo_msgs::GetModelState srv;
-    // srv.request.model_name = obj_name;
-    // if (!get_model_state_client[agent].call(srv) || !srv.response.success)
-    //     throw ros::Exception("Calling service get_model_state failed...");
-    // geometry_msgs::Pose obj_pose = srv.response.pose;
-    // show_pose(obj_pose);
+    else
+    {
+        /* GET OBJ POSE */
+        gazebo_msgs::GetModelState srv;
+        srv.request.model_name = obj_name;
+        if (!get_model_state_client[agent].call(srv) || !srv.response.success)
+            throw ros::Exception("Calling service get_model_state failed...");
+        obj_pose = srv.response.pose;
+    }
+    show_pose(obj_pose);
 
     /* MOVE ROBOT HEAD */
     robot_head_follow_obj(agent, obj_name);
 
+    geometry_msgs::Pose mid_pose = make_pose(make_point(1.4, -0.4, 0.84), make_quaternion());
+
     /* MOVE ARM TO OBJ */
+    if(agent==AGENT::HUMAN and obj_name=="g1")
+        move_pose_target(agent, mid_pose);
     move_pose_target(agent, obj_pose);
 
     /* GRAB OBJ */
@@ -188,12 +162,55 @@ void PickName(AGENT agent, std::string obj_name)
     grab_obj(agent, obj_name);
 
     /* HOME POSITION */
+    if(agent==AGENT::HUMAN and obj_name=="g1")
+        move_pose_target(agent, mid_pose);
     move_home(agent);
 
     /* MOVE ROBOT HEAD */
     robot_head_follow_human(agent);
 
     ROS_INFO("\t%s PICK END", get_agent_str(agent).c_str());
+}
+
+void PickNameConcu(AGENT agent, std::string obj_name)
+{
+    ROS_INFO("\t%s PICK START %s", get_agent_str(agent).c_str(), obj_name.c_str());
+
+    g_holding[agent] = obj_name;
+
+    geometry_msgs::Pose obj_pose;
+    if(init_poses.find(obj_name)!=init_poses.end())
+    {
+        set_obj_position(agent, obj_name, init_poses[obj_name]);
+        obj_pose = init_poses[obj_name];
+    }
+    else
+    {
+        /* GET OBJ POSE */
+        gazebo_msgs::GetModelState srv;
+        srv.request.model_name = obj_name;
+        if (!get_model_state_client[agent].call(srv) || !srv.response.success)
+            throw ros::Exception("Calling service get_model_state failed...");
+        obj_pose = srv.response.pose;
+    }
+    show_pose(obj_pose);
+
+    /* MOVE ROBOT HEAD */
+    robot_head_follow_obj(agent, obj_name);
+
+    geometry_msgs::Pose mid_pose = make_pose(make_point(1.4, -0.4, 0.84), make_quaternion());
+
+    /* MOVE ARM TO OBJ */
+    if(agent==AGENT::HUMAN and obj_name=="g1")
+        move_pose_target(agent, mid_pose);
+    move_pose_target(agent, obj_pose);
+
+    /* GRAB OBJ */
+    set_mass_obj(obj_name, false);
+    set_obj_pose(agent, obj_name, obj_pose);
+    grab_obj(agent, obj_name);
+
+    ROS_INFO("\t%s PICK_CONCU END", get_agent_str(agent).c_str());
 }
 
 void PlacePose(AGENT agent, geometry_msgs::Pose pose)
@@ -235,6 +252,34 @@ void PlaceLocation(AGENT agent, std::string location)
     PlacePose(agent, pose);
 }
 
+void PlaceLocationConcu(AGENT agent, std::string location)
+{
+    geometry_msgs::Pose pose = locations[location];
+
+    if(agent==AGENT::ROBOT)
+    {
+        if(nb_dropped_box[location]!=0)
+            pose.position.y += 0.15;
+        nb_dropped_box[location]++;
+    }
+
+    ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
+
+    /* MOVE ROBOT HEAD */
+    robot_head_follow_pose(agent, pose.position);
+
+    /* MOVE ARM TO POSE */
+    move_pose_target(agent, pose);
+
+    /* DROP OBJ */
+    std::string obj_name = g_holding[agent];
+    drop(agent, obj_name);
+    set_obj_pose(agent, obj_name, pose);
+    set_mass_obj(obj_name, true);
+
+    ROS_INFO("\t%s PLACE_POSE END", get_agent_str(agent).c_str());
+}
+
 void BePassive(AGENT agent)
 {
     if (isRobot(agent))
@@ -256,14 +301,7 @@ void BePassive(AGENT agent)
     }
 }
 
-enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SIDE_LOOK_MAIN};
-HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
-geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
-geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
-geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(5.48 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
-geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(7.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
 
-geometry_msgs::Pose hand_pose_far = make_pose(make_point(0,0,-1), make_quaternion_RPY(0,0,0));
 
 void TurnAround()
 {
@@ -360,9 +398,49 @@ void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers a
     // Prompt answer 
     std_msgs::String prompt_msg;
     if(answer)
-        prompt_msg.data = " Yes, " + location + " is empty.";
+        prompt_msg.data = "  Yes, " + location + " is empty.";
     else
-        prompt_msg.data = " No, " + location + " is full...";
+        prompt_msg.data = "  No, " + location + " is full...";
+
+    ROS_WARN("%s", prompt_msg.data.c_str());
+
+    // Speak
+    std_msgs::String msg;
+    std::string box_id(1, location.back());
+    std::string answer_str = answer ? "yes" : "no";
+    msg.data = answer_str+"_box"+box_id;
+    sound_player_pub.publish(msg);
+
+    // Delay
+    ROS_WARN("Waiting N seconds (N*2s sim time)...");
+    float N = 2;
+    ros::Rate loop(2);
+    ros::Time start = ros::Time::now();
+    while(ros::Time::now() - start < ros::Duration(N*2))
+    {
+        prompt_pub.publish(prompt_msg);
+        loop.sleep();
+    }
+
+    ROS_WARN("Done !");
+}
+
+void Com(std::string location, bool empty)
+{
+    robot_head_follow_human(AGENT::ROBOT);
+
+    // Prompt answer 
+    std_msgs::String prompt_msg;
+
+    std::string box_id(1, location.back());
+    std::string empty_str = empty ? "empty" : "full";
+
+    prompt_msg.data = "  Box " + box_id + " is " + empty_str + ".";
+
+    // Speak
+    std_msgs::String msg;
+    msg.data = "box"+box_id+"_"+empty_str;
+    sound_player_pub.publish(msg);
 
     ROS_WARN("%s", prompt_msg.data.c_str());
 
@@ -379,6 +457,7 @@ void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers a
 
     ROS_WARN("Done !");
 }
+
 
 //  MANAGE ACTIONS + EVENTS + SIGNALS  //
 std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start)
@@ -560,6 +639,21 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 
             Ask(action.obj_name, action.location, action.answers);
 
+            send_visual_signal_action_over(agent, action);
+            action_done[agent] = true;
+        }
+        else if(sim_msgs::Action::COM == action.type)
+        {
+            action_received[agent] = true;
+            sim_msgs::Signal sgl;
+            sgl.id = action.id;
+            sgl.type = sim_msgs::Signal::S_RA;
+            visual_signals_pub[agent].publish(sgl);
+            ROS_INFO("Start signal SENT for ASKING");
+
+            ros::Duration(0.2).sleep();
+
+            Com(action.location, action.empty);
 
             send_visual_signal_action_over(agent, action);
             action_done[agent] = true;
@@ -583,11 +677,23 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
                 else
                     PickName(agent, action.obj_name);
                 break;
+            case sim_msgs::Action::PICK_OBJ_NAME_CONCU:
+                if (action.obj_name == "")
+                    ROS_ERROR("%d Missing obj_name in action msg!", agent);
+                else
+                    PickNameConcu(agent, action.obj_name);
+                break;
             case sim_msgs::Action::PLACE_OBJ_NAME:
                 if (action.location == "")
                     ROS_ERROR("%d Missing location in action msg!", agent);
                 else
                     PlaceLocation(agent, action.location);
+                break;
+            case sim_msgs::Action::PLACE_OBJ_NAME_CONCU:
+                if (action.location == "")
+                    ROS_ERROR("%d Missing location in action msg!", agent);
+                else
+                    PlaceLocationConcu(agent, action.location);
                 break;
             default:
                 throw ros::Exception("Action type unknown...");
@@ -970,10 +1076,6 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
 {
     ROS_INFO("Start reset...");
 
-    // Reset g_cubes
-    ROS_INFO("\tReset cubes");
-    for (unsigned int i = 0; i < g_cubes.size(); i++)
-        g_cubes[i].setOnTable(true);
 
     ROS_INFO("\tReset drop zones");
     for (auto it = g_center_drop_zones.begin(); it != g_center_drop_zones.end(); it++)
@@ -1161,7 +1263,7 @@ bool set_green_cube_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolRespo
 {
     gazebo_msgs::SetModelState srv_set;
     geometry_msgs::Pose far_pose = make_pose(make_point(0.0, 6.0, 0.05), make_quaternion());
-    geometry_msgs::Pose shown_pose = make_pose(make_point(1.2, -0.6, 0.75), make_quaternion());
+    geometry_msgs::Pose shown_pose = make_pose(make_point(0.85, -0.6, 0.75), make_quaternion());
 
     srv_set.request.model_state.model_name = "g1";
     srv_set.request.model_state.pose = req.data ? shown_pose : far_pose;
@@ -1178,7 +1280,6 @@ void set_green_cube(bool d)
 
 int main(int argc, char **argv)
 {
-    init_cubes();
     init_drop_zones();
 
     ros::init(argc, argv, "sim_controller");
@@ -1264,6 +1365,8 @@ int main(int argc, char **argv)
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);
     ros::Subscriber h_start_moving_sub = node_handle.subscribe("/h_start_moving", 1, h_start_moving_cb);
+
+    sound_player_pub = node_handle.advertise<std_msgs::String>("/sound_player", 1);
 
     ros::AsyncSpinner spinner(10);
     spinner.start();

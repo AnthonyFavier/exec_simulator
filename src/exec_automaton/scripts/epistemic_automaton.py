@@ -140,8 +140,6 @@ def build_expected_ha(name, parameters):
 
     return HA
 
-sound_finished = sa.WaveObject.from_wave_file("/home/sshekhar/exec_simulator/src/exec_automaton/scripts/finished_70.wav")
-
 def check_copresence(s: ConM.Step):
     return s.from_pair.copresence
 
@@ -327,21 +325,20 @@ def exec_epistemic(init_step):
         if check_copresence(curr_step):
             g_copresent = True
 
-            # Manage addtional questions
-            process_questions(curr_step)
-
             # Identify Agent Turn
-            human_turn = curr_step.get_pairs()[0].robot_action.is_wait_turn()
-
             # Human Turn
-            if human_turn:
+            if curr_step.get_pairs()[0].robot_action.is_wait_turn():
                 RA = default_robot_passive_action
+                
+                # Manage addtional questions
+                process_questions(curr_step)
 
                 # Extract Possible human actions
                 g_possible_human_actions = get_possible_human_actions(curr_step)
 
                 # Send NS + HAs to HMI
                 send_NS(VHA.NS)
+                g_sound_player_pub.publish(String("ns"))
                 send_vha(g_possible_human_actions, VHA.NS, timeout=0.0)
 
                 look_at_human()
@@ -366,8 +363,26 @@ def exec_epistemic(init_step):
                 random_integer = random.randint(0, len(curr_step.children)-1)
                 # RA = curr_step.children[random_integer].from_pair.robot_action
 
-                # Execute RA
-                start_execute_RA(RA)
+                # Check if com
+                if RA.name == "communicate_if_cube_can_be_put":
+                    box_action_1 = RA.parameters[1]
+                    next_step = get_next_step(curr_step, HA, RA)
+                    next_best_RA = next_step.comp_best_choice.from_pair.robot_action
+                    if next_best_RA.name != "communicate_if_cube_can_be_put":
+                        new_com_action = ConM.Action.cast_PT2A(CM.PrimitiveTask("com", (box_action_1, "empty"), None, 0, 'R'), 0, None)
+                    else:
+                        box_action_2 = next_best_RA.parameters[1]
+                        curr_step = next_step
+                        RA = next_best_RA
+                        boxes = ["box_1", "box_2", "box_3"]
+                        boxes.remove(box_action_1)
+                        boxes.remove(box_action_2)
+                        new_com_action = CM.Action.cast_PT2A(CM.PrimitiveTask("com", (boxes[0], "full"), None, 0, 'R'), 0, None)
+                    
+                    start_execute_RA(new_com_action)
+
+                else:
+                    start_execute_RA(RA)
 
                 if not RA.is_passive():
                     wait_step_end()
@@ -396,15 +411,18 @@ def exec_epistemic(init_step):
 
                 if g_robot_action_done:
                     if len(RAs):
-                        start_execute_RA(RAs.pop(0))
+                        RA = RAs.pop(0)
+                        RA.name += "_concu"
+                        start_execute_RA(RA)
                         g_robot_action_done = False
                     else:
                         robot_done = True
                         reset_head()
+                        robot_home_pub.publish(EmptyM())
 
                 if g_human_action_done:
                     if len(HAs):
-                        sound_ns.play()
+                        g_sound_player_pub.publish(String("ns"))
 
                         is_come_back = HAs[0].name=="move_to_table" and HAs[0].parameters[1]=="table"
 
@@ -487,7 +505,6 @@ def send_NS_update_HAs(ps: CM.PState, type, timeout=0.0, only_has=None):
     #             break
     # g_best_human_action_pub.publish(best_ha)
 
-sound_ns = sa.WaveObject.from_wave_file("/home/sshekhar/exec_simulator/src/exec_automaton/scripts/sound.wav")
 def send_NS(type, turn=None):
     sgl = Signal()
     if type==VHA.NS:
@@ -505,8 +522,6 @@ def send_NS(type, turn=None):
         raise Exception("Invalid turn")
     robot_visual_signal_pub.publish(sgl)
     time.sleep(0.001)
-
-    sound_ns.play()
 
 def passive_update_HAs(ps: CM.PState, RA: CM.Action, timeout=0.0, only_has=None):
     global g_possible_human_actions
@@ -987,8 +1002,17 @@ def compute_msg_action_epistemic(a):
         msg.type=Action.PICK_OBJ_NAME
         msg.obj_name=a.parameters[0]
 
+    elif "pick_concu"==a.name:
+        msg.type=Action.PICK_OBJ_NAME_CONCU
+        msg.obj_name=a.parameters[0]
+
     elif "place_1"==a.name:
         msg.type=Action.PLACE_OBJ_NAME
+        msg.obj_name=a.parameters[0]
+        msg.location = a.parameters[1] + "_" + a.agent
+
+    elif "place_1_concu"==a.name:
+        msg.type=Action.PLACE_OBJ_NAME_CONCU
         msg.obj_name=a.parameters[0]
         msg.location = a.parameters[1] + "_" + a.agent
 
@@ -1009,6 +1033,11 @@ def compute_msg_action_epistemic(a):
         msg.obj_name=a.parameters[0]
         msg.location=a.parameters[1]
         msg.answers = g_answer_boxes
+
+    elif "com"==a.name:
+        msg.type=Action.COM
+        msg.location=a.parameters[0]
+        msg.empty=a.parameters[1]=="empty"
 
     if msg.type==-1:
         raise Exception("Unknown action")
@@ -1562,7 +1591,7 @@ def main_exec():
         2: ("baseline",               "OOO",      "3cubes",   None),
         3: ("baseline",               "OOO",      "4cubes",   None),
         4: ("approach_com",           "OOT",      "3cubes",   None),
-        5: ("approach_com",           "OOO",      "3cubes",   None),
+        5: ("approach_com",           "OOO",      "3cubes",   load("/home/sshekhar/Desktop/HATPEHDA-concurrent-org/dlgp/dom_n_sol_OOO_com.p")),
         6: ("approach_com",           "OOO",      "4cubes",   None),
         7: ("approach_wait_act",      "OOT",      "3cubes",   None),
         8: ("approach_wait_act",      "OOO",      "3cubes",   load("/home/sshekhar/Desktop/HATPEHDA-concurrent-org/dlgp/dom_n_sol_tt.p")),
@@ -1660,7 +1689,7 @@ def main_exec():
         #         space += " "
         #     recap = exec_regime + space + recap + "\n\n" 
 
-        sound_finished.play()
+        g_sound_player_pub.publish(String("finished"))
         if order==[]:
             g_prompt_pub.publish(String( recap + g_prompt_messages["end_expe"][LANG]))
         else:
@@ -1694,6 +1723,8 @@ if __name__ == "__main__":
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
     robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
     robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
+    
+    robot_home_pub = rospy.Publisher('/r_home', EmptyM, queue_size=1)
 
     g_wait_press_enter_pub = rospy.Publisher("/wait_press_enter", EmptyM, queue_size=1)
     enter_pressed_sub = rospy.Subscriber('/enter_pressed', EmptyM, enter_pressed_cb)
@@ -1727,6 +1758,8 @@ if __name__ == "__main__":
     g_get_box_types_client = rospy.ServiceProxy("/get_box_types", GetBoxTypes)
     
     g_set_green_cube_client = rospy.ServiceProxy("/set_green_cube", SetBool)
+
+    g_sound_player_pub = rospy.Publisher('/sound_player', String, queue_size=1)
 
     # Wait for publisher init
     time.sleep(0.1)
