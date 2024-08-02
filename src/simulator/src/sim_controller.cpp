@@ -35,6 +35,8 @@ ros::ServiceClient set_synchro_step_client;
 ros::ServiceClient hide_move_buttons_client;
 ros::ServiceClient set_question_buttons_client;
 
+ros::Publisher sound_player_pub;
+
 bool g_step_synchro_on = true;
 
 
@@ -402,6 +404,13 @@ void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers a
 
     ROS_WARN("%s", prompt_msg.data.c_str());
 
+    // Speak
+    std_msgs::String msg;
+    std::string box_id(1, location.back());
+    std::string answer_str = answer ? "yes" : "no";
+    msg.data = answer_str+"_box"+box_id;
+    sound_player_pub.publish(msg);
+
     // Delay
     ROS_WARN("Waiting N seconds (N*2s sim time)...");
     float N = 2;
@@ -424,9 +433,14 @@ void Com(std::string location, bool empty)
     std_msgs::String prompt_msg;
 
     std::string box_id(1, location.back());
-    std::string empty_str = empty ? "empty." : "full.";
+    std::string empty_str = empty ? "empty" : "full";
 
-    prompt_msg.data = "  Box " + box_id + " is " + empty_str;
+    prompt_msg.data = "  Box " + box_id + " is " + empty_str + ".";
+
+    // Speak
+    std_msgs::String msg;
+    msg.data = "box"+box_id+"_"+empty_str;
+    sound_player_pub.publish(msg);
 
     ROS_WARN("%s", prompt_msg.data.c_str());
 
@@ -1351,6 +1365,8 @@ int main(int argc, char **argv)
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);
     ros::Subscriber h_start_moving_sub = node_handle.subscribe("/h_start_moving", 1, h_start_moving_cb);
+
+    sound_player_pub = node_handle.advertise<std_msgs::String>("/sound_player", 1);
 
     ros::AsyncSpinner spinner(10);
     spinner.start();

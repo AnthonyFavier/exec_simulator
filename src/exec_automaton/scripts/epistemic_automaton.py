@@ -140,8 +140,6 @@ def build_expected_ha(name, parameters):
 
     return HA
 
-sound_finished = sa.WaveObject.from_wave_file("/home/afavier/new_exec_sim_ws/src/exec_automaton/scripts/finished_70.wav")
-
 def check_copresence(s: ConM.Step):
     return s.from_pair.copresence
 
@@ -340,6 +338,7 @@ def exec_epistemic(init_step):
 
                 # Send NS + HAs to HMI
                 send_NS(VHA.NS)
+                g_sound_player_pub.publish(String("ns"))
                 send_vha(g_possible_human_actions, VHA.NS, timeout=0.0)
 
                 look_at_human()
@@ -423,7 +422,7 @@ def exec_epistemic(init_step):
 
                 if g_human_action_done:
                     if len(HAs):
-                        sound_ns.play()
+                        g_sound_player_pub.publish(String("ns"))
 
                         is_come_back = HAs[0].name=="move_to_table" and HAs[0].parameters[1]=="table"
 
@@ -506,7 +505,6 @@ def send_NS_update_HAs(ps: CM.PState, type, timeout=0.0, only_has=None):
     #             break
     # g_best_human_action_pub.publish(best_ha)
 
-sound_ns = sa.WaveObject.from_wave_file("/home/afavier/new_exec_sim_ws/src/exec_automaton/scripts/sound.wav")
 def send_NS(type, turn=None):
     sgl = Signal()
     if type==VHA.NS:
@@ -524,8 +522,6 @@ def send_NS(type, turn=None):
         raise Exception("Invalid turn")
     robot_visual_signal_pub.publish(sgl)
     time.sleep(0.001)
-
-    sound_ns.play()
 
 def passive_update_HAs(ps: CM.PState, RA: CM.Action, timeout=0.0, only_has=None):
     global g_possible_human_actions
@@ -1595,11 +1591,11 @@ def main_exec():
         2: ("baseline",               "OOO",      "3cubes",   None),
         3: ("baseline",               "OOO",      "4cubes",   None),
         4: ("approach_com",           "OOT",      "3cubes",   None),
-        5: ("approach_com",           "OOO",      "3cubes",   None),
+        5: ("approach_com",           "OOO",      "3cubes",   load("/home/afavier/EHATP-EHDA/dom_n_sol_OOO_com.p")),
         6: ("approach_com",           "OOO",      "4cubes",   None),
         7: ("approach_wait_act",      "OOT",      "3cubes",   None),
-        8: ("approach_wait_act",      "OOO",      "3cubes",   load("/home/afavier/EHATP-EHDA/dom_n_sol_tt--3opaq.p")),
-        9: ("approach_wait_act",      "OOO",      "4cubes",   load("/home/afavier/EHATP-EHDA/dom_n_sol_tt--3opaq.p")),
+        8: ("approach_wait_act",      "OOO",      "3cubes",   load("/home/afavier/EHATP-EHDA/dom_n_sol_OOO_wait.p")),
+        9: ("approach_wait_act",      "OOO",      "4cubes",   None),
     }
 
     rospy.loginfo("Wait for set_box_types service to be started...")
@@ -1693,7 +1689,7 @@ def main_exec():
         #         space += " "
         #     recap = exec_regime + space + recap + "\n\n" 
 
-        sound_finished.play()
+        g_sound_player_pub.publish(String("finished"))
         if order==[]:
             g_prompt_pub.publish(String( recap + g_prompt_messages["end_expe"][LANG]))
         else:
@@ -1762,6 +1758,8 @@ if __name__ == "__main__":
     g_get_box_types_client = rospy.ServiceProxy("/get_box_types", GetBoxTypes)
     
     g_set_green_cube_client = rospy.ServiceProxy("/set_green_cube", SetBool)
+
+    g_sound_player_pub = rospy.Publisher('/sound_player', String, queue_size=1)
 
     # Wait for publisher init
     time.sleep(0.1)
