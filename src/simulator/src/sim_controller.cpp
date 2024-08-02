@@ -74,6 +74,15 @@ std::map<std::string, int> nb_dropped_box =
     {"box_3_R", 0},  
 };
 
+
+enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SIDE_LOOK_MAIN};
+HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
+geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
+geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(5.48 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
+geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(7.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
+
+
 // Deprecated for epistemic
 class DropZone
 {
@@ -110,76 +119,39 @@ void init_drop_zones()
     g_center_drop_zones.push_back( DropZone(make_point(0.86, -0.50, 0.75)) );
 }
 
-class Cube
-{
-public:
-    Cube(std::string name)
-    {
-        m_name = name;
-        m_on_table = true;
-    }
-    std::string getName()
-    {
-        return m_name;
-    }
-    bool getOnTable()
-    {
-        return m_on_table;
-    }
-    void setOnTable(bool v)
-    {
-        m_on_table = v;
-    }
-
-private:
-    std::string m_name;
-    bool m_on_table;
-};
-std::vector<Cube> g_cubes;
-void init_cubes()
-{
-    g_cubes.push_back(Cube("w1"));
-    g_cubes.push_back(Cube("r1"));
-    g_cubes.push_back(Cube("y1"));
-}
 
 // ************************* HIGH LEVEL ACTIONS **************************** //
 void PickName(AGENT agent, std::string obj_name)
 {
     ROS_INFO("\t%s PICK START %s", get_agent_str(agent).c_str(), obj_name.c_str());
 
-    /* FIND OBJ NAME & UPDATE CUBES */
-    bool found = false;
-    for (unsigned int i = 0; i < g_cubes.size(); i++)
+    g_holding[agent] = obj_name;
+
+    geometry_msgs::Pose obj_pose;
+    if(init_poses.find(obj_name)!=init_poses.end())
     {
-        if (g_cubes[i].getName() == obj_name)
-        {
-            found = true;
-            g_cubes[i].setOnTable(false);
-            g_holding[agent] = obj_name;
-            break;
-        }
+        set_obj_position(agent, obj_name, init_poses[obj_name]);
+        obj_pose = init_poses[obj_name];
     }
-    if (!found)
-        throw ros::Exception(agent + " PICK " + obj_name + " not found...");
-
-    // std::cout << "Agent " << agent << " is now holding " << g_holding[agent].c_str() << std::endl;
-
-    set_obj_position(agent, obj_name, init_poses[obj_name]);
-    geometry_msgs::Pose obj_pose = init_poses[obj_name];
-
-    /* GET OBJ POSE */
-    // gazebo_msgs::GetModelState srv;
-    // srv.request.model_name = obj_name;
-    // if (!get_model_state_client[agent].call(srv) || !srv.response.success)
-    //     throw ros::Exception("Calling service get_model_state failed...");
-    // geometry_msgs::Pose obj_pose = srv.response.pose;
-    // show_pose(obj_pose);
+    else
+    {
+        /* GET OBJ POSE */
+        gazebo_msgs::GetModelState srv;
+        srv.request.model_name = obj_name;
+        if (!get_model_state_client[agent].call(srv) || !srv.response.success)
+            throw ros::Exception("Calling service get_model_state failed...");
+        obj_pose = srv.response.pose;
+    }
+    show_pose(obj_pose);
 
     /* MOVE ROBOT HEAD */
     robot_head_follow_obj(agent, obj_name);
 
+    geometry_msgs::Pose mid_pose = make_pose(make_point(1.4, -0.4, 0.84), make_quaternion());
+
     /* MOVE ARM TO OBJ */
+    if(agent==AGENT::HUMAN and obj_name=="g1")
+        move_pose_target(agent, mid_pose);
     move_pose_target(agent, obj_pose);
 
     /* GRAB OBJ */
@@ -188,6 +160,8 @@ void PickName(AGENT agent, std::string obj_name)
     grab_obj(agent, obj_name);
 
     /* HOME POSITION */
+    if(agent==AGENT::HUMAN and obj_name=="g1")
+        move_pose_target(agent, mid_pose);
     move_home(agent);
 
     /* MOVE ROBOT HEAD */
@@ -256,14 +230,7 @@ void BePassive(AGENT agent)
     }
 }
 
-enum HUMAN_STATE{AT_MAIN_LOOK_MAIN, AT_MAIN_LOOK_SIDE, AT_SIDE_LOOK_SIDE, AT_SIDE_LOOK_MAIN};
-HUMAN_STATE g_human_state = HUMAN_STATE::AT_MAIN_LOOK_MAIN;
-geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_MAIN = make_pose(make_point(1.48,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
-geometry_msgs::Pose hand_pose_AT_MAIN_LOOK_SIDE = make_pose(make_point(3.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
-geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_MAIN = make_pose(make_point(5.48 ,  0.5, 0.87),  make_quaternion_RPY(0,0,M_PI));
-geometry_msgs::Pose hand_pose_AT_SIDE_LOOK_SIDE = make_pose(make_point(7.72, -0.5, 0.87),  make_quaternion_RPY(0,0,0));
 
-geometry_msgs::Pose hand_pose_far = make_pose(make_point(0,0,-1), make_quaternion_RPY(0,0,0));
 
 void TurnAround()
 {
@@ -970,10 +937,6 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
 {
     ROS_INFO("Start reset...");
 
-    // Reset g_cubes
-    ROS_INFO("\tReset cubes");
-    for (unsigned int i = 0; i < g_cubes.size(); i++)
-        g_cubes[i].setOnTable(true);
 
     ROS_INFO("\tReset drop zones");
     for (auto it = g_center_drop_zones.begin(); it != g_center_drop_zones.end(); it++)
@@ -1161,7 +1124,7 @@ bool set_green_cube_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolRespo
 {
     gazebo_msgs::SetModelState srv_set;
     geometry_msgs::Pose far_pose = make_pose(make_point(0.0, 6.0, 0.05), make_quaternion());
-    geometry_msgs::Pose shown_pose = make_pose(make_point(1.2, -0.6, 0.75), make_quaternion());
+    geometry_msgs::Pose shown_pose = make_pose(make_point(0.85, -0.6, 0.75), make_quaternion());
 
     srv_set.request.model_state.model_name = "g1";
     srv_set.request.model_state.pose = req.data ? shown_pose : far_pose;
@@ -1178,7 +1141,6 @@ void set_green_cube(bool d)
 
 int main(int argc, char **argv)
 {
-    init_cubes();
     init_drop_zones();
 
     ros::init(argc, argv, "sim_controller");
