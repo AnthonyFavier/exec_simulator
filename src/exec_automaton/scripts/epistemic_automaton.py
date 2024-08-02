@@ -327,15 +327,13 @@ def exec_epistemic(init_step):
         if check_copresence(curr_step):
             g_copresent = True
 
-            # Manage addtional questions
-            process_questions(curr_step)
-
             # Identify Agent Turn
-            human_turn = curr_step.get_pairs()[0].robot_action.is_wait_turn()
-
             # Human Turn
-            if human_turn:
+            if curr_step.get_pairs()[0].robot_action.is_wait_turn():
                 RA = default_robot_passive_action
+                
+                # Manage addtional questions
+                process_questions(curr_step)
 
                 # Extract Possible human actions
                 g_possible_human_actions = get_possible_human_actions(curr_step)
@@ -366,8 +364,26 @@ def exec_epistemic(init_step):
                 random_integer = random.randint(0, len(curr_step.children)-1)
                 # RA = curr_step.children[random_integer].from_pair.robot_action
 
-                # Execute RA
-                start_execute_RA(RA)
+                # Check if com
+                if RA.name == "communicate_if_cube_can_be_put":
+                    box_action_1 = RA.parameters[1]
+                    next_step = get_next_step(curr_step, HA, RA)
+                    next_best_RA = next_step.comp_best_choice.from_pair.robot_action
+                    if next_best_RA.name != "communicate_if_cube_can_be_put":
+                        new_com_action = ConM.Action.cast_PT2A(CM.PrimitiveTask("com", (box_action_1, "empty"), None, 0, 'R'), 0, None)
+                    else:
+                        box_action_2 = next_best_RA.parameters[1]
+                        curr_step = next_step
+                        RA = next_best_RA
+                        boxes = ["box_1", "box_2", "box_3"]
+                        boxes.remove(box_action_1)
+                        boxes.remove(box_action_2)
+                        new_com_action = CM.Action.cast_PT2A(CM.PrimitiveTask("com", (boxes[0], "full"), None, 0, 'R'), 0, None)
+                    
+                    start_execute_RA(new_com_action)
+
+                else:
+                    start_execute_RA(RA)
 
                 if not RA.is_passive():
                     wait_step_end()
@@ -396,11 +412,14 @@ def exec_epistemic(init_step):
 
                 if g_robot_action_done:
                     if len(RAs):
-                        start_execute_RA(RAs.pop(0))
+                        RA = RAs.pop(0)
+                        RA.name += "_concu"
+                        start_execute_RA(RA)
                         g_robot_action_done = False
                     else:
                         robot_done = True
                         reset_head()
+                        robot_home_pub.publish(EmptyM())
 
                 if g_human_action_done:
                     if len(HAs):
@@ -987,8 +1006,17 @@ def compute_msg_action_epistemic(a):
         msg.type=Action.PICK_OBJ_NAME
         msg.obj_name=a.parameters[0]
 
+    elif "pick_concu"==a.name:
+        msg.type=Action.PICK_OBJ_NAME_CONCU
+        msg.obj_name=a.parameters[0]
+
     elif "place_1"==a.name:
         msg.type=Action.PLACE_OBJ_NAME
+        msg.obj_name=a.parameters[0]
+        msg.location = a.parameters[1] + "_" + a.agent
+
+    elif "place_1_concu"==a.name:
+        msg.type=Action.PLACE_OBJ_NAME_CONCU
         msg.obj_name=a.parameters[0]
         msg.location = a.parameters[1] + "_" + a.agent
 
@@ -1009,6 +1037,11 @@ def compute_msg_action_epistemic(a):
         msg.obj_name=a.parameters[0]
         msg.location=a.parameters[1]
         msg.answers = g_answer_boxes
+
+    elif "com"==a.name:
+        msg.type=Action.COM
+        msg.location=a.parameters[0]
+        msg.empty=a.parameters[1]=="empty"
 
     if msg.type==-1:
         raise Exception("Unknown action")
@@ -1694,6 +1727,8 @@ if __name__ == "__main__":
     human_visual_signal_sub = rospy.Subscriber('/human_visual_signals', Signal, human_visual_signal_cb)
     robot_visual_signal_sub = rospy.Subscriber('/robot_visual_signals', Signal, robot_visual_signal_cb)
     robot_visual_signal_pub = rospy.Publisher('/robot_visual_signals', Signal, queue_size=1)
+    
+    robot_home_pub = rospy.Publisher('/r_home', EmptyM, queue_size=1)
 
     g_wait_press_enter_pub = rospy.Publisher("/wait_press_enter", EmptyM, queue_size=1)
     enter_pressed_sub = rospy.Subscriber('/enter_pressed', EmptyM, enter_pressed_cb)

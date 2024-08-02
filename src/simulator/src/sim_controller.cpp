@@ -170,6 +170,47 @@ void PickName(AGENT agent, std::string obj_name)
     ROS_INFO("\t%s PICK END", get_agent_str(agent).c_str());
 }
 
+void PickNameConcu(AGENT agent, std::string obj_name)
+{
+    ROS_INFO("\t%s PICK START %s", get_agent_str(agent).c_str(), obj_name.c_str());
+
+    g_holding[agent] = obj_name;
+
+    geometry_msgs::Pose obj_pose;
+    if(init_poses.find(obj_name)!=init_poses.end())
+    {
+        set_obj_position(agent, obj_name, init_poses[obj_name]);
+        obj_pose = init_poses[obj_name];
+    }
+    else
+    {
+        /* GET OBJ POSE */
+        gazebo_msgs::GetModelState srv;
+        srv.request.model_name = obj_name;
+        if (!get_model_state_client[agent].call(srv) || !srv.response.success)
+            throw ros::Exception("Calling service get_model_state failed...");
+        obj_pose = srv.response.pose;
+    }
+    show_pose(obj_pose);
+
+    /* MOVE ROBOT HEAD */
+    robot_head_follow_obj(agent, obj_name);
+
+    geometry_msgs::Pose mid_pose = make_pose(make_point(1.4, -0.4, 0.84), make_quaternion());
+
+    /* MOVE ARM TO OBJ */
+    if(agent==AGENT::HUMAN and obj_name=="g1")
+        move_pose_target(agent, mid_pose);
+    move_pose_target(agent, obj_pose);
+
+    /* GRAB OBJ */
+    set_mass_obj(obj_name, false);
+    set_obj_pose(agent, obj_name, obj_pose);
+    grab_obj(agent, obj_name);
+
+    ROS_INFO("\t%s PICK_CONCU END", get_agent_str(agent).c_str());
+}
+
 void PlacePose(AGENT agent, geometry_msgs::Pose pose)
 {
     ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
@@ -207,6 +248,34 @@ void PlaceLocation(AGENT agent, std::string location)
     }
 
     PlacePose(agent, pose);
+}
+
+void PlaceLocationConcu(AGENT agent, std::string location)
+{
+    geometry_msgs::Pose pose = locations[location];
+
+    if(agent==AGENT::ROBOT)
+    {
+        if(nb_dropped_box[location]!=0)
+            pose.position.y += 0.15;
+        nb_dropped_box[location]++;
+    }
+
+    ROS_INFO("\t%s PLACE_POSE START", get_agent_str(agent).c_str());
+
+    /* MOVE ROBOT HEAD */
+    robot_head_follow_pose(agent, pose.position);
+
+    /* MOVE ARM TO POSE */
+    move_pose_target(agent, pose);
+
+    /* DROP OBJ */
+    std::string obj_name = g_holding[agent];
+    drop(agent, obj_name);
+    set_obj_pose(agent, obj_name, pose);
+    set_mass_obj(obj_name, true);
+
+    ROS_INFO("\t%s PLACE_POSE END", get_agent_str(agent).c_str());
 }
 
 void BePassive(AGENT agent)
@@ -327,9 +396,9 @@ void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers a
     // Prompt answer 
     std_msgs::String prompt_msg;
     if(answer)
-        prompt_msg.data = " Yes, " + location + " is empty.";
+        prompt_msg.data = "  Yes, " + location + " is empty.";
     else
-        prompt_msg.data = " No, " + location + " is full...";
+        prompt_msg.data = "  No, " + location + " is full...";
 
     ROS_WARN("%s", prompt_msg.data.c_str());
 
@@ -346,6 +415,35 @@ void Ask(std::string obj_name, std::string location, sim_msgs::CanPlaceAnswers a
 
     ROS_WARN("Done !");
 }
+
+void Com(std::string location, bool empty)
+{
+    robot_head_follow_human(AGENT::ROBOT);
+
+    // Prompt answer 
+    std_msgs::String prompt_msg;
+
+    std::string box_id(1, location.back());
+    std::string empty_str = empty ? "empty." : "full.";
+
+    prompt_msg.data = "  Box " + box_id + " is " + empty_str;
+
+    ROS_WARN("%s", prompt_msg.data.c_str());
+
+    // Delay
+    ROS_WARN("Waiting N seconds (N*2s sim time)...");
+    float N = 2;
+    ros::Rate loop(2);
+    ros::Time start = ros::Time::now();
+    while(ros::Time::now() - start < ros::Duration(N*2))
+    {
+        prompt_pub.publish(prompt_msg);
+        loop.sleep();
+    }
+
+    ROS_WARN("Done !");
+}
+
 
 //  MANAGE ACTIONS + EVENTS + SIGNALS  //
 std::string compute_event_name(AGENT agent, sim_msgs::Action action, bool start)
@@ -527,6 +625,21 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
 
             Ask(action.obj_name, action.location, action.answers);
 
+            send_visual_signal_action_over(agent, action);
+            action_done[agent] = true;
+        }
+        else if(sim_msgs::Action::COM == action.type)
+        {
+            action_received[agent] = true;
+            sim_msgs::Signal sgl;
+            sgl.id = action.id;
+            sgl.type = sim_msgs::Signal::S_RA;
+            visual_signals_pub[agent].publish(sgl);
+            ROS_INFO("Start signal SENT for ASKING");
+
+            ros::Duration(0.2).sleep();
+
+            Com(action.location, action.empty);
 
             send_visual_signal_action_over(agent, action);
             action_done[agent] = true;
@@ -550,11 +663,23 @@ void manage_action(AGENT agent, const sim_msgs::Action &action)
                 else
                     PickName(agent, action.obj_name);
                 break;
+            case sim_msgs::Action::PICK_OBJ_NAME_CONCU:
+                if (action.obj_name == "")
+                    ROS_ERROR("%d Missing obj_name in action msg!", agent);
+                else
+                    PickNameConcu(agent, action.obj_name);
+                break;
             case sim_msgs::Action::PLACE_OBJ_NAME:
                 if (action.location == "")
                     ROS_ERROR("%d Missing location in action msg!", agent);
                 else
                     PlaceLocation(agent, action.location);
+                break;
+            case sim_msgs::Action::PLACE_OBJ_NAME_CONCU:
+                if (action.location == "")
+                    ROS_ERROR("%d Missing location in action msg!", agent);
+                else
+                    PlaceLocationConcu(agent, action.location);
                 break;
             default:
                 throw ros::Exception("Action type unknown...");
