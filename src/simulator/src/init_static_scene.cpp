@@ -51,15 +51,15 @@ void init_scene_epistemic()
   box_1.primitives.resize(1);
   box_1.primitives[0].type = box_1.primitives[0].BOX;
   box_1.primitives[0].dimensions.resize(3);
-  box_1.primitives[0].dimensions[0] = 0.53;
-  box_1.primitives[0].dimensions[1] = 0.53;
-  box_1.primitives[0].dimensions[2] = 0.38;
+  box_1.primitives[0].dimensions[0] = 0.50;
+  box_1.primitives[0].dimensions[1] = 0.50;
+  box_1.primitives[0].dimensions[2] = 0.37;
 
   /* Define the pose of the object. */
   box_1.primitive_poses.resize(1);
   box_1.primitive_poses[0].position.x = 0.85;
-  box_1.primitive_poses[0].position.y = -0.25;
-  box_1.primitive_poses[0].position.z = 0.89;
+  box_1.primitive_poses[0].position.y = -0.07;
+  box_1.primitive_poses[0].position.z = 0.885;
   box_1.primitive_poses[0].orientation.w = 1.0;
 
   box_1.id = "box_1";
@@ -68,15 +68,15 @@ void init_scene_epistemic()
   box_2 = box_1;
   box_2.id = "box_2";
   box_2.primitive_poses[0].position.x = 0.85;
-  box_2.primitive_poses[0].position.y = 0.1;
-  box_2.primitive_poses[0].position.z = 0.89;
+  box_2.primitive_poses[0].position.y = 0.24;
+  box_2.primitive_poses[0].position.z = 0.885;
   planning_scene_interface.applyCollisionObject(box_2);
 
   box_3 = box_1;
   box_3.id = "box_3";
   box_3.primitive_poses[0].position.x = 0.85;
-  box_3.primitive_poses[0].position.y = 0.45;
-  box_3.primitive_poses[0].position.z = 0.89;
+  box_3.primitive_poses[0].position.y = 0.55;
+  box_3.primitive_poses[0].position.z = 0.885;
   planning_scene_interface.applyCollisionObject(box_3);
 
 
@@ -90,9 +90,9 @@ void init_scene_epistemic()
   r1.primitives.resize(1);
   r1.primitives[0].type = r1.primitives[0].BOX;
   r1.primitives[0].dimensions.resize(3);
-  r1.primitives[0].dimensions[0] = 0.10;
-  r1.primitives[0].dimensions[1] = 0.10;
-  r1.primitives[0].dimensions[2] = 0.10;
+  r1.primitives[0].dimensions[0] = 0.12;
+  r1.primitives[0].dimensions[1] = 0.12;
+  r1.primitives[0].dimensions[2] = 0.12;
 
   /* Define the pose of the object. */
   r1.primitive_poses.resize(1);  
@@ -114,9 +114,9 @@ void init_scene_epistemic()
   y1.primitives.resize(1);
   y1.primitives[0].type = y1.primitives[0].BOX;
   y1.primitives[0].dimensions.resize(3);
-  y1.primitives[0].dimensions[0] = 0.10;
-  y1.primitives[0].dimensions[1] = 0.10;
-  y1.primitives[0].dimensions[2] = 0.10;
+  y1.primitives[0].dimensions[0] = 0.12;
+  y1.primitives[0].dimensions[1] = 0.12;
+  y1.primitives[0].dimensions[2] = 0.12;
 
   /* Define the pose of the object. */
   y1.primitive_poses.resize(1);  
@@ -127,6 +127,30 @@ void init_scene_epistemic()
 
   y1.operation = y1.ADD;
   planning_scene_interface.applyCollisionObject(y1);
+
+  /* cube g1 */
+
+  moveit_msgs::CollisionObject g1;
+  g1.id = "g1";
+  g1.header.frame_id = "world";
+
+  /* Define the primitive and its dimensions. */
+  g1.primitives.resize(1);
+  g1.primitives[0].type = g1.primitives[0].BOX;
+  g1.primitives[0].dimensions.resize(3);
+  g1.primitives[0].dimensions[0] = 0.12;
+  g1.primitives[0].dimensions[1] = 0.12;
+  g1.primitives[0].dimensions[2] = 0.12;
+
+  /* Define the pose of the object. */
+  g1.primitive_poses.resize(1);  
+  g1.primitive_poses[0].position.x = 0.85;
+  g1.primitive_poses[0].position.y = -0.45;
+  g1.primitive_poses[0].position.z = 0.75;
+  g1.primitive_poses[0].orientation.w = 1.0;
+
+  g1.operation = g1.ADD;
+  planning_scene_interface.applyCollisionObject(g1);
 }
 
 void init_scene_stack_empiler_2()
