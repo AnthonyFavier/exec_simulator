@@ -52,18 +52,18 @@ sim_msgs::BoxTypes g_box_types;
 //  DOMAIN DESCRIPTION  //
 std::map<std::string, geometry_msgs::Pose> locations =
     {
-        {"box_1_R",     make_pose(make_point(0.71, -0.33, 1.15),    make_quaternion())},
-        {"box_2_R",     make_pose(make_point(0.71, 0.03, 1.15),     make_quaternion())},
-        {"box_3_R",     make_pose(make_point(0.71, 0.38, 1.15),     make_quaternion())},
-        {"box_1_H",     make_pose(make_point(0.98, -0.2, 1.15),     make_quaternion())},
-        {"box_2_H",     make_pose(make_point(0.98, 0.1, 1.15),      make_quaternion())},
-        {"box_3_H",     make_pose(make_point(0.98, 0.4, 1.15),      make_quaternion())},
+        {"box_1_R",     make_pose(make_point(0.73, -0.14, 1.15),    make_quaternion())},
+        {"box_2_R",     make_pose(make_point(0.73, 0.24, 1.15),     make_quaternion())},
+        {"box_3_R",     make_pose(make_point(0.73, 0.5, 1.15),     make_quaternion())},
+        {"box_1_H",     make_pose(make_point(0.97, -0.07, 1.15),     make_quaternion())},
+        {"box_2_H",     make_pose(make_point(0.97, 0.24, 1.15),      make_quaternion())},
+        {"box_3_H",     make_pose(make_point(0.97, 0.55, 1.15),      make_quaternion())},
 };
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
-        {"box_1_cover",       make_pose(make_point(0.85, -0.25, 0.7),   make_quaternion())},
-        {"box_2_cover",       make_pose(make_point(0.85, 0.1, 0.7),     make_quaternion())},
-        {"box_3_cover",       make_pose(make_point(0.85, 0.45, 0.7),    make_quaternion())},
+        {"box_1_cover",       make_pose(make_point(0.85, -0.07, 0.7),   make_quaternion())},
+        {"box_2_cover",       make_pose(make_point(0.85, 0.24, 0.7),     make_quaternion())},
+        {"box_3_cover",       make_pose(make_point(0.85, 0.55, 0.7),    make_quaternion())},
         {"w1",                make_pose(make_point(8.5, -0.4, 0.75),    make_quaternion())},
         {"r1",                make_pose(make_point(0.5, -0.6, 0.75),    make_quaternion())},
         {"y1",                make_pose(make_point(0.5, -0.85, 0.75),   make_quaternion())},
@@ -145,6 +145,7 @@ void PickName(AGENT agent, std::string obj_name)
         obj_pose = srv.response.pose;
     }
     show_pose(obj_pose);
+    set_obj_pose(agent, obj_name, obj_pose);
 
     /* MOVE ROBOT HEAD */
     robot_head_follow_obj(agent, obj_name);
@@ -158,7 +159,6 @@ void PickName(AGENT agent, std::string obj_name)
 
     /* GRAB OBJ */
     set_mass_obj(obj_name, false);
-    set_obj_pose(agent, obj_name, obj_pose);
     grab_obj(agent, obj_name);
 
     /* HOME POSITION */
@@ -245,7 +245,7 @@ void PlaceLocation(AGENT agent, std::string location)
     if(agent==AGENT::ROBOT)
     {
         if(nb_dropped_box[location]!=0)
-            pose.position.y += 0.15;
+            pose.position.y += 0.14;
         nb_dropped_box[location]++;
     }
 
@@ -1169,6 +1169,14 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     nb_dropped_box["box_3_R"] =0; 
 
     // Green cube
+    srv_attach.request.model_name_2 = "g1";
+    srv_attach.request.link_name_2 = "g1_link";
+    srv_attach.request.model_name_1 = ROBOT_ATTACH_MODEL_NAME;
+    srv_attach.request.link_name_1 = ROBOT_ATTACH_LINK_NAME;
+    detach_plg_client[AGENT::ROBOT].call(srv_attach);
+    srv_attach.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
+    srv_attach.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
+    detach_plg_client[AGENT::HUMAN].call(srv_attach);
     set_green_cube(false);
 
     ROS_INFO("World reset ok");
@@ -1263,7 +1271,7 @@ bool set_green_cube_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolRespo
 {
     gazebo_msgs::SetModelState srv_set;
     geometry_msgs::Pose far_pose = make_pose(make_point(0.0, 6.0, 0.05), make_quaternion());
-    geometry_msgs::Pose shown_pose = make_pose(make_point(0.85, -0.6, 0.75), make_quaternion());
+    geometry_msgs::Pose shown_pose = make_pose(make_point(0.85, -0.45, 0.75), make_quaternion());
 
     srv_set.request.model_state.model_name = "g1";
     srv_set.request.model_state.pose = req.data ? shown_pose : far_pose;
