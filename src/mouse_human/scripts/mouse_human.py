@@ -363,6 +363,7 @@ def incoming_vha_cb(msg: VHA):
         g_z_pass.ready_activate_auto_pass = True
         g_z_pass.ns_idle = False
 
+    these_are_actions = False
     for i,ha in enumerate(g_vha.valid_human_actions):
 
         # Questions
@@ -395,6 +396,7 @@ def incoming_vha_cb(msg: VHA):
                     break
             # If found corresponding zone, stop current loop
             if found:
+                these_are_actions = True
                 break
 
 
@@ -423,14 +425,17 @@ def incoming_vha_cb(msg: VHA):
 
     set_question_buttons(srv_set_q_buttons)
     if len(lines):
+        title_str = "You may ask:"
+        if these_are_actions:
+            title_str = "You may act or ask:"
         # print in shell
-        rospy.logwarn("Questions:")
+        rospy.logwarn(title_str)
         for l in lines:
             rospy.logwarn(l)
 
         # in prompt window
         msg_questions = String()
-        msg_questions.data = "Questions:\n"
+        msg_questions.data = title_str + "\n"
         for l in lines:
             msg_questions.data += f"{l}\n"
         g_prompt_pub.publish(msg_questions)
