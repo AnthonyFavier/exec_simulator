@@ -14,7 +14,7 @@ def sound_player_cb(msg):
 if __name__ == "__main__":
     rospy.init_node('sound_player')
 
-    path = "/home/afavier/new_exec_sim_ws/sounds/"
+    path = "/home/sshekhar/exec_simulator/sounds/"
 
     # load sounds
     sounds = {
