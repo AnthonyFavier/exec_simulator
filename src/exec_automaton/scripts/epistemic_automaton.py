@@ -29,6 +29,7 @@ from sim_msgs.srv import GetBoxTypes, GetBoxTypesRequest, GetBoxTypesResponse
 from sim_msgs.msg import CanPlaceAnswers
 import simpleaudio as sa
 import numpy as np
+from sim_msgs.srv import SetQuestionButtons, SetQuestionButtonsRequest, SetQuestionButtonsResponse
 
 class IdResult(Enum):
     NOT_NEEDED=0
@@ -201,6 +202,9 @@ def human_action_done_cb(m: EmptyM):
     g_human_action_done = True
     print("BAZABF H DONE")
 
+#####################
+## Human Questions ##
+#####################
 def presence_of_questions_in_step(s: ConM.Step):
     for p in s.get_pairs():
         if p.human_action.name == "communicate_if_cube_can_be_put":
@@ -221,85 +225,333 @@ def com_flagged_as_additional_question(a: CM.Action):
     except AttributeError:
         return False
 
+def addition_questions(s: ConM.Step):
+
+    """ add additional questions with "no" answer according to opaque boxes """
+
+    # Get box types
+    res = g_get_box_types_client() # type: GetBoxTypesResponse
+
+    # For each of the three box
+    new_pairs = []
+    for n_box in range(1,4):
+        box_type = res.types.__getattribute__(f"box_{n_box}")
+        if box_type==BoxTypes.OPAQUE:
+            # Look for corresponding question, and if additional question needed
+            must_add_question = True
+            for p in s.get_pairs():
+                if p.human_action.name=="communicate_if_cube_can_be_put" and p.human_action.parameters[1]==f"box_{n_box}":
+                    must_add_question = False
+                    break
+            
+            if must_add_question:
+
+                # Identify object held
+                for p in s.get_pairs():
+                    if p.human_action.name=="communicate_if_cube_can_be_put":
+                        obj_held = p.human_action.parameters[0]
+
+                # Create new question in pair
+                h_com_action = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", (obj_held, f"box_{n_box}"), None, 0, "H"), 0, None)
+                h_com_action.is_additional_question = True
+                r_wait_turn = s.get_pairs()[0].robot_action
+                new_pair = ConM.ActionPair(h_com_action, r_wait_turn, None, None)
+                new_pairs.append(new_pair)
+    
+    # Update step
+    new_human_options = ConM.arrange_pairs_in_HumanOption(s.get_pairs()+new_pairs)
+    s.init(new_human_options, s.from_pair)
+    s.with_additional_questions = True
+
 g_answer_boxes = CanPlaceAnswers()
-def process_questions(s: ConM.Step):
+def update_g_answers(s: ConM.Step):
+    """ update g_answers_boxes according 'real' questions """
+
     global g_answer_boxes
 
-    # If there are questions in current step
-    if presence_of_questions_in_step(s):
+    # Updates answers
+    g_answer_boxes.box_1 = False
+    g_answer_boxes.box_2 = False
+    g_answer_boxes.box_3 = False
+    for p in s.get_pairs():
+        if p.human_action.name=="communicate_if_cube_can_be_put":
+            if p.human_action.parameters[1]=="box_1":
+                if not com_flagged_as_additional_question(p.human_action):
+                    g_answer_boxes.box_1 = True
+            if p.human_action.parameters[1]=="box_2":
+                if not com_flagged_as_additional_question(p.human_action):
+                    g_answer_boxes.box_2 = True
+            if p.human_action.parameters[1]=="box_3":
+                if not com_flagged_as_additional_question(p.human_action):
+                    g_answer_boxes.box_3 = True
 
-        # If no flag "without_additional_question"
-        if not step_flagged_already_with_additional_questions(s):
+def identify_case(s: ConM.Step):
+    case = None
 
-            """ add additional questions with "no" answer according to opaque boxes """
+    # 3 cases: (O: Opaque, T: Transparent, f: full, e: empty)
+    # - OTO - fee -
+    # - OOO - fee -
+    # - OOO - ffe -
 
-            # Get box types
-            res = g_get_box_types_client() # type: GetBoxTypesResponse
+    has = get_possible_human_actions(s)
 
-            # For each of the three box
-            new_pairs = []
-            for n_box in range(1,4):
-                box_type = res.types.__getattribute__(f"box_{n_box}")
-                if box_type==BoxTypes.OPAQUE:
-                    # Look for corresponding question, and if additional question needed
-                    must_add_question = True
-                    for p in s.get_pairs():
-                        if p.human_action.name=="communicate_if_cube_can_be_put" and p.human_action.parameters[1]==f"box_{n_box}":
-                            must_add_question = False
-                            break
-                    
-                    if must_add_question:
+    # - OTO - fee -
+    # com 1 (add) / place 2 / com 3
+    for ha in has:
+        str_ha = str(ha)[str(ha).find('-HA-')+len('-HA-'):]
+        if str_ha=="place_1('w1', 'box_2')":
+            return 1
+    
+    # - OOO - fee -
+    # com 1 (add) / com 2 / com 3
+    for ha in has:
+        str_ha = str(ha)[str(ha).find('-HA-')+len('-HA-'):]
+        if str_ha=="communicate_if_cube_can_be_put('w1', 'box_2')":
+            if not com_flagged_as_additional_question(ha):
+                return 2
 
-                        # Identify object held
-                        for p in s.get_pairs():
-                            if p.human_action.name=="communicate_if_cube_can_be_put":
-                                obj_held = p.human_action.parameters[0]
+    # - OOO - ffe -
+    # com1 (add) / com 2 (add) / com 3
+    for ha in has:
+        str_ha = str(ha)[str(ha).find('-HA-')+len('-HA-'):]
+        if str_ha=="communicate_if_cube_can_be_put('w1', 'box_2')":
+            if com_flagged_as_additional_question(ha):
+                return 3
 
-                        # Create new question in pair
-                        h_com_action = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", [obj_held, f"box_{n_box}"], None, 0, "H"), 0, None)
-                        h_com_action.is_additional_question = True
-                        r_wait_turn = s.get_pairs()[0].robot_action
-                        new_pair = ConM.ActionPair(h_com_action, r_wait_turn, None, None)
-                        new_pairs.append(new_pair)
-            
-            # Update step
-            new_human_options = ConM.arrange_pairs_in_HumanOption(s.get_pairs()+new_pairs)
-            s.init(new_human_options, s.from_pair)
-            s.with_additional_questions = True
 
-        # else:
-        #     # find additional questions (pairs) to remove
-        #     p_to_remove = []
-        #     for p in s.get_pairs():
-        #         if p.human_action.name=="communicate_if_cube_can_be_put":
-        #             if com_flagged_as_additional_question(p.human_action):
-        #                 p_to_remove.append(p)
+    return case
 
-        #     # remove pairs
-        #     new_pairs = s.get_pairs()
-        #     for p in p_to_remove:
-        #         new_pairs.remove(p)
+def handle_case(case, step):
+    if case==1:
+        mock_HA = question_case_1(step)
 
-        #     # Update step
-        #     new_human_options = ConM.arrange_pairs_in_HumanOption(new_pairs)
-        #     s.init(new_human_options, s.from_pair)
-        
-        # Updates answers
-        g_answer_boxes.box_1 = False
-        g_answer_boxes.box_2 = False
-        g_answer_boxes.box_3 = False
-        for p in s.get_pairs():
-            if p.human_action.name=="communicate_if_cube_can_be_put":
-                if p.human_action.parameters[1]=="box_1":
-                    if not com_flagged_as_additional_question(p.human_action):
-                        g_answer_boxes.box_1 = True
-                if p.human_action.parameters[1]=="box_2":
-                    if not com_flagged_as_additional_question(p.human_action):
-                        g_answer_boxes.box_2 = True
-                if p.human_action.parameters[1]=="box_3":
-                    if not com_flagged_as_additional_question(p.human_action):
-                        g_answer_boxes.box_3 = True
+    elif case==2:
+        mock_HA = question_case_2(step)
 
+    elif case==3:
+        mock_HA = question_case_3(step)
+    else:
+        raise Exception("handle_case: Case unknown")
+    
+    req = SetQuestionButtonsRequest()
+    req.q1 = False
+    req.q2 = False
+    req.q3 = False
+    req.q4 = False
+    req.q5 = False
+    g_set_question_buttons_client(req)
+
+    return mock_HA
+
+def question_case_1(s):
+    global g_possible_human_actions
+    
+    mock_HA = None
+
+    # all actions
+    com_1 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_1"), None, 0, 'H'), 0, None)
+    com_2 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_2"), None, 0, 'H'), 0, None)
+    com_3 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_3"), None, 0, 'H'), 0, None)
+    place_2 = CM.Action.cast_PT2A(CM.PrimitiveTask("place_1", ("w1", "box_2"), None, 0, 'H'), 0, None)
+    place_3 = CM.Action.cast_PT2A(CM.PrimitiveTask("place_1", ("w1", "box_3"), None, 0, 'H'), 0, None)
+    PASS = CM.Action.create_passive("H", "PASS")
+
+    # graph
+    actions = [com_1, place_2, com_3]
+    com_1.com_graph_children = [com_1, place_2, com_3, place_3]
+    com_3.com_graph_children = [com_3, com_1, place_2, place_3]
+
+    # run graph
+    mock_HA = None
+    while not mock_HA in [place_2, place_3]:
+        g_possible_human_actions = actions
+        send_NS(VHA.NS_IDLE)
+        g_sound_player_pub.publish(String("ns"))
+        send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
+        look_at_human()
+        wait_human_decision(s)
+        mock_HA = MOCK_assess_human_action()
+        if not mock_HA.is_passive():
+            wait_step_end()
+
+        if CM.Action.are_similar(mock_HA, com_1):
+            actions = com_1.com_graph_children
+        if CM.Action.are_similar(mock_HA, com_3):
+            actions = com_3.com_graph_children
+
+        if CM.Action.are_similar(mock_HA, place_2):
+            mock_HA = place_2
+        if CM.Action.are_similar(mock_HA, place_3):
+            mock_HA = place_3
+
+        reset()
+
+    return mock_HA
+
+def question_case_2(s):
+    global g_possible_human_actions
+
+    mock_HA = None
+
+    # all actions
+    com_1 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_1"), None, 0, 'H'), 0, None)
+    com_2_1 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_2"), None, 0, 'H'), 0, None)
+    com_3_1 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_3"), None, 0, 'H'), 0, None)
+    com_2_2 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_2"), None, 0, 'H'), 0, None)
+    com_3_2 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_3"), None, 0, 'H'), 0, None)
+    place_2 = CM.Action.cast_PT2A(CM.PrimitiveTask("place_1", ("w1", "box_2"), None, 0, 'H'), 0, None)
+    place_3 = CM.Action.cast_PT2A(CM.PrimitiveTask("place_1", ("w1", "box_3"), None, 0, 'H'), 0, None)
+    PASS = CM.Action.create_passive("H", "PASS")
+
+    # graph
+    actions = [com_1, com_2_1, com_3_1]
+    com_1.com_graph_children = [com_1, place_2, place_3, com_3_2, com_2_2]
+    com_2_1.com_graph_children = [com_2_1, place_2, com_1, com_3_2]
+    com_3_1.com_graph_children = [com_3_1, place_3, com_1, com_2_2]
+    com_3_2.com_graph_children = [com_3_2, place_2, place_3, com_1, com_2_2]
+    com_2_2.com_graph_children = [com_2_2, place_2, place_3, com_1, com_3_2]
+
+    com_2_once = False
+    com_3_once = False
+
+    # run graph
+    mock_HA = None
+    while not mock_HA in [place_2, place_3]:
+        g_possible_human_actions = actions
+        send_NS(VHA.NS_IDLE)
+        g_sound_player_pub.publish(String("ns"))
+        send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
+        look_at_human()
+        wait_human_decision(s)
+        mock_HA = MOCK_assess_human_action()
+        if not mock_HA.is_passive():
+            wait_step_end()
+
+        if CM.Action.are_similar(mock_HA, com_1):
+            actions = com_1.com_graph_children
+        if CM.Action.are_similar(mock_HA, com_2_1):
+            if not com_2_once:
+                actions = com_2_1.com_graph_children
+                com_2_once = True
+            else:
+                actions = com_2_2.com_graph_children
+        if CM.Action.are_similar(mock_HA, com_3_1):
+            if not com_3_once:
+                actions = com_3_1.com_graph_children
+                com_3_once = True
+            else:
+                actions = com_3_2.com_graph_children
+
+        if CM.Action.are_similar(mock_HA, place_2):
+            mock_HA = place_2
+        if CM.Action.are_similar(mock_HA, place_3):
+            mock_HA = place_3
+
+        reset()
+
+    return mock_HA
+
+def question_case_3(s):
+    global g_possible_human_actions
+    
+    mock_HA = None
+
+    # all actions
+    com_1_1 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_1"), None, 0, 'H'), 0, None)
+    com_2_1 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_2"), None, 0, 'H'), 0, None)
+    com_3 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_3"), None, 0, 'H'), 0, None)
+    com_1_2 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_1"), None, 0, 'H'), 0, None)
+    com_2_2 = CM.Action.cast_PT2A(CM.PrimitiveTask("communicate_if_cube_can_be_put", ("w1", "box_2"), None, 0, 'H'), 0, None)
+    place_2 = CM.Action.cast_PT2A(CM.PrimitiveTask("place_1", ("w1", "box_2"), None, 0, 'H'), 0, None)
+    place_3 = CM.Action.cast_PT2A(CM.PrimitiveTask("place_1", ("w1", "box_3"), None, 0, 'H'), 0, None)
+    PASS = CM.Action.create_passive("H", "PASS")
+
+    # graph
+    actions = [com_1_1, com_3, com_2_1]
+    com_1_1.com_graph_children = [com_1_1, com_2_2, com_3]
+    com_2_1.com_graph_children = [com_2_1, com_3, com_1_2]
+    com_3.com_graph_children = [com_3, com_2_2, com_1_2, place_3]
+    com_2_2.com_graph_children = [com_2_2, place_3, com_3, com_1_2]
+    com_1_2.com_graph_children = [com_1_2, place_3, com_3, com_2_2]
+
+    com_1_once = False
+    com_2_once = False
+
+    # run graph
+    mock_HA = None
+    while not mock_HA in [place_2, place_3]:
+        g_possible_human_actions = actions
+        send_NS(VHA.NS_IDLE)
+        g_sound_player_pub.publish(String("ns"))
+        send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
+        look_at_human()
+        wait_human_decision(s)
+        mock_HA = MOCK_assess_human_action()
+        if not mock_HA.is_passive():
+            wait_step_end()
+
+        if CM.Action.are_similar(mock_HA, com_1_1):
+            if not com_1_once:
+                actions = com_1_1.com_graph_children
+            else:
+                actions = com_1_2.com_graph_children
+        if CM.Action.are_similar(mock_HA, com_2_1):
+            if not com_2_once:
+                actions = com_2_1.com_graph_children
+                com_2_once = True
+            else:
+                actions = com_2_2.com_graph_children
+        if CM.Action.are_similar(mock_HA, com_3):
+            actions = com_3.com_graph_children
+
+        if CM.Action.are_similar(mock_HA, place_2):
+            mock_HA = place_2
+        if CM.Action.are_similar(mock_HA, place_3):
+            mock_HA = place_3
+
+        reset()
+
+    return mock_HA
+
+def find_matching_step(mock_HA, s):
+    # knowing the executed action (place_2 or place_3), find the first matching child step
+    # max 2 steps
+
+    pair = None
+
+    for c in s.children:
+        pairs = c.get_pairs()
+        for p in pairs:
+            if p.human_action.name==mock_HA.name:
+                if p.human_action.parameters==mock_HA.parameters:
+                    pair = p
+                    break 
+        if pair!=None:
+                break
+
+        for cc in c.children:
+            ppairs = cc.get_pairs()
+            for pp in ppairs:
+                if pp.human_action.name==mock_HA.name:
+                    if pp.human_action.parameters==mock_HA.parameters:
+                        pair = pp
+                        break
+            if pair!=None:
+                break
+
+        if pair!=None:
+                break
+
+    if pair==None:
+        raise Exception("find_matching_step: unable to thing matching action pair...")
+
+    next_step = pair.next[0].get_in_step()
+
+    return next_step
+
+##############
+## EXECUTOR ##
+##############
 g_copresent = True
 def exec_epistemic(init_step):
     
@@ -329,28 +581,38 @@ def exec_epistemic(init_step):
             # Human Turn
             if curr_step.get_pairs()[0].robot_action.is_wait_turn():
                 RA = default_robot_passive_action
+
+                # Two major cases: With question or not
+                if presence_of_questions_in_step(curr_step):
+                    addition_questions(curr_step)
+                    update_g_answers(curr_step)
+                    
+                    # Three cases leading to three hard-coded graphs
+                    case = identify_case(curr_step)
+                    mock_HA = handle_case(case, curr_step)
+                    next_step = find_matching_step(mock_HA, curr_step)
+                    RA = next_step.from_pair.robot_action
+                    HA = next_step.from_pair.human_action
+                    curr_step = next_step.parent
+
+                else:
+                    # Extract Possible human actions
+                    g_possible_human_actions = get_possible_human_actions(curr_step)
+
+                    # Send NS + HAs to HMI
+                    send_NS(VHA.NS)
+                    g_sound_player_pub.publish(String("ns"))
+                    send_vha(g_possible_human_actions, VHA.NS, timeout=0.0)
+
+                    look_at_human()
+
+                    # Wait for human choice
+                    wait_human_decision(curr_step)
+                    HA = MOCK_assess_human_action()
+
+                    if not HA.is_passive():
+                        wait_step_end()
                 
-                # Manage addtional questions
-                process_questions(curr_step)
-
-                # Extract Possible human actions
-                g_possible_human_actions = get_possible_human_actions(curr_step)
-
-                # Send NS + HAs to HMI
-                send_NS(VHA.NS)
-                g_sound_player_pub.publish(String("ns"))
-                send_vha(g_possible_human_actions, VHA.NS, timeout=0.0)
-
-                look_at_human()
-
-                # Wait for human choice
-                wait_human_decision(curr_step)
-                HA = MOCK_assess_human_action()
-
-                if not HA.is_passive():
-                    wait_step_end()
-
-
             # Robot Turn
             else:
                 HA = default_human_passive_action
@@ -415,7 +677,7 @@ def exec_epistemic(init_step):
                         RA.name += "_concu"
                         start_execute_RA(RA)
                         g_robot_action_done = False
-                    else:
+                    elif not robot_done:
                         robot_done = True
                         reset_head()
                         robot_home_pub.publish(EmptyM())
@@ -673,7 +935,11 @@ def wait_human_decision(s: ConM.Step):
 
     str_bar = IncrementalBarStr(max=TIMEOUT_DELAY, width=INCREMENTAL_BAR_STR_WIDTH)
 
-    if not s.isHInactive():
+    if presence_of_questions_in_step(s):
+        while not rospy.is_shutdown() and g_new_human_decision==None:
+            time.sleep(0.01)
+
+    elif not s.isHInactive():
         start_waiting_time = time.time()
         prompt("wait_human_decision")
         time.sleep(0.01)
@@ -1760,6 +2026,8 @@ if __name__ == "__main__":
     g_set_green_cube_client = rospy.ServiceProxy("/set_green_cube", SetBool)
 
     g_sound_player_pub = rospy.Publisher('/sound_player', String, queue_size=1)
+
+    g_set_question_buttons_client = rospy.ServiceProxy('/set_question_buttons', SetQuestionButtons)
 
     # Wait for publisher init
     time.sleep(0.1)
