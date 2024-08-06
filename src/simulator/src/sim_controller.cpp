@@ -65,8 +65,8 @@ std::map<std::string, geometry_msgs::Pose> init_poses =
         {"box_2_cover",       make_pose(make_point(0.85, 0.24, 0.7),     make_quaternion())},
         {"box_3_cover",       make_pose(make_point(0.85, 0.55, 0.7),    make_quaternion())},
         {"w1",                make_pose(make_point(8.5, -0.4, 0.75),    make_quaternion())},
-        {"r1",                make_pose(make_point(0.5, -0.6, 0.75),    make_quaternion())},
-        {"y1",                make_pose(make_point(0.5, -0.85, 0.75),   make_quaternion())},
+        {"r1",                make_pose(make_point(0.5, -0.5, 0.75),    make_quaternion())},
+        {"y1",                make_pose(make_point(0.5, -0.75, 0.75),   make_quaternion())},
 };
 
 std::map<std::string, int> nb_dropped_box = 

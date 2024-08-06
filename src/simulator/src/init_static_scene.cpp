@@ -97,7 +97,7 @@ void init_scene_epistemic()
   /* Define the pose of the object. */
   r1.primitive_poses.resize(1);  
   r1.primitive_poses[0].position.x = 0.5;
-  r1.primitive_poses[0].position.y = -0.6;
+  r1.primitive_poses[0].position.y = -0.5;
   r1.primitive_poses[0].position.z = 0.75;
   r1.primitive_poses[0].orientation.w = 1.0;
 
@@ -121,7 +121,7 @@ void init_scene_epistemic()
   /* Define the pose of the object. */
   y1.primitive_poses.resize(1);  
   y1.primitive_poses[0].position.x = 0.5;
-  y1.primitive_poses[0].position.y = -0.85;
+  y1.primitive_poses[0].position.y = -0.75;
   y1.primitive_poses[0].position.z = 0.75;
   y1.primitive_poses[0].orientation.w = 1.0;
 
