@@ -68,7 +68,8 @@ void show_pose(geometry_msgs::Pose pose);
 std::string get_agent_str(AGENT agent);
 bool isRobot(AGENT agent);
 void set_mass_obj(std::string obj_name, bool enable);
-void set_green_cube(bool d);
+bool set_3_cubes_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
+bool set_4_cubes_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
 
 
 // ****************************** CALLBACKS ******************************* //

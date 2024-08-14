@@ -1913,7 +1913,8 @@ def main_exec():
         g_set_box_types_client.call(req)
 
         # Green Cube (4th Cube)
-        g_set_green_cube_client(run[2]=="4cubes")
+        if run[2]=="4cubes":
+            g_set_4_cubes_client()
 
         # Wait for Start Signal from Prompt Window
         wait_start_signal()
@@ -2023,7 +2024,8 @@ if __name__ == "__main__":
     g_set_box_types_client = rospy.ServiceProxy("/set_box_types", SetBoxTypes)
     g_get_box_types_client = rospy.ServiceProxy("/get_box_types", GetBoxTypes)
     
-    g_set_green_cube_client = rospy.ServiceProxy("/set_green_cube", SetBool)
+    g_set_3_cubes_client = rospy.ServiceProxy("/set_3_cubes", EmptyS)
+    g_set_4_cubes_client = rospy.ServiceProxy("/set_4_cubes", EmptyS)
 
     g_sound_player_pub = rospy.Publisher('/sound_player', String, queue_size=1)
 

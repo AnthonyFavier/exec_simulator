@@ -52,21 +52,20 @@ sim_msgs::BoxTypes g_box_types;
 //  DOMAIN DESCRIPTION  //
 std::map<std::string, geometry_msgs::Pose> locations =
     {
-        {"box_1_R",     make_pose(make_point(0.73, -0.14, 1.15),    make_quaternion())},
-        {"box_2_R",     make_pose(make_point(0.73, 0.24, 1.15),     make_quaternion())},
-        {"box_3_R",     make_pose(make_point(0.73, 0.5, 1.15),     make_quaternion())},
-        {"box_1_H",     make_pose(make_point(0.97, -0.07, 1.15),     make_quaternion())},
-        {"box_2_H",     make_pose(make_point(0.97, 0.24, 1.15),      make_quaternion())},
-        {"box_3_H",     make_pose(make_point(0.97, 0.55, 1.15),      make_quaternion())},
+        {"box_1_R",     make_pose(make_point(0.73, -0.14, 1.15),        make_quaternion())},
+        {"box_2_R",     make_pose(make_point(0.73, 0.17, 1.15),         make_quaternion())},
+        {"box_3_R",     make_pose(make_point(0.73, 0.5, 1.15),          make_quaternion())},
+        {"box_1_H",     make_pose(make_point(0.97, -0.07, 1.15),        make_quaternion())},
+        {"box_2_H",     make_pose(make_point(0.97, 0.24, 1.15),         make_quaternion())},
+        {"box_3_H",     make_pose(make_point(0.97, 0.55, 1.15),         make_quaternion())},
 };
 std::map<std::string, geometry_msgs::Pose> init_poses =
     {
-        {"box_1_cover",       make_pose(make_point(0.85, -0.07, 0.7),   make_quaternion())},
-        {"box_2_cover",       make_pose(make_point(0.85, 0.24, 0.7),     make_quaternion())},
-        {"box_3_cover",       make_pose(make_point(0.85, 0.55, 0.7),    make_quaternion())},
         {"w1",                make_pose(make_point(8.5, -0.4, 0.75),    make_quaternion())},
-        {"r1",                make_pose(make_point(0.5, -0.5, 0.75),    make_quaternion())},
-        {"y1",                make_pose(make_point(0.5, -0.75, 0.75),   make_quaternion())},
+        {"r1",                make_pose(make_point(0.5, -0.4, 0.75),    make_quaternion())},
+        {"y1",                make_pose(make_point(0.5, -0.65, 0.75),   make_quaternion())},
+        {"g1",                make_pose(make_point(0.85, -0.45, 0.75),  make_quaternion())},
+        {"g2",                make_pose(make_point(0.5, -0.65, 0.85),   make_quaternion())},
 };
 
 std::map<std::string, int> nb_dropped_box = 
@@ -259,7 +258,7 @@ void PlaceLocationConcu(AGENT agent, std::string location)
     if(agent==AGENT::ROBOT)
     {
         if(nb_dropped_box[location]!=0)
-            pose.position.y += 0.15;
+            pose.position.y += 0.14;
         nb_dropped_box[location]++;
     }
 
@@ -1087,8 +1086,8 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     // if (!get_world_properties.call(srv) || !srv.response.success)
     //     throw ros::Exception("Calling get_world_properties failed...");
 
-    // Detach and reset pose of world models
-    ROS_INFO("\tDetach and reset world pose of models");
+    // Detach 
+    ROS_INFO("\tDetach cubes");
     gazebo_ros_link_attacher::Attach srv_attach;
     gazebo_msgs::SetModelState srv_set;
 
@@ -1108,11 +1107,6 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
         srv_attach.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
         srv_attach.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
         detach_plg_client[AGENT::HUMAN].call(srv_attach);
-
-        // Set obj to initial pose
-        srv_set.request.model_state.model_name = obj_name;
-        srv_set.request.model_state.pose = obj_pose;
-        set_model_state_client[AGENT::ROBOT].call(srv_set);
     }
 
     // Reset robot head
@@ -1164,20 +1158,12 @@ bool reset_world_server(std_srvs::Empty::Request &req, std_srvs::Empty::Response
     move_human_body_pub.publish(msg_body);
 
     // Reset nb_dropped
-    nb_dropped_box["box_1_R"] =0;  
-    nb_dropped_box["box_2_R"] =0;  
-    nb_dropped_box["box_3_R"] =0; 
+    nb_dropped_box["box_1_R"] = 0;  
+    nb_dropped_box["box_2_R"] = 0;  
+    nb_dropped_box["box_3_R"] = 0; 
 
-    // Green cube
-    srv_attach.request.model_name_2 = "g1";
-    srv_attach.request.link_name_2 = "g1_link";
-    srv_attach.request.model_name_1 = ROBOT_ATTACH_MODEL_NAME;
-    srv_attach.request.link_name_1 = ROBOT_ATTACH_LINK_NAME;
-    detach_plg_client[AGENT::ROBOT].call(srv_attach);
-    srv_attach.request.model_name_1 = HUMAN_ATTACH_MODEL_NAME;
-    srv_attach.request.link_name_1 = HUMAN_ATTACH_LINK_NAME;
-    detach_plg_client[AGENT::HUMAN].call(srv_attach);
-    set_green_cube(false);
+    // Set 3 cubes
+    set_3_cubes_server(empty_srv.request, empty_srv.response);
 
     ROS_INFO("World reset ok");
 
@@ -1241,21 +1227,26 @@ bool set_box_types_server(sim_msgs::SetBoxTypesRequest &req, sim_msgs::SetBoxTyp
     gazebo_msgs::SetModelState srv_set;
     geometry_msgs::Pose far_pose = make_pose(make_point(0, 0, -1), make_quaternion_RPY(0,0,0));
 
+    geometry_msgs::Pose box_1_cover_pose = make_pose(make_point(0.85, -0.07, 0.7),   make_quaternion());
+    geometry_msgs::Pose box_2_cover_pose = make_pose(make_point(0.85, 0.24, 0.7),   make_quaternion());
+    geometry_msgs::Pose box_3_cover_pose = make_pose(make_point(0.85, 0.55, 0.7),   make_quaternion());
+
+
     g_box_types = req.types;
 
     /* Box 1 */
     srv_set.request.model_state.model_name = "box_1_cover";
-    srv_set.request.model_state.pose = (req.types.box_1==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_1_cover"] : far_pose;
+    srv_set.request.model_state.pose = (req.types.box_1==sim_msgs::BoxTypes::OPAQUE) ? box_1_cover_pose : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     /* Box 2 */
     srv_set.request.model_state.model_name = "box_2_cover";
-    srv_set.request.model_state.pose = (req.types.box_2==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_2_cover"] : far_pose;
+    srv_set.request.model_state.pose = (req.types.box_2==sim_msgs::BoxTypes::OPAQUE) ? box_2_cover_pose : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     /* Box 3 */
     srv_set.request.model_state.model_name = "box_3_cover";
-    srv_set.request.model_state.pose = (req.types.box_3==sim_msgs::BoxTypes::OPAQUE) ? init_poses["box_3_cover"] : far_pose;
+    srv_set.request.model_state.pose = (req.types.box_3==sim_msgs::BoxTypes::OPAQUE) ? box_3_cover_pose : far_pose;
     set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     return true;
@@ -1267,23 +1258,62 @@ bool get_box_types_server(sim_msgs::GetBoxTypesRequest &req, sim_msgs::GetBoxTyp
     return true;
 }
 
-bool set_green_cube_server(std_srvs::SetBoolRequest &req, std_srvs::SetBoolResponse &res)
+bool set_3_cubes_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
 {
     gazebo_msgs::SetModelState srv_set;
-    geometry_msgs::Pose far_pose = make_pose(make_point(0.0, 6.0, 0.05), make_quaternion());
-    geometry_msgs::Pose shown_pose = make_pose(make_point(0.85, -0.45, 0.75), make_quaternion());
+
+    geometry_msgs::Pose far_pose = make_pose(make_point(0.0, 6.0, 1.0), make_quaternion());
+
+    srv_set.request.model_state.model_name = "r1";
+    srv_set.request.model_state.pose = init_poses["r1"];
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    srv_set.request.model_state.model_name = "y1";
+    srv_set.request.model_state.pose = init_poses["y1"];
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     srv_set.request.model_state.model_name = "g1";
-    srv_set.request.model_state.pose = req.data ? shown_pose : far_pose;
+    srv_set.request.model_state.pose = far_pose;
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    srv_set.request.model_state.model_name = "g2";
+    srv_set.request.model_state.pose = far_pose;
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    srv_set.request.model_state.model_name = "w1";
+    srv_set.request.model_state.pose = init_poses["w1"];
     set_model_state_client[AGENT::ROBOT].call(srv_set);
 
     return true;
 }
-void set_green_cube(bool d)
+
+bool set_4_cubes_server(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
 {
-    std_srvs::SetBool srv;
-    srv.request.data = d;
-    set_green_cube_server(srv.request, srv.response);
+    gazebo_msgs::SetModelState srv_set;
+
+    geometry_msgs::Pose far_pose = make_pose(make_point(0.0, 6.0, 1.0), make_quaternion());
+
+    srv_set.request.model_state.model_name = "r1";
+    srv_set.request.model_state.pose = far_pose;
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    srv_set.request.model_state.model_name = "y1";
+    srv_set.request.model_state.pose = init_poses["y1"];
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    srv_set.request.model_state.model_name = "g1";
+    srv_set.request.model_state.pose = init_poses["g1"];
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    srv_set.request.model_state.model_name = "g2";
+    srv_set.request.model_state.pose = init_poses["g2"];
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    srv_set.request.model_state.model_name = "w1";
+    srv_set.request.model_state.pose = init_poses["w1"];
+    set_model_state_client[AGENT::ROBOT].call(srv_set);
+
+    return true;
 }
 
 int main(int argc, char **argv)
@@ -1368,8 +1398,8 @@ int main(int argc, char **argv)
     ros::ServiceServer set_box_types_service = node_handle.advertiseService("set_box_types", set_box_types_server);
     ros::ServiceServer get_box_types_service = node_handle.advertiseService("get_box_types", get_box_types_server);
     
-    ros::ServiceServer set_green_cube_service = node_handle.advertiseService("/set_green_cube", set_green_cube_server); 
-
+    ros::ServiceServer set_3_cubes_service = node_handle.advertiseService("/set_3_cubes", set_3_cubes_server); 
+    ros::ServiceServer set_4_cubes_service = node_handle.advertiseService("/set_4_cubes", set_4_cubes_server); 
 
     ros::Subscriber r_start_moving_sub = node_handle.subscribe("/r_start_moving", 1, r_start_moving_cb);
     ros::Subscriber h_start_moving_sub = node_handle.subscribe("/h_start_moving", 1, h_start_moving_cb);
