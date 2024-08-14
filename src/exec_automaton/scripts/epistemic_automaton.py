@@ -600,9 +600,9 @@ def exec_epistemic(init_step):
                     g_possible_human_actions = get_possible_human_actions(curr_step)
 
                     # Send NS + HAs to HMI
-                    send_NS(VHA.NS)
+                    send_NS(VHA.NS_IDLE)
                     g_sound_player_pub.publish(String("ns"))
-                    send_vha(g_possible_human_actions, VHA.NS, timeout=0.0)
+                    send_vha(g_possible_human_actions, VHA.NS_IDLE, timeout=0.0)
 
                     look_at_human()
 
@@ -941,19 +941,24 @@ def wait_human_decision(s: ConM.Step):
 
     elif not s.isHInactive():
         start_waiting_time = time.time()
-        prompt("wait_human_decision")
-        time.sleep(0.01)
-        start_prompt_bar_pub.publish(EmptyM())
-        time.sleep(0.01)
-        while not rospy.is_shutdown() and not s.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY and g_new_human_decision==None:
-            elapsed = time.time()-start_waiting_time
+        g_prompt_pub.publish(String( "  It's your turn to act." ))
 
-            # Update progress bars
-            str_bar.goto(elapsed)
-            g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
-
+        while not rospy.is_shutdown() and g_new_human_decision==None:
             # Loop rate
             time.sleep(0.01)
+
+        # time.sleep(0.01)
+        # start_prompt_bar_pub.publish(EmptyM())
+        # time.sleep(0.01)
+        # while not rospy.is_shutdown() and not s.isHInactive() and time.time()-start_waiting_time<TIMEOUT_DELAY and g_new_human_decision==None:
+        #     elapsed = time.time()-start_waiting_time
+
+        #     # Update progress bars
+        #     str_bar.goto(elapsed)
+        #     g_prompt_progress_bar_pub.publish(String(f"{str_bar.get_str()}"))
+
+        #     # Loop rate
+        #     time.sleep(0.01)
 
         # Check if timeout reached
         if g_new_human_decision==None:
