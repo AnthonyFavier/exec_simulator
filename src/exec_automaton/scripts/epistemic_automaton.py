@@ -170,24 +170,24 @@ def get_actions_until_copresence(s: ConM.Step):
     HAs = []
     RAs = []
     while not s.from_pair.copresence:
-        p = s.comp_best_choice.from_pair
+        # p = s.comp_best_choice.from_pair
         # 
-        # p = s.children[0].from_pair
+        p = s.children[0].from_pair
 
         if not p.robot_action.is_passive():
             RAs.append(p.robot_action)
         if not p.human_action.is_passive():
             HAs.append(p.human_action)
 
-        s = s.comp_best_choice
-        # s = s.children[0]
+        # s = s.comp_best_choice
+        s = s.children[0]
 
     return HAs, RAs
 
 def get_next_step_after_concurrent(s: ConM.Step):
     while not s.from_pair.copresence:
-        s = s.comp_best_choice
-        # s = s.children[0]
+        # s = s.comp_best_choice
+        s = s.children[0]
     return s
 
 g_robot_action_done = True
@@ -1862,7 +1862,7 @@ def main_exec():
         2: ("baseline",               "OOO",      "3cubes",   None),
         3: ("baseline",               "OOO",      "4cubes",   None),
         4: ("approach_com",           "OOT",      "3cubes",   None),
-        5: ("approach_com",           "OOO",      "3cubes",   load("/home/sshekhar/Desktop/HATPEHDA-concurrent-org/dlgp/dom_n_sol_OOO_com.p")),
+        5: ("approach_com",           "OOO",      "3cubes",   load("/home/sshekhar/Desktop/HATPEHDA-concurrent-org/dlgp/dom_n_sol_tt.p")),
         6: ("approach_com",           "OOO",      "4cubes",   None),
         7: ("approach_wait_act",      "OOT",      "3cubes",   None),
         8: ("approach_wait_act",      "OOO",      "3cubes",   load("/home/sshekhar/Desktop/HATPEHDA-concurrent-org/dlgp/dom_n_sol_tt.p")),
