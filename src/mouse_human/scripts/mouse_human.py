@@ -120,9 +120,9 @@ if DOMAIN_NAME=="epistemic":
     create_zone(0,0,1920,300,           ["move_to_table"])
     create_zone(1206,519,100,115,       ["pick('w1',)"])
     create_zone(549,572,120,130,        ["pick('g1',)"])
-    create_zone(765,396,264,351,        ["place_1('w1', 'box_1')"])
-    create_zone(1030,396,251,351,       ["place_1('w1', 'box_2')"])
-    create_zone(1291,396,257,351,       ["place_1('w1', 'box_3')"])
+    create_zone(765,396,264,351,        ["place_1('X', 'box_1')"])
+    create_zone(1030,396,251,351,       ["place_1('X', 'box_2')"])
+    create_zone(1291,396,257,351,       ["place_1('X', 'box_3')"])
     create_zone(1371,820,228,217,       ["PASS"])
     create_zone(1476, 296, 110, 109,    ["q1"])
     create_zone(1638,296,110,109,       ["q2"])
@@ -385,7 +385,7 @@ def incoming_vha_cb(msg: VHA):
         found = False
         for z in g_zones:
             for z_a in z.valid_actions:
-                if z_a == ha[:len(z_a)]: # ha starts with z_a
+                if z_a == ha[:len(z_a)] or (z_a[:len("place_1")]=="place_1" and z_a[-len("'box_X')"):])==ha[-len("'box_X')"):]: # ha starts with z_a
                     z.current_action_id = i+1
                     found = True
                     # If turn or move actions, show buttons
