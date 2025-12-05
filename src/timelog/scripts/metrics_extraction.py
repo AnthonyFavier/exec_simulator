@@ -25,7 +25,7 @@ from datetime import datetime
 
 import timelog
 
-path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
+path = "<absolute_path_to_replace>/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
 import ConcurrentModule as ConM
 import CommonModule as CM
@@ -136,7 +136,7 @@ if __name__=='__main__':
     domain_name, g_hfe_states, g_hfe_final = dill.load(open(CM.path + "policy_real_human_free_early.p", "rb"))
 
 
-    dir_path = '/home/afavier/new_exec_sim_ws/events'
+    dir_path = '<absolute_path_to_replace>/events'
     files = []
     for file_path in os.listdir(dir_path):
         if os.path.isfile(os.path.join(dir_path, file_path)):

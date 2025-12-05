@@ -18,7 +18,7 @@ from progress.bar import IncrementalBar
 from sim_msgs.msg import EventLog
 from std_srvs.srv import SetBool, SetBoolResponse
 
-path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
+path = "<absolute_path_to_replace>/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
 
 ## LOGGER ##

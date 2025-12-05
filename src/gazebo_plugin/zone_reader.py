@@ -7,7 +7,7 @@ from progress.bar import IncrementalBar
 
 DOMAIN_NAME = "stack_empiler_2"
 
-PATH = "/home/afavier/new_exec_sim_ws/src/gazebo_plugin/"
+PATH = "<absolute_path_to_replace>/src/gazebo_plugin/"
 
 if DOMAIN_NAME=="stack_empiler":
     INPUT_FILENAME = "zones_stack_empiler.png"

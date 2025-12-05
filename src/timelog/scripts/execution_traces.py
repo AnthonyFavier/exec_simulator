@@ -8,7 +8,7 @@ import os
 
 import timelog
 
-path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
+path = "<absolute_path_to_replace>/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
 import ConcurrentModule as ConM
 import CommonModule as CM
@@ -105,7 +105,7 @@ if __name__=='__main__':
 
     domain_name, CM.g_PSTATES, CM.g_FINAL_IPSTATES = dill.load(open(CM.path + "search_space.p", 'rb'))
 
-    dir_path = '/home/afavier/new_exec_sim_ws/events'
+    dir_path = '<absolute_path_to_replace>/events'
     files = []
     for file_path in os.listdir(dir_path):
         if os.path.isfile(os.path.join(dir_path, file_path)):

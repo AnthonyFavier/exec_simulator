@@ -27,7 +27,7 @@ import time
 
 DOMAIN_NAME = "stack_empiler_2"
 
-path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
+path = "<absolute_path_to_replace>/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
 
 ## LOGGER ##
@@ -364,7 +364,7 @@ def main():
     rospy.wait_for_service('gazebo/spawn_sdf_model')
 
     # spawn prompt button
-    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/prompt_button.sdf','r')
+    f = open(f'<absolute_path_to_replace>/src/simulator/worlds/prompt_button.sdf','r')
     sdff = f.read()
     f.close()
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
@@ -372,29 +372,29 @@ def main():
     print(f"prompt_button spawned")
 
     # spawn tuto zones
-    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t1.sdf','r')
+    f = open(f'<absolute_path_to_replace>/src/simulator/worlds/t1.sdf','r')
     sdff = f.read()
     f.close()
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t1", sdff, "", g_far_zone_pose, "world")
-    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t2.sdf','r')
+    f = open(f'<absolute_path_to_replace>/src/simulator/worlds/t2.sdf','r')
     sdff = f.read()
     f.close()
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t2", sdff, "", g_far_zone_pose, "world")
-    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t3.sdf','r')
+    f = open(f'<absolute_path_to_replace>/src/simulator/worlds/t3.sdf','r')
     sdff = f.read()
     f.close()
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t3", sdff, "", g_far_zone_pose, "world")
-    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/t4.sdf','r')
+    f = open(f'<absolute_path_to_replace>/src/simulator/worlds/t4.sdf','r')
     sdff = f.read()
     f.close()
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
     spawn_model_prox(f"t4", sdff, "", g_far_zone_pose, "world")
 
     # spawn auto_click indicator
-    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/worlds/auto_pass_indicator.sdf','r')
+    f = open(f'<absolute_path_to_replace>/src/simulator/worlds/auto_pass_indicator.sdf','r')
     sdff = f.read()
     f.close()
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)

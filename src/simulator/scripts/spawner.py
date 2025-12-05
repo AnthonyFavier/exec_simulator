@@ -41,7 +41,7 @@ if __name__ == "__main__":
     rospy.wait_for_service('gazebo/spawn_sdf_model')
 
     # spawn prompt button
-    f = open(f'/home/afavier/new_exec_sim_ws/src/simulator/scripts/test_cube.sdf','r')
+    f = open(f'<absolute_path_to_replace>/src/simulator/scripts/test_cube.sdf','r')
     sdff = f.read()
     f.close()
     spawn_model_prox = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)

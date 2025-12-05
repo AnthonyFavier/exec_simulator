@@ -11,7 +11,6 @@ import logging.config
 import time
 from enum import Enum
 import matplotlib.pyplot as plt
-sys.path.insert(0, "/home/afavier/new_exec_sim_ws/src/progress/")
 from progress.bar import IncrementalBar, StrBar, IncrementalBarStr
 from std_msgs.msg import Int32, Bool
 from std_msgs.msg import Empty as EmptyM
@@ -39,7 +38,7 @@ INPUT = True
 # DEBUG = True
 # INPUT = True
 
-path = "/home/afavier/ws/HATPEHDA/domains_and_results/"
+path = "<absolute_path_to_replace>/HATPEHDA/domains_and_results/"
 sys.path.insert(0, path)
 import ConcurrentModule as ConM
 import CommonModule as CM
@@ -145,7 +144,7 @@ def build_expected_ha(name, parameters):
 
     return HA
 
-sound_finished = sa.WaveObject.from_wave_file("/home/afavier/new_exec_sim_ws/src/exec_automaton/scripts/finished_70.wav")
+sound_finished = sa.WaveObject.from_wave_file("<absolute_path_to_replace>/src/exec_automaton/scripts/finished_70.wav")
 def training():
     global TIMEOUT_DELAY, g_enter_pressed, g_force_exec_stop, TRAINING_PROMPT_ONLY, step_over
 
@@ -813,7 +812,7 @@ def send_NS_update_HAs(ps: CM.PState, type, timeout=0.0, only_has=None):
     #             break
     # g_best_human_action_pub.publish(best_ha)
 
-sound_ns = sa.WaveObject.from_wave_file("/home/afavier/new_exec_sim_ws/src/exec_automaton/scripts/sound.wav")
+sound_ns = sa.WaveObject.from_wave_file("<absolute_path_to_replace>/src/exec_automaton/scripts/sound.wav")
 def send_NS(type, turn=None):
     sgl = Signal()
     if type==VHA.NS:
