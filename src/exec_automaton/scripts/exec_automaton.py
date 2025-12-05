@@ -1868,7 +1868,7 @@ def main_exec():
     exec_regime = None
 
 
-    LANG = "FR" # 'FR' | 'EN'
+    LANG = "EN" # 'FR' | 'EN'
 
     # given order
     order = ['t',1,2,3,4,5,6]
