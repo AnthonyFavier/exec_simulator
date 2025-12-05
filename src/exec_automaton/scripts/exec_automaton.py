@@ -540,7 +540,7 @@ def training():
 
     reset_head()
     g_go_idle_pose_client.call()
-    sound_finished.play()
+    # sound_finished.play()
     wait_prompt_button_pressed()
 
     return -2, -2
@@ -831,7 +831,7 @@ def send_NS(type, turn=None):
     robot_visual_signal_pub.publish(sgl)
     time.sleep(0.001)
 
-    sound_ns.play()
+    # sound_ns.play()
 
 def passive_update_HAs(ps: CM.PState, RA: CM.Action, timeout=0.0, only_has=None):
     global g_possible_human_actions
@@ -1453,7 +1453,6 @@ def force_exec_stop_cb(msg):
 ## PROMPT ##
 ############
 
-LANG = "FR" # EN | FR
 g_permanent_prompt = ""
 g_prompt_start_extra = "  "
 def set_permanent_prompt_line(msg_id):
@@ -1936,7 +1935,7 @@ def main_exec():
                 space += " "
             recap = exec_regime + space + recap + "\n\n" 
 
-            sound_finished.play()
+            # sound_finished.play()
         if order==[]:
             g_prompt_pub.publish(String( recap + g_prompt_messages["end_expe"][LANG]))
         else:
